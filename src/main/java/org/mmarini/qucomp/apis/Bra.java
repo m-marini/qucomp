@@ -28,10 +28,9 @@
 
 package org.mmarini.qucomp.apis;
 
-import org.mmarini.NotImplementedException;
-
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -49,26 +48,15 @@ public record Bra(Complex[] values) {
     public static final Bra MINUS_I = Ket.minus_i().conj();
 
     /**
-     * Create the bra quantum operator
+     * Returns a ket base for the given value and size
      *
-     * @param values the single states
+     * @param value the value
+     * @param size  the number of qubit
      */
-    public Bra(Complex[] values) {
-        this.values = requireNonNull(values);
-        for (Complex value : values) {
-            requireNonNull(value);
-        }
-    }
-
-    /**
-     * Returns the ket quantum state
-     *
-     * @param values the values
-     */
-    public static Bra create(double... values) {
-        return new Bra(Arrays.stream(values)
-                .mapToObj(v ->
-                        new Complex(v, 0))
+    public static Bra base(int value, int size) {
+        int n = 1 << size;
+        return new Bra(IntStream.range(0, n)
+                .mapToObj(i -> value == i ? Complex.one() : Complex.zero())
                 .toArray(Complex[]::new));
     }
 
@@ -79,6 +67,15 @@ public record Bra(Complex[] values) {
      */
     public static Bra create(Complex... values) {
         return new Bra(values);
+    }
+
+    /**
+     * Returns the ket quantum state
+     *
+     * @param values the values
+     */
+    public static Bra create(float... values) {
+        return new Bra(VectorUtils.create(values));
     }
 
     /**
@@ -124,27 +121,48 @@ public record Bra(Complex[] values) {
     }
 
     /**
+     * Create the bra quantum operator
+     *
+     * @param values the single states
+     */
+    public Bra(Complex[] values) {
+        this.values = requireNonNull(values);
+        for (Complex value : values) {
+            requireNonNull(value);
+        }
+    }
+
+    /**
      * Returns the ket added to other (this + other)
      *
      * @param other the other ket
      */
     public Bra add(Bra other) {
-        if (values.length != other.values.length) {
-            throw new IllegalArgumentException(format("Expected %d states (%d)",
-                    values.length, other.values.length));
-        }
-        Complex[] states = new Complex[values.length];
-        for (int i = 0; i < values.length; i++) {
-            states[i] = values[i].add(other.values[i]);
-        }
-        return new Bra(states);
+        return new Bra(VectorUtils.add(values, other.values));
+    }
+
+    /***
+     * Returns value
+     * @param i the index
+     */
+    public Complex at(int i) {
+        return values[i];
     }
 
     /**
      * Returns the conjugated Kat
      */
     public Ket conj() {
-        return new Ket(Arrays.stream(values).map(Complex::conj).toArray(Complex[]::new));
+        return new Ket(VectorUtils.conj(values));
+    }
+
+    /**
+     * Returns the tensor product (this x other)
+     *
+     * @param other the other ket
+     */
+    public Bra cross(Bra other) {
+        return new Bra(VectorUtils.cross(values, other.values));
     }
 
     @Override
@@ -165,19 +183,32 @@ public record Bra(Complex[] values) {
      * @param ket the ket
      */
     public Complex mul(Ket ket) {
-        if (values.length != ket.values().length) {
-            throw new IllegalArgumentException(format("Expected %d states (%d)",
-                    values.length, ket.values().length));
-        }
-        Complex result = Complex.zero();
-        for (int i = 0; i < values.length; i++) {
-            result = result.add(values[i].mul(ket.values()[i]));
-        }
-        return result;
+        return VectorUtils.mul(values, ket.values());
     }
 
-    public Bra mul(Matrix alpha) {
-        throw new NotImplementedException();
+    /**
+     * Returns the transformed ket
+     *
+     * @param matrix the matrix operator
+     */
+    public Bra mul(Matrix matrix) {
+        int n = values.length;
+        if (matrix.numRows() != n) {
+            throw new IllegalArgumentException(format("Matrix operator must have shape ? x %d (%d x %d)",
+                    n,
+                    matrix.numRows(), matrix.numCols()));
+        }
+        int m = matrix.numCols();
+        Complex[] cells = new Complex[m];
+        for (int i = 0; i < m; i++) {
+            Complex cell = Complex.zero();
+            for (int j = 0; j < n; j++) {
+                Complex c = matrix.at(j, i);
+                cell = cell.add(c.mul(values[j]));
+            }
+            cells[i] = cell;
+        }
+        return create(cells);
     }
 
     /**
@@ -185,30 +216,24 @@ public record Bra(Complex[] values) {
      *
      * @param alpha scale
      */
-    public Bra mul(double alpha) {
-        return new Bra(
-                Arrays.stream(values)
-                        .map(v -> v.mul(alpha))
-                        .toArray(Complex[]::new));
+    public Bra mul(float alpha) {
+        return new Bra(VectorUtils.mul(values, alpha));
     }
 
     /**
-     * Returns the ket scaled by comlpex factor
+     * Returns the ket scaled by complex factor
      *
      * @param alpha the factor
      */
     public Bra mul(Complex alpha) {
-        return new Bra(
-                Arrays.stream(values)
-                        .map(v -> v.mul(alpha))
-                        .toArray(Complex[]::new));
+        return new Bra(VectorUtils.mul(values, alpha));
     }
 
     /**
      * Returns the negated ket
      */
     public Bra neg() {
-        return new Bra(Arrays.stream(values).map(Complex::neg).toArray(Complex[]::new));
+        return new Bra(VectorUtils.neg(values));
     }
 
     /**
@@ -217,15 +242,7 @@ public record Bra(Complex[] values) {
      * @param other the other ket
      */
     public Bra sub(Bra other) {
-        if (values.length != other.values.length) {
-            throw new IllegalArgumentException(format("Expected %d states (%d)",
-                    values.length, other.values.length));
-        }
-        Complex[] states = new Complex[values.length];
-        for (int i = 0; i < values.length; i++) {
-            states[i] = values[i].sub(other.values[i]);
-        }
-        return new Bra(states);
+        return new Bra(VectorUtils.sub(values, other.values));
     }
 
     @Override

@@ -8,17 +8,17 @@ import static java.lang.Math.abs;
  * @param real the x coordinate
  * @param im   the y coordinate
  */
-public record Complex(double real, double im) {
+public record Complex(float real, float im) {
     public static Complex ZERO = new Complex(0, 0);
     public static Complex ONE = new Complex(1, 0);
     public static Complex I = new Complex(0, 1);
 
     /**
-     * Returns complex from real couple
+     * Returns complex from the reals
      *
      * @param real the real part
      */
-    public static Complex create(double real) {
+    public static Complex create(float real) {
         return new Complex(real, 0);
     }
 
@@ -32,7 +32,7 @@ public record Complex(double real, double im) {
     /**
      * Returns i complex (0 + im i)
      */
-    public static Complex i(double im) {
+    public static Complex i(float im) {
         return new Complex(0, im);
     }
 
@@ -64,7 +64,7 @@ public record Complex(double real, double im) {
      *
      * @param alpha the scala
      */
-    public Complex add(double alpha) {
+    public Complex add(float alpha) {
         return new Complex(real + alpha, im);
     }
 
@@ -81,9 +81,9 @@ public record Complex(double real, double im) {
      * @param other the other complex
      */
     public Complex div(Complex other) {
-        double mb2 = other.moduleSquare();
-        double r = (real * other.real + im * other.im) / mb2;
-        double i = (im * other.real - real * other.im) / mb2;
+        float mb2 = other.moduleSquare();
+        float r = (real * other.real + im * other.im) / mb2;
+        float i = (im * other.real - real * other.im) / mb2;
         return new Complex(r, i);
     }
 
@@ -91,7 +91,7 @@ public record Complex(double real, double im) {
      * Returns the inverse comples
      */
     public Complex inv() {
-        double m2 = moduleSquare();
+        float m2 = moduleSquare();
         return new Complex(real / m2, -im / m2);
     }
 
@@ -101,23 +101,23 @@ public record Complex(double real, double im) {
      * @param other   the other complex
      * @param epsilon the range
      */
-    public boolean isClose(Complex other, double epsilon) {
-        double dr = abs(real - other.real);
-        double di = abs(im - other.im);
+    public boolean isClose(Complex other, float epsilon) {
+        float dr = abs(real - other.real);
+        float di = abs(im - other.im);
         return dr <= epsilon && di <= epsilon;
     }
 
     /**
      * Returns the module
      */
-    public double module() {
-        return Math.sqrt(moduleSquare());
+    public float module() {
+        return (float) Math.sqrt(moduleSquare());
     }
 
     /**
      * Returns the module square
      */
-    public double moduleSquare() {
+    public float moduleSquare() {
         return real * real + im * im;
     }
 
@@ -127,8 +127,8 @@ public record Complex(double real, double im) {
      * @param other the other product
      */
     public Complex mul(Complex other) {
-        double r = real * other.real - im * other.im;
-        double i = real * other.im + im * other.real;
+        float r = real * other.real - im * other.im;
+        float i = real * other.im + im * other.real;
         return new Complex(r, i);
     }
 
@@ -137,7 +137,7 @@ public record Complex(double real, double im) {
      *
      * @param alpha the scala
      */
-    public Complex mul(double alpha) {
+    public Complex mul(float alpha) {
         return new Complex(real * alpha, im * alpha);
     }
 
@@ -153,7 +153,7 @@ public record Complex(double real, double im) {
      *
      * @param alpha the scala
      */
-    public Complex sub(double alpha) {
+    public Complex sub(float alpha) {
         return new Complex(real - alpha, im);
     }
 
@@ -168,8 +168,26 @@ public record Complex(double real, double im) {
 
     @Override
     public String toString() {
-        return im < 0
-                ? "(" + real + " " + im + " i)"
-                : "(" + real + " +" + im + " i)";
+        if (im == 0) {
+            return Float.toString(real);
+        }
+        if (real == 0) {
+            if (im == 1) {
+                return "i";
+            }
+            if (im == -1) {
+                return "-i";
+            }
+            return im + " i";
+        }
+        if (im == 1) {
+            return real + " +i";
+        }
+        if (im == -1) {
+            return real + " -i";
+        }
+        return im > 0
+                ? real + " +" + im + " i"
+                : real + " " + im + " i";
     }
 }

@@ -31,19 +31,21 @@ package org.mmarini.qucomp.apis;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
 import static java.lang.Math.sqrt;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mmarini.Matchers.complexClose;
 
 class BraTest {
 
-    public static final double HALF_SQRT2 = sqrt(2) / 2;
-    public static final double EPSILON = 1e-3;
+    public static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
+    public static final float EPSILON = 1e-3F;
 
     public static Stream<Arguments> dataBraket() {
         return Stream.of(
@@ -124,6 +126,60 @@ class BraTest {
                         Complex.ONE},
                 ket.values());
     }
+    @ParameterizedTest
+    @CsvSource({
+            "0, 1",
+            "1, 1",
+            "0, 2",
+            "1, 2",
+            "2, 2",
+            "3, 2",
+            "0, 3",
+            "1, 3",
+            "2, 3",
+            "3, 3",
+            "4, 3",
+            "5, 3",
+            "6, 3",
+            "7, 3",
+    })
+    void base(int value, int size) {
+        Bra b = Bra.base(value, size);
+        int n = 1 << size;
+        assertEquals(n, b.values().length);
+        for (int i = 0; i < size; i++) {
+            assertEquals(i == value
+                            ? Complex.one() : Complex.zero(),
+                    b.values()[i]);
+        }
+    }
+
+    @Test
+    void cross() {
+        Bra ket = Bra.zero().cross(Bra.zero());
+        Complex[] values = ket.values();
+        assertEquals(4, values.length);
+        assertThat(values[0], complexClose(1, EPSILON));
+        assertThat(values[1], complexClose(0, EPSILON));
+        assertThat(values[2], complexClose(0, EPSILON));
+        assertThat(values[3], complexClose(0, EPSILON));
+    }
+
+    @Test
+    void testMul1() {
+        // Given
+        Matrix x = Matrix.create(2, 2,
+                0, 1,
+                1, 0);
+        // When
+        Bra notZero = Bra.zero().mul(x);
+        Bra notOne = Bra.one().mul(x);
+        // Then
+        assertThat(notZero.values()[0], complexClose(0, EPSILON));
+        assertThat(notZero.values()[1], complexClose(1, EPSILON));
+        assertThat(notOne.values()[0], complexClose(1, EPSILON));
+        assertThat(notOne.values()[1], complexClose(0, EPSILON));
+    }
 
     @Test
     void equals() {
@@ -144,20 +200,16 @@ class BraTest {
 
     @Test
     void minus() {
-        Bra one = Bra.minus();
-        assertArrayEquals(new Complex[]{
-                        Complex.create(HALF_SQRT2).conj(),
-                        Complex.create(-HALF_SQRT2).conj()},
-                one.values());
+        Bra bra = Bra.minus();
+        assertThat(bra.at(0), complexClose(HALF_SQRT2, EPSILON));
+        assertThat(bra.at(1), complexClose(-HALF_SQRT2, EPSILON));
     }
 
     @Test
     void minus_i() {
-        Bra one = Bra.minus_i();
-        assertArrayEquals(new Complex[]{
-                        Complex.create(HALF_SQRT2).conj(),
-                        Complex.i(-HALF_SQRT2).conj()},
-                one.values());
+        Bra bra = Bra.minus_i();
+        assertThat(bra.at(0), complexClose(HALF_SQRT2, EPSILON));
+        assertThat(bra.at(1), complexClose(Complex.i(HALF_SQRT2), EPSILON));
     }
 
     @Test

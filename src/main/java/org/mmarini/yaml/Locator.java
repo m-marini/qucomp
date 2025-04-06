@@ -42,11 +42,6 @@ import static org.mmarini.Utils.stream;
 public class Locator {
 
     private static final Locator ROOT = new Locator(JsonPointer.empty());
-    public final JsonPointer pointer;
-
-    public Locator(JsonPointer pointer) {
-        this.pointer = requireNonNull(pointer);
-    }
 
     /**
      *
@@ -60,6 +55,11 @@ public class Locator {
      */
     public static Locator root() {
         return ROOT;
+    }
+    public final JsonPointer pointer;
+
+    public Locator(JsonPointer pointer) {
+        this.pointer = requireNonNull(pointer);
     }
 
     public MapStream<Integer, Locator> elementIndices(JsonNode root) {

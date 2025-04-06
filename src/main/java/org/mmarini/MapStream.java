@@ -46,15 +46,6 @@ import static java.util.Objects.requireNonNull;
 public record MapStream<K, V>(Stream<Map.Entry<K, V>> entries) {
 
     /**
-     * Creates the map stream
-     *
-     * @param entries the entries
-     */
-    public MapStream(Stream<Map.Entry<K, V>> entries) {
-        this.entries = requireNonNull(entries);
-    }
-
-    /**
      * Returns the concatenated stream
      *
      * @param streams the streams
@@ -101,6 +92,15 @@ public record MapStream<K, V>(Stream<Map.Entry<K, V>> entries) {
      */
     public static <K, V> MapStream<K, V> of(Map<K, V> map) {
         return new MapStream<>(map.entrySet().stream());
+    }
+
+    /**
+     * Creates the map stream
+     *
+     * @param entries the entries
+     */
+    public MapStream(Stream<Map.Entry<K, V>> entries) {
+        this.entries = requireNonNull(entries);
     }
 
     /**

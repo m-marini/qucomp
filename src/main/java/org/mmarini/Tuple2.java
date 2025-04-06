@@ -11,20 +11,6 @@ import static java.util.Objects.requireNonNull;
 
 public class Tuple2<T1, T2> {
 
-    public final T1 _1;
-    public final T2 _2;
-
-    /**
-     * Creates a Tuple2
-     *
-     * @param v1 first value
-     * @param v2 second value
-     */
-    public Tuple2(T1 v1, T2 v2) {
-        this._1 = requireNonNull(v1);
-        this._2 = requireNonNull(v2);
-    }
-
     /**
      * Returns the function to map the second value
      *
@@ -79,6 +65,19 @@ public class Tuple2<T1, T2> {
      */
     public static <K, V> Collector<Tuple2<K, V>, ?, Map<K, V>> toMap() {
         return Collectors.toMap(Tuple2<K, V>::getV1, Tuple2<K, V>::getV2);
+    }
+    public final T1 _1;
+    public final T2 _2;
+
+    /**
+     * Creates a Tuple2
+     *
+     * @param v1 first value
+     * @param v2 second value
+     */
+    public Tuple2(T1 v1, T2 v2) {
+        this._1 = requireNonNull(v1);
+        this._2 = requireNonNull(v2);
     }
 
     @Override

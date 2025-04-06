@@ -39,9 +39,6 @@ public class Messages {
 
     public static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle.getBundle(BUNDLE_NAME);
 
-    private Messages() {
-    }
-
     public static String getString(final String key) {
         return getStringOpt(key).orElseGet(() -> '!' + key + '!');
     }
@@ -52,5 +49,8 @@ public class Messages {
         } catch (final MissingResourceException e) {
             return Optional.empty();
         }
+    }
+
+    private Messages() {
     }
 }

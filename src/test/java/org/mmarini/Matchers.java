@@ -41,7 +41,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 public interface Matchers {
 
-    static Matcher<Complex> complexClose(Complex expected, double epsilon) {
+    static Matcher<Complex> complexClose(Complex expected, float epsilon) {
         requireNonNull(expected);
         return new CustomMatcher<>(format("Complex close to %s within +- %f",
                 expected,
@@ -53,7 +53,7 @@ public interface Matchers {
                             .appendValue(complex.toString())
                             .appendText(" differs from ")
                             .appendValue(expected.toString())
-                            .appendText(" DEG (more then ")
+                            .appendText(" (more then ")
                             .appendValue(epsilon)
                             .appendText(")");
                 } else {
@@ -67,6 +67,10 @@ public interface Matchers {
                 return complex.isClose(expected, epsilon);
             }
         };
+    }
+
+    static Matcher<Complex> complexClose(float expected, float epsilon) {
+        return complexClose(Complex.create(expected), epsilon);
     }
 
     static <T> Matcher<Optional<T>> emptyOptional() {

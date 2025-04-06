@@ -233,28 +233,6 @@ public class GridLayoutHelper<T extends Container> {
         });
     }
 
-    private final ResourceBundle bundle;
-    private final T container;
-    private final GridBagLayout layout;
-    private GridBagConstraints constraints;
-    /**
-     * @param container
-     */
-    public GridLayoutHelper(final T container) {
-        this(null, container);
-    }
-    /**
-     * @param bundle
-     * @param container
-     */
-    public GridLayoutHelper(final ResourceBundle bundle, final T container) {
-        this.bundle = bundle;
-        this.container = container;
-        layout = new GridBagLayout();
-        constraints = new GridBagConstraints();
-        container.setLayout(layout);
-    }
-
     /**
      * @param c
      * @return
@@ -277,6 +255,29 @@ public class GridLayoutHelper<T extends Container> {
             n = m.apply(n, a);
         }
         return n;
+    }
+    private final ResourceBundle bundle;
+    private final T container;
+    private final GridBagLayout layout;
+    private GridBagConstraints constraints;
+
+    /**
+     * @param container
+     */
+    public GridLayoutHelper(final T container) {
+        this(null, container);
+    }
+
+    /**
+     * @param bundle
+     * @param container
+     */
+    public GridLayoutHelper(final ResourceBundle bundle, final T container) {
+        this.bundle = bundle;
+        this.container = container;
+        layout = new GridBagLayout();
+        constraints = new GridBagConstraints();
+        container.setLayout(layout);
     }
 
     public GridLayoutHelper<T> add(final Component c) {
