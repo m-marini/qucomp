@@ -29,23 +29,28 @@
 package org.mmarini.qucomp.apis;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static java.lang.Math.sqrt;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.closeTo;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mmarini.Matchers.complexClose;
 
 class KetTest {
 
-    public static final double HALF_SQRT2 = sqrt(2) / 2;
+    public static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
+    public static final float EPSILON = 1e-6F;
 
     @Test
     void add() {
         Ket ket0 = Ket.ZERO;
         Ket ket1 = Ket.ONE;
         Ket add = ket0.add(ket1);
-        assertArrayEquals(new Complex[]{
-                        Complex.ONE,
-                        Complex.ONE},
-                add.values());
+        assertThat(add.at(0), complexClose(1, EPSILON));
+        assertThat(add.at(1), complexClose(1, EPSILON));
     }
 
     @Test
@@ -76,6 +81,76 @@ class KetTest {
                 ket.values());
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "0, 1",
+            "1, 1",
+            "0, 2",
+            "1, 2",
+            "2, 2",
+            "3, 2",
+            "0, 3",
+            "1, 3",
+            "2, 3",
+            "3, 3",
+            "4, 3",
+            "5, 3",
+            "6, 3",
+            "7, 3",
+    })
+    void base(int value, int size) {
+        Ket b = Ket.base(value, size);
+        int n = 1 << size;
+        assertEquals(n, b.values().length);
+        for (int i = 0; i < size; i++) {
+            assertEquals(i == value
+                            ? Complex.one() : Complex.zero(),
+                    b.values()[i]);
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "0,0, 1,0,0,0",
+            "0,1, 0,1,0,0",
+            "1,0, 0,0,1,0",
+            "1,1, 0,0,0,1",
+    })
+    void cross(int b1, int b0, float exp0, float exp1, float exp2, float exp3) {
+        // Given
+        Ket ket0 = b0 == 0 ? Ket.zero() : Ket.one();
+        Ket ket1 = b1 == 0 ? Ket.zero() : Ket.one();
+        Ket ket = ket1.cross(ket0);
+        assertEquals(4, ket.values().length);
+        assertThat(ket.at(0), complexClose(exp0, EPSILON));
+        assertThat(ket.at(1), complexClose(exp1, EPSILON));
+        assertThat(ket.at(2), complexClose(exp2, EPSILON));
+        assertThat(ket.at(3), complexClose(exp3, EPSILON));
+    }
+
+    @Test
+    void minus() {
+        Ket ket = Ket.minus();
+        assertThat(ket.at(0), complexClose(HALF_SQRT2, EPSILON));
+        assertThat(ket.at(1), complexClose(-HALF_SQRT2, EPSILON));
+    }
+
+    @Test
+    void testMul1() {
+        // Given
+        Matrix x = Matrix.create(2, 2,
+                0, 1,
+                1, 0);
+        // When
+        Ket notZero = Ket.zero().mul(x);
+        Ket notOne = Ket.one().mul(x);
+        // Then
+        assertThat(notZero.values()[0], complexClose(0, EPSILON));
+        assertThat(notZero.values()[1], complexClose(1, EPSILON));
+        assertThat(notOne.values()[0], complexClose(1, EPSILON));
+        assertThat(notOne.values()[1], complexClose(0, EPSILON));
+    }
+
     @Test
     void equals() {
         Ket ket1 = Ket.create(Complex.create(1), Complex.create(2));
@@ -94,21 +169,22 @@ class KetTest {
     }
 
     @Test
-    void minus() {
-        Ket one = Ket.minus();
-        assertArrayEquals(new Complex[]{
-                        Complex.create(HALF_SQRT2),
-                        Complex.create(-HALF_SQRT2)},
-                one.values());
+    void minus_i() {
+        Ket one = Ket.minus_i();
+        assertThat(one.at(0), complexClose(HALF_SQRT2, EPSILON));
+        assertThat(one.at(1), complexClose(Complex.i(-HALF_SQRT2), EPSILON));
     }
 
     @Test
-    void minus_i() {
-        Ket one = Ket.minus_i();
-        assertArrayEquals(new Complex[]{
-                        Complex.create(HALF_SQRT2),
-                        Complex.i(-HALF_SQRT2)},
-                one.values());
+    void prob() {
+        double[] zero = Ket.zero().prob();
+        double[] one = Ket.one().prob();
+        double[] plus = Ket.plus().prob();
+
+        assertArrayEquals(new double[]{1, 0}, zero);
+        assertArrayEquals(new double[]{0, 1}, one);
+        assertThat(plus[0], closeTo(0.5, EPSILON));
+        assertThat(plus[1], closeTo(0.5, EPSILON));
     }
 
     @Test

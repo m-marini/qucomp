@@ -28,10 +28,9 @@
 
 package org.mmarini.qucomp.apis;
 
-import org.mmarini.NotImplementedException;
-
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 import static java.lang.Math.sqrt;
 import static java.lang.String.format;
@@ -40,39 +39,64 @@ import static java.util.Objects.requireNonNull;
 /**
  * Ket quantum state
  *
- * @param values the values of single state
+ * @param values the values of single states
  */
 public record Ket(Complex[] values) {
 
     public static final Ket ZERO = create(1, 0);
     public static final Ket ONE = create(0, 1);
-    public static final Ket PLUS = create(1, 1).mul(sqrt(2) / 2);
-    public static final Ket MINUS = create(1, -1).mul(sqrt(2) / 2);
-    public static final Ket I = create(Complex.one(), Complex.i()).mul(sqrt(2) / 2);
-    public static final Ket MINUS_I = create(Complex.one(), Complex.i(-1)).mul(sqrt(2) / 2);
-
-    /**
-     * Create the ket quantum state
-     *
-     * @param values the single states
-     */
-    public Ket(Complex[] values) {
-        this.values = requireNonNull(values);
-        for (Complex value : values) {
-            requireNonNull(value);
-        }
-    }
+    public static final Complex HALF_SQRT2 = Complex.create((float) (sqrt(2) / 2));
+    public static final Complex I_HALF_SQRT2 = new Complex(0f, (float) (sqrt(2) / 2));
+    public static final Ket PLUS = create(HALF_SQRT2, HALF_SQRT2);
+    public static final Ket MINUS = create(HALF_SQRT2, HALF_SQRT2.neg());
+    public static final Ket I = create(HALF_SQRT2, I_HALF_SQRT2);
+    public static final Ket MINUS_I = create(HALF_SQRT2, I_HALF_SQRT2.neg());
 
     /**
      * Returns the ket quantum state
      *
      * @param values the values
      */
-    public static Ket create(double... values) {
-        return new Ket(Arrays.stream(values)
-                .mapToObj(v ->
-                        new Complex(v, 0))
+    public static Ket create(float... values) {
+        return new Ket(VectorUtils.create(values));
+    }
+
+    /***
+     * Returns value
+     * @param i the index
+     */
+    public Complex at(int i) {
+        return values[i];
+    }
+
+    /**
+     * Returns the tensor product (this x other)
+     *
+     * @param other the other ket
+     */
+    public Ket cross(Ket other) {
+        return new Ket(VectorUtils.cross(values, other.values));
+    }
+
+    /**
+     * Returns a ket base for the given value and size
+     *
+     * @param value the value
+     * @param size  the number of qubit
+     */
+    public static Ket base(int value, int size) {
+        int n = 1 << size;
+        return new Ket(IntStream.range(0, n)
+                .mapToObj(i -> value == i ? Complex.one() : Complex.zero())
                 .toArray(Complex[]::new));
+    }
+
+    /**
+     * Returns the probability of each state
+     */
+    public double[] prob() {
+        return Arrays.stream(values).mapToDouble(Complex::moduleSquare)
+                .toArray();
     }
 
     /**
@@ -127,20 +151,31 @@ public record Ket(Complex[] values) {
     }
 
     /**
+     * Create the ket quantum state
+     *
+     * @param values the single states
+     */
+    public Ket(Complex[] values) {
+        this.values = requireNonNull(values);
+        for (Complex value : values) {
+            requireNonNull(value);
+        }
+    }
+
+    /**
      * Returns the ket added to other (this + other)
      *
      * @param other the other ket
      */
     public Ket add(Ket other) {
-        if (values.length != other.values.length) {
-            throw new IllegalArgumentException(format("Expected %d states (%d)",
-                    values.length, other.values.length));
-        }
-        Complex[] states = new Complex[values.length];
-        for (int i = 0; i < values.length; i++) {
-            states[i] = values[i].add(other.values[i]);
-        }
-        return new Ket(states);
+        return new Ket(VectorUtils.add(values, other.values));
+    }
+
+    /**
+     * Returns the conjugated Bra
+     */
+    public Bra conj() {
+        return new Bra(VectorUtils.conj(values));
     }
 
     @Override
@@ -156,14 +191,28 @@ public record Ket(Complex[] values) {
     }
 
     /**
-     * Returns the conjugated Bra
+     * Returns the transformed ket
+     *
+     * @param matrix the matrix operator
      */
-    public Bra conj() {
-        return new Bra(Arrays.stream(values).map(Complex::conj).toArray(Complex[]::new));
-    }
-
-    public Ket mul(Matrix alpha) {
-        throw new NotImplementedException();
+    public Ket mul(Matrix matrix) {
+        int n = values.length;
+        if (matrix.numCols() != n) {
+            throw new IllegalArgumentException(format("Matrix operator must have shape ? x %d (%dx%d)",
+                    n,
+                    matrix.numRows(), matrix.numCols()));
+        }
+        int m = matrix.numRows();
+        Complex[] cells = new Complex[m];
+        for (int i = 0; i < m; i++) {
+            Complex cell = Complex.zero();
+            for (int j = 0; j < n; j++) {
+                Complex c = matrix.at(i, j);
+                cell = cell.add(c.mul(values[j]));
+            }
+            cells[i] = cell;
+        }
+        return create(cells);
     }
 
     /**
@@ -171,30 +220,24 @@ public record Ket(Complex[] values) {
      *
      * @param alpha scale
      */
-    public Ket mul(double alpha) {
-        return new Ket(
-                Arrays.stream(values)
-                        .map(v -> v.mul(alpha))
-                        .toArray(Complex[]::new));
+    public Ket mul(float alpha) {
+        return new Ket(VectorUtils.mul(values, alpha));
     }
 
     /**
-     * Returns the ket scaled by comlpex factor
+     * Returns the ket scaled by complex factor
      *
      * @param alpha the factor
      */
     public Ket mul(Complex alpha) {
-        return new Ket(
-                Arrays.stream(values)
-                        .map(v -> v.mul(alpha))
-                        .toArray(Complex[]::new));
+        return new Ket(VectorUtils.mul(values, alpha));
     }
 
     /**
      * Returns the negated ket
      */
     public Ket neg() {
-        return new Ket(Arrays.stream(values).map(Complex::neg).toArray(Complex[]::new));
+        return new Ket(VectorUtils.neg(values));
     }
 
     /**
@@ -203,15 +246,7 @@ public record Ket(Complex[] values) {
      * @param other the other ket
      */
     public Ket sub(Ket other) {
-        if (values.length != other.values.length) {
-            throw new IllegalArgumentException(format("Expected %d states (%d)",
-                    values.length, other.values.length));
-        }
-        Complex[] states = new Complex[values.length];
-        for (int i = 0; i < values.length; i++) {
-            states[i] = values[i].sub(other.values[i]);
-        }
-        return new Ket(states);
+        return new Ket(VectorUtils.sub(values, other.values));
     }
 
     @Override
