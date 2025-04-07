@@ -1,0 +1,12 @@
+---
+$schema: https://mmarini.org/qucomp/qucomp-schema-0.1
+# Or
+gates:
+  - gate: i
+    qubit: 2
+---
+# And
+gates:
+  - gate: ccnot
+    controls: [0, 1]
+    data: 2

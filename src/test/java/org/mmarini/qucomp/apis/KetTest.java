@@ -30,19 +30,43 @@ package org.mmarini.qucomp.apis;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import static java.lang.Math.sqrt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.Matchers.matchesPattern;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mmarini.Matchers.complexClose;
 
 class KetTest {
 
     public static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
     public static final float EPSILON = 1e-6F;
+
+    public static Stream<Arguments> fromText1bitDataSet() {
+        return Stream.of(
+                Arguments.arguments("|0>", Ket.zero()),
+                Arguments.arguments("|1>", Ket.one()),
+                Arguments.arguments("|+>", Ket.plus()),
+                Arguments.arguments("|->", Ket.minus()),
+                Arguments.arguments("|i>", Ket.i()),
+                Arguments.arguments("|-i>", Ket.minus_i())
+        );
+    }
+
+    public static Stream<Arguments> fromText2bitDataSet() {
+        return Stream.of(
+                Arguments.arguments("|0>|0>", Ket.base(0, 2)),
+                Arguments.arguments("|0>|1>", Ket.base(1, 2)),
+                Arguments.arguments("|1>|0>", Ket.base(2, 2)),
+                Arguments.arguments("|1>|1>", Ket.base(3, 2))
+        );
+    }
 
     @Test
     void add() {
@@ -51,6 +75,14 @@ class KetTest {
         Ket add = ket0.add(ket1);
         assertThat(add.at(0), complexClose(1, EPSILON));
         assertThat(add.at(1), complexClose(1, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("fromText1bitDataSet")
+    void fromText1bit(String text, Ket exp) {
+        // Given
+        Ket ket = Ket.fromText(text);
+        assertEquals(exp, ket);
     }
 
     @Test
@@ -126,6 +158,39 @@ class KetTest {
         assertThat(ket.at(1), complexClose(exp1, EPSILON));
         assertThat(ket.at(2), complexClose(exp2, EPSILON));
         assertThat(ket.at(3), complexClose(exp3, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("fromText2bitDataSet")
+    void fromText2bit(String text, Ket exp) {
+        // Given
+        Ket ket = Ket.fromText(text);
+        assertEquals(exp, ket);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            ", Missing ket expression",
+            "|, Missing element after \\|",
+            "|>, Unknow ket \\|>",
+    })
+    void fromTextError(String text, String exp) {
+        // Given
+        IllegalArgumentException th = assertThrows(IllegalArgumentException.class, () ->
+                Ket.fromText(text != null ? text : ""));
+        assertThat(th.getMessage(), matchesPattern(exp));
+    }
+
+    @Test
+    void toString0Test() {
+        Ket ket = Ket.create(Complex.zero(), Complex.zero(), Complex.zero(), Complex.zero());
+        assertEquals("(0.0) |3>", ket.toString());
+    }
+
+    @Test
+    void toStringTest() {
+        Ket ket = Ket.create(new Complex(0, 0), new Complex(2, 0), new Complex(0, 2), new Complex(2, 2));
+        assertEquals("(2.0) |1> + (2.0 i) |2> + (2.0 +2.0 i) |3>", ket.toString());
     }
 
     @Test
