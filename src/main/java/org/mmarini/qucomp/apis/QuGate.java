@@ -6,6 +6,7 @@ import org.mmarini.yaml.Locator;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
@@ -14,22 +15,41 @@ import static java.util.Objects.requireNonNull;
 /**
  * Defines the gate transformation and the bit indices of the gate
  *
+ * @param type      the port type
  * @param indices   the indices
  * @param transform the transformation
  */
-public record QuGate(int[] indices, Matrix transform) {
+public record QuGate(String type, int[] indices, Matrix transform) {
     private static final Map<String, BiFunction<JsonNode, Locator, QuGate>> BUILDERS = Map.of(
-            "s", (r, l) -> unaryFromJson(r, l, Matrix.s()),
-            "t", (r, l) -> unaryFromJson(r, l, Matrix.t()),
-            "h", (r, l) -> unaryFromJson(r, l, Matrix.h()),
-            "x", (r, l) -> unaryFromJson(r, l, Matrix.x()),
-            "y", (r, l) -> unaryFromJson(r, l, Matrix.y()),
-            "z", (r, l) -> unaryFromJson(r, l, Matrix.z()),
-            "i", (r, l) -> unaryFromJson(r, l, Matrix.identity()),
+            "s", (r, l) -> unaryFromJson(r, l, QuGate::s),
+            "t", (r, l) -> unaryFromJson(r, l, QuGate::t),
+            "h", (r, l) -> unaryFromJson(r, l, QuGate::h),
+            "x", (r, l) -> unaryFromJson(r, l, QuGate::x),
+            "y", (r, l) -> unaryFromJson(r, l, QuGate::y),
+            "z", (r, l) -> unaryFromJson(r, l, QuGate::z),
+            "i", (r, l) -> unaryFromJson(r, l, QuGate::i),
             "swap", QuGate::swapFromJson,
             "cnot", QuGate::cnotFromJson,
             "ccnot", QuGate::ccnotFromJson
     );
+
+    /**
+     * Create the gate
+     *
+     * @param type      the type
+     * @param indices   the indices
+     * @param transform the transformation
+     */
+    public QuGate(String type, int[] indices, Matrix transform) {
+        this.type = requireNonNull(type);
+        this.indices = requireNonNull(indices);
+        this.transform = requireNonNull(transform);
+        int n = 1 << indices.length;
+        if (!transform.hasShape(n, n)) {
+            throw new IllegalArgumentException(format("transform shape must be %dx%d (%dx%d)",
+                    n, n, transform.numRows(), transform.numCols()));
+        }
+    }
 
     /**
      * Returns the ccnot gate definition
@@ -39,16 +59,7 @@ public record QuGate(int[] indices, Matrix transform) {
      * @param data the data bit index
      */
     public static QuGate ccnot(int c0, int c1, int data) {
-        return new QuGate(new int[]{c0, c1, data}, Matrix.ccnot());
-    }
-
-    /**
-     * Returns the ccnot gate definition
-     *
-     * @param qubit the data bit
-     */
-    public static QuGate i(int qubit) {
-        return new QuGate(new int[]{qubit}, Matrix.identity());
+        return new QuGate("ccnot", new int[]{c0, c1, data}, Matrix.ccnot());
     }
 
     /**
@@ -137,13 +148,12 @@ public record QuGate(int[] indices, Matrix transform) {
     }
 
     /**
-     * Returns the cnot gate definition
+     * Returns the ccnot gate definition
      *
-     * @param control the control bit index
-     * @param data    the data bit index
+     * @param qubit the data bit
      */
-    public static QuGate cnot(int control, int data) {
-        return new QuGate(new int[]{control, data}, Matrix.cnot());
+    public static QuGate i(int qubit) {
+        return new QuGate("i", new int[]{qubit}, Matrix.identity());
     }
 
     /**
@@ -174,6 +184,16 @@ public record QuGate(int[] indices, Matrix transform) {
     }
 
     /**
+     * Returns the cnot gate definition
+     *
+     * @param control the control bit index
+     * @param data    the data bit index
+     */
+    public static QuGate cnot(int control, int data) {
+        return new QuGate("cnot", new int[]{control, data}, Matrix.cnot());
+    }
+
+    /**
      * Returns the gate from json
      *
      * @param root    the document
@@ -185,28 +205,19 @@ public record QuGate(int[] indices, Matrix transform) {
                 .mapToInt(l ->
                         l.getNode(root).asInt())
                 .toArray();
-        return new QuGate(qubit, Matrix.swap());
+        return swap(qubit[0], qubit[1]);
     }
 
     /**
      * Returns the gate from json
      *
-     * @param root      the document
-     * @param locator   the locator
-     * @param transform the transform matrix
+     * @param root    the document
+     * @param locator the locator
+     * @param builder the general builder function
      */
-    public static QuGate unaryFromJson(JsonNode root, Locator locator, Matrix transform) {
+    public static QuGate unaryFromJson(JsonNode root, Locator locator, IntFunction<QuGate> builder) {
         int qubit = locator.path("qubit").getNode(root).asInt();
-        return new QuGate(new int[]{qubit}, transform);
-    }
-
-    /**
-     * Returns the h gate (Hadamard) definition
-     *
-     * @param data the data bit index
-     */
-    public static QuGate h(int data) {
-        return new QuGate(new int[]{data}, Matrix.h());
+        return builder.apply(qubit);
     }
 
     /**
@@ -223,12 +234,21 @@ public record QuGate(int[] indices, Matrix transform) {
     }
 
     /**
+     * Returns the h gate (Hadamard) definition
+     *
+     * @param data the data bit index
+     */
+    public static QuGate h(int data) {
+        return new QuGate("h", new int[]{data}, Matrix.h());
+    }
+
+    /**
      * Returns the s gate definition
      *
      * @param data the data bit index
      */
     public static QuGate s(int data) {
-        return new QuGate(new int[]{data}, Matrix.s());
+        return new QuGate("s", new int[]{data}, Matrix.s());
     }
 
     /**
@@ -238,7 +258,7 @@ public record QuGate(int[] indices, Matrix transform) {
      * @param data1 the data1 bit index
      */
     public static QuGate swap(int data0, int data1) {
-        return new QuGate(new int[]{data0, data1}, Matrix.swap());
+        return new QuGate("swap", new int[]{data0, data1}, Matrix.swap());
     }
 
     /**
@@ -247,7 +267,7 @@ public record QuGate(int[] indices, Matrix transform) {
      * @param data the data bit index
      */
     public static QuGate t(int data) {
-        return new QuGate(new int[]{data}, Matrix.t());
+        return new QuGate("t", new int[]{data}, Matrix.t());
     }
 
     /**
@@ -256,7 +276,7 @@ public record QuGate(int[] indices, Matrix transform) {
      * @param data the data bit index
      */
     public static QuGate x(int data) {
-        return new QuGate(new int[]{data}, Matrix.x());
+        return new QuGate("x", new int[]{data}, Matrix.x());
     }
 
     /**
@@ -265,7 +285,7 @@ public record QuGate(int[] indices, Matrix transform) {
      * @param data the data bit index
      */
     public static QuGate y(int data) {
-        return new QuGate(new int[]{data}, Matrix.y());
+        return new QuGate("y", new int[]{data}, Matrix.y());
     }
 
     /**
@@ -274,23 +294,7 @@ public record QuGate(int[] indices, Matrix transform) {
      * @param data the data bit index
      */
     public static QuGate z(int data) {
-        return new QuGate(new int[]{data}, Matrix.z());
-    }
-
-    /**
-     * Create the gate
-     *
-     * @param indices   the indices
-     * @param transform the transformation
-     */
-    public QuGate(int[] indices, Matrix transform) {
-        this.indices = requireNonNull(indices);
-        this.transform = requireNonNull(transform);
-        int n = 1 << indices.length;
-        if (!transform.hasShape(n, n)) {
-            throw new IllegalArgumentException(format("transform shape must be %dx%d (%dx%d)",
-                    n, n, transform.numRows(), transform.numCols()));
-        }
+        return new QuGate("z", new int[]{data}, Matrix.z());
     }
 
     /**

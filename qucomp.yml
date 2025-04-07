@@ -4,6 +4,10 @@ $schema: https://mmarini.org/qucomp/qucomp-schema-0.1
 gates:
   - gate: i
     qubit: 2
+  - gate: x
+    qubit: 0
+  - gate: swap
+    qubits: [ 0, 1 ]
 ---
 # And
 gates:
