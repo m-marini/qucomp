@@ -29,7 +29,9 @@
 package org.mmarini.qucomp.apis;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
+import java.util.StringTokenizer;
 import java.util.stream.IntStream;
 
 import static java.lang.Math.sqrt;
@@ -51,6 +53,51 @@ public record Ket(Complex[] values) {
     public static final Ket MINUS = create(HALF_SQRT2, HALF_SQRT2.neg());
     public static final Ket I = create(HALF_SQRT2, I_HALF_SQRT2);
     public static final Ket MINUS_I = create(HALF_SQRT2, I_HALF_SQRT2.neg());
+    private static final Map<String, Ket> KET_DICTIONARY = Map.of(
+            "|0>", zero(),
+            "|1>", one(),
+            "|+>", plus(),
+            "|->", minus(),
+            "|i>", i(),
+            "|-i>", minus_i()
+    );
+
+    /**
+     * Returns the ket by parsing a text
+     * <p>
+     * The syntax of text is:
+     * <pre>
+     *  &lt;ket> ::= &lt>ket1> &lt;ket>
+     *  &lt;ket1> ::= "|0>" | "|1>" | "|+>" | "|->" | "|i>" | "|-i>"
+     * </pre>
+     * </p>
+     *
+     * @param text the text
+     */
+    public static Ket fromText(String text) {
+        StringTokenizer tokenizer = new StringTokenizer(requireNonNull(text), "| ", true);
+        Ket result = null;
+        while (tokenizer.hasMoreElements()) {
+            String tok = tokenizer.nextToken();
+            if (tok.equals("|")) {
+                if (!tokenizer.hasMoreElements()) {
+                    throw new IllegalArgumentException(format("Missing element after %s", tok));
+                }
+                String tok1 = tokenizer.nextToken();
+                Ket keti = KET_DICTIONARY.get("|" + tok1);
+                if (keti == null) {
+                    throw new IllegalArgumentException(format("Unknow ket |%s", tok1));
+                }
+                result = result == null ? keti : result.cross(keti);
+            } else if (!tok.isBlank()) {
+                throw new IllegalArgumentException(format("Unknow token \"%s\"", tok));
+            }
+        }
+        if (result == null) {
+            throw new IllegalArgumentException("Missing ket expression");
+        }
+        return result;
+    }
 
     /**
      * Returns the ket quantum state
@@ -251,6 +298,21 @@ public record Ket(Complex[] values) {
 
     @Override
     public String toString() {
-        return "Ket" + Arrays.toString(values);
+        StringBuilder builder = new StringBuilder();
+        boolean isZero = true;
+        for (int i = 0; i < values.length; i++) {
+            if (values[i].module() != 0) {
+                if (!isZero) {
+                    builder.append(" + ");
+                }
+                isZero = false;
+                builder.append("(");
+                builder.append(values[i]);
+                builder.append(") |");
+                builder.append(i);
+                builder.append(">");
+            }
+        }
+        return isZero ? "(0.0) |" + (values.length - 1) + ">" : builder.toString();
     }
 }

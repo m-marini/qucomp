@@ -1,6 +1,11 @@
 package org.mmarini.qucomp.apis;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import org.mmarini.yaml.Locator;
+
 import java.util.Arrays;
+import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
@@ -13,6 +18,19 @@ import static java.util.Objects.requireNonNull;
  * @param transform the transformation
  */
 public record QuGate(int[] indices, Matrix transform) {
+    private static final Map<String, BiFunction<JsonNode, Locator, QuGate>> BUILDERS = Map.of(
+            "s", (r, l) -> unaryFromJson(r, l, Matrix.s()),
+            "t", (r, l) -> unaryFromJson(r, l, Matrix.t()),
+            "h", (r, l) -> unaryFromJson(r, l, Matrix.h()),
+            "x", (r, l) -> unaryFromJson(r, l, Matrix.x()),
+            "y", (r, l) -> unaryFromJson(r, l, Matrix.y()),
+            "z", (r, l) -> unaryFromJson(r, l, Matrix.z()),
+            "i", (r, l) -> unaryFromJson(r, l, Matrix.identity()),
+            "swap", QuGate::swapFromJson,
+            "cnot", QuGate::cnotFromJson,
+            "ccnot", QuGate::ccnotFromJson
+    );
+
     /**
      * Returns the ccnot gate definition
      *
@@ -25,13 +43,28 @@ public record QuGate(int[] indices, Matrix transform) {
     }
 
     /**
-     * Returns the cnot gate definition
+     * Returns the ccnot gate definition
      *
-     * @param control the control bit index
-     * @param data    the data bit index
+     * @param qubit the data bit
      */
-    public static QuGate cnot(int control, int data) {
-        return new QuGate(new int[]{control, data}, Matrix.ccnot());
+    public static QuGate i(int qubit) {
+        return new QuGate(new int[]{qubit}, Matrix.identity());
+    }
+
+    /**
+     * Returns the gate from json
+     *
+     * @param root    the document
+     * @param locator the locator
+     */
+    public static QuGate ccnotFromJson(JsonNode root, Locator locator) {
+        int[] controls = locator.path("controls")
+                .elements(root)
+                .mapToInt(l ->
+                        l.getNode(root).asInt())
+                .toArray();
+        int data = locator.path("data").getNode(root).asInt();
+        return ccnot(controls[0], controls[1], data);
     }
 
     /**
@@ -101,6 +134,70 @@ public record QuGate(int[] indices, Matrix transform) {
                     return s1;
                 })
                 .toArray();
+    }
+
+    /**
+     * Returns the cnot gate definition
+     *
+     * @param control the control bit index
+     * @param data    the data bit index
+     */
+    public static QuGate cnot(int control, int data) {
+        return new QuGate(new int[]{control, data}, Matrix.cnot());
+    }
+
+    /**
+     * Returns the gate from json
+     *
+     * @param root    the document
+     * @param locator the locator
+     */
+    public static QuGate cnotFromJson(JsonNode root, Locator locator) {
+        int control = locator.path("control").getNode(root).asInt();
+        int data = locator.path("data").getNode(root).asInt();
+        return cnot(control, data);
+    }
+
+    /**
+     * Returns the gate from json
+     *
+     * @param root    the document
+     * @param locator the locator
+     */
+    public static QuGate fromJson(JsonNode root, Locator locator) {
+        String gate = locator.path("gate").getNode(root).asText();
+        BiFunction<JsonNode, Locator, QuGate> builder = BUILDERS.get(gate);
+        if (builder == null) {
+            throw new IllegalArgumentException(format("Unknown gate \"%s\"", gate));
+        }
+        return builder.apply(root, locator);
+    }
+
+    /**
+     * Returns the gate from json
+     *
+     * @param root    the document
+     * @param locator the locator
+     */
+    public static QuGate swapFromJson(JsonNode root, Locator locator) {
+        int[] qubit = locator.path("qubits")
+                .elements(root)
+                .mapToInt(l ->
+                        l.getNode(root).asInt())
+                .toArray();
+        return new QuGate(qubit, Matrix.swap());
+    }
+
+    /**
+     * Returns the gate from json
+     *
+     * @param root      the document
+     * @param locator   the locator
+     * @param transform the transform matrix
+     */
+    public static QuGate unaryFromJson(JsonNode root, Locator locator, Matrix transform) {
+        int qubit = locator.path("qubit").getNode(root).asInt();
+        return new QuGate(new int[]{qubit}, transform);
     }
 
     /**
