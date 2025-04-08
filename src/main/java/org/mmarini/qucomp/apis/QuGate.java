@@ -19,8 +19,8 @@ import static java.util.Objects.requireNonNull;
  * @param indices   the indices
  * @param transform the transformation
  */
-public record QuGate(String type, int[] indices, Matrix transform) {
-    private static final Map<String, BiFunction<JsonNode, Locator, QuGate>> BUILDERS = Map.of(
+public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
+    private static final Map<java.lang.String, BiFunction<JsonNode, Locator, QuGate>> BUILDERS = Map.of(
             "s", (r, l) -> unaryFromJson(r, l, QuGate::s),
             "t", (r, l) -> unaryFromJson(r, l, QuGate::t),
             "h", (r, l) -> unaryFromJson(r, l, QuGate::h),
@@ -34,21 +34,18 @@ public record QuGate(String type, int[] indices, Matrix transform) {
     );
 
     /**
-     * Create the gate
+     * Returns the gate from json
      *
-     * @param type      the type
-     * @param indices   the indices
-     * @param transform the transformation
+     * @param root    the document
+     * @param locator the locator
      */
-    public QuGate(String type, int[] indices, Matrix transform) {
-        this.type = requireNonNull(type);
-        this.indices = requireNonNull(indices);
-        this.transform = requireNonNull(transform);
-        int n = 1 << indices.length;
-        if (!transform.hasShape(n, n)) {
-            throw new IllegalArgumentException(format("transform shape must be %dx%d (%dx%d)",
-                    n, n, transform.numRows(), transform.numCols()));
+    public static QuGate fromJson(JsonNode root, Locator locator) {
+        java.lang.String gate = locator.path("gate").getNode(root).asText();
+        BiFunction<JsonNode, Locator, QuGate> builder = BUILDERS.get(gate);
+        if (builder == null) {
+            throw new IllegalArgumentException(format("Unknown gate \"%s\"", gate));
         }
+        return builder.apply(root, locator);
     }
 
     /**
@@ -169,18 +166,21 @@ public record QuGate(String type, int[] indices, Matrix transform) {
     }
 
     /**
-     * Returns the gate from json
+     * Create the gate
      *
-     * @param root    the document
-     * @param locator the locator
+     * @param type      the type
+     * @param indices   the indices
+     * @param transform the transformation
      */
-    public static QuGate fromJson(JsonNode root, Locator locator) {
-        String gate = locator.path("gate").getNode(root).asText();
-        BiFunction<JsonNode, Locator, QuGate> builder = BUILDERS.get(gate);
-        if (builder == null) {
-            throw new IllegalArgumentException(format("Unknown gate \"%s\"", gate));
+    public QuGate(java.lang.String type, int[] indices, Matrix transform) {
+        this.type = requireNonNull(type);
+        this.indices = requireNonNull(indices);
+        this.transform = requireNonNull(transform);
+        int n = 1 << indices.length;
+        if (!transform.hasShape(n, n)) {
+            throw new IllegalArgumentException(format("transform shape must be %dx%d (%dx%d)",
+                    n, n, transform.numRows(), transform.numCols()));
         }
-        return builder.apply(root, locator);
     }
 
     /**

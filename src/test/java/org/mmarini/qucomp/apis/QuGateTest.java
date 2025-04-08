@@ -18,53 +18,53 @@ import static org.mmarini.Matchers.complexClose;
 class QuGateTest {
 
     public static final float EPSILON = 1e-6F;
-    public static final String S_YAML = """
+    public static final java.lang.String S_YAML = """
             ---
             gate: s
             qubit: 1
             """;
-    public static final String T_YAML = """
+    public static final java.lang.String T_YAML = """
             ---
             gate: t
             qubit: 1
             """;
-    public static final String H_YAML = """
+    public static final java.lang.String H_YAML = """
             ---
             gate: h
             qubit: 1
             """;
-    public static final String X_YAML = """
+    public static final java.lang.String X_YAML = """
             ---
             gate: x
             qubit: 1
             """;
-    public static final String Y_YAML = """
+    public static final java.lang.String Y_YAML = """
             ---
             gate: y
             qubit: 1
             """;
-    public static final String Z_YAML = """
+    public static final java.lang.String Z_YAML = """
             ---
             gate: z
             qubit: 1
             """;
-    public static final String I_YAML = """
+    public static final java.lang.String I_YAML = """
             ---
             gate: i
             qubit: 1
             """;
-    public static final String SWAP_YAML = """
+    public static final java.lang.String SWAP_YAML = """
             ---
             gate: swap
             qubits: [1, 2]
             """;
-    public static final String CNOT_YAML = """
+    public static final java.lang.String CNOT_YAML = """
             ---
             gate: cnot
             control: 1
             data: 2
             """;
-    public static final String CCNOT_YAML = """
+    public static final java.lang.String CCNOT_YAML = """
             ---
             gate: ccnot
             controls: [1, 2]

@@ -77,6 +77,26 @@ class KetTest {
         assertThat(add.at(1), complexClose(1, EPSILON));
     }
 
+    @Test
+    void bitProbs01plus() {
+        Ket ket = Ket.zero().cross(Ket.one()).cross(Ket.plus());
+        double[] p = ket.bitProbs();
+        assertEquals(3, p.length);
+        assertThat(p[0], closeTo(0.5, EPSILON));
+        assertThat(p[1], closeTo(1, EPSILON));
+        assertThat(p[2], closeTo(0, EPSILON));
+    }
+
+    @Test
+    void bitProbsPlusx3() {
+        Ket ket = Ket.plus().cross(Ket.plus()).cross(Ket.plus());
+        double[] p = ket.bitProbs();
+        assertEquals(3, p.length);
+        assertThat(p[0], closeTo(0.5, EPSILON));
+        assertThat(p[1], closeTo(0.5, EPSILON));
+        assertThat(p[2], closeTo(0.5, EPSILON));
+    }
+
     @ParameterizedTest
     @MethodSource("fromText1bitDataSet")
     void fromText1bit(String text, Ket exp) {
@@ -172,7 +192,7 @@ class KetTest {
     @CsvSource({
             ", Missing ket expression",
             "|, Missing element after \\|",
-            "|>, Unknow ket \\|>",
+            "|>, Unknown ket \\|>",
     })
     void fromTextError(String text, String exp) {
         // Given
@@ -318,5 +338,36 @@ class KetTest {
                         Complex.ONE,
                         Complex.ZERO},
                 zero.values());
+    }
+
+    @Test
+    void split() {
+        // Given ...
+        Ket ket = Ket.create(1f / 8, 1f / 8, (float) (sqrt(7) / 4), (float) (sqrt(7) / 4));
+        // When
+        Ket[] kets = ket.split(1, 3);
+        Ket ket0 = kets[0];
+        Ket ket1 = kets[1];
+        // Then
+        assertThat(ket0.at(0), complexClose(1f / 8, EPSILON));
+        assertThat(ket0.at(1), complexClose(0, EPSILON));
+        assertThat(ket0.at(2), complexClose((float) sqrt(7) / 4, EPSILON));
+        assertThat(ket0.at(3), complexClose(0, EPSILON));
+        // And
+        assertThat(ket1.at(0), complexClose(0, EPSILON));
+        assertThat(ket1.at(1), complexClose(1f / 8, EPSILON));
+        assertThat(ket1.at(2), complexClose(0, EPSILON));
+        assertThat(ket1.at(3), complexClose((float) sqrt(7) / 4, EPSILON));
+    }
+
+    @Test
+    void module() {
+        assertThat(Ket.zero().moduleSquare(), closeTo(1, EPSILON));
+        assertThat(Ket.one().moduleSquare(), closeTo(1, EPSILON));
+        assertThat(Ket.plus().moduleSquare(), closeTo(1, EPSILON));
+        assertThat(Ket.minus().moduleSquare(), closeTo(1, EPSILON));
+        assertThat(Ket.i().moduleSquare(), closeTo(1, EPSILON));
+        assertThat(Ket.minus_i().moduleSquare(), closeTo(1, EPSILON));
+        assertThat(Ket.i().cross(Ket.plus()).moduleSquare(), closeTo(1, EPSILON));
     }
 }

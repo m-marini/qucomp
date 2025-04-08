@@ -11,3 +11,4 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Issue [#1](https://github.com/m-marini/qucomp/issues/1): Engine kernel
 - Issue [#2](https://github.com/m-marini/qucomp/issues/2): Add yaml files
+- Issue [#4](https://github.com/m-marini/qucomp/issues/4): Add GUI

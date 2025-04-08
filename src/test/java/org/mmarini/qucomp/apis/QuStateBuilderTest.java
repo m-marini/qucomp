@@ -20,7 +20,7 @@ import static org.mmarini.qucomp.apis.QuGate.x;
 class QuStateBuilderTest {
 
     public static final float EPSILON = 1e-6F;
-    public static final String YAML = """
+    public static final java.lang.String YAML = """
             ---
             $schema: https://mmarini.org/qucomp/qucomp-schema-0.1
             gates:
@@ -68,7 +68,7 @@ class QuStateBuilderTest {
     })
     void build(int in, int exp) {
         // Given
-        Matrix m = QuStateBuilder.build(swap(1, 2));
+        Matrix m = QuCircuitBuilder.build(swap(1, 2));
         Ket ket0 = Ket.base(in, 3);
         // When
         Ket ket1 = ket0.mul(m);
@@ -94,7 +94,7 @@ class QuStateBuilderTest {
     })
     void build1(int in, int exp) {
         // Given
-        Matrix m = QuStateBuilder.build(x(0), x(1));
+        Matrix m = QuCircuitBuilder.build(x(0), x(1));
         Ket ket0 = Ket.base(in, 2);
         // When
         Ket ket1 = ket0.mul(m);
@@ -110,7 +110,7 @@ class QuStateBuilderTest {
     @Test
     void loadGates() throws IOException {
         JsonNode node = Utils.fromText(YAML);
-        QuGate[] gates = QuStateBuilder.loadGates(node, Locator.root());
+        QuGate[] gates = QuCircuitBuilder.loadGates(node, Locator.root());
         assertThat(gates, arrayWithSize(10));
 
         assertArrayEquals(new int[]{1}, gates[0].indices());
@@ -146,7 +146,7 @@ class QuStateBuilderTest {
 
     @Test
     void numQuBits() {
-        assertEquals(0, QuStateBuilder.numQuBits());
-        assertEquals(6, QuStateBuilder.numQuBits(swap(5, 1), x(3)));
+        assertEquals(0, QuCircuitBuilder.numQuBits());
+        assertEquals(6, QuCircuitBuilder.numQuBits(swap(5, 1), x(3)));
     }
 }

@@ -32,10 +32,15 @@ import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import net.sourceforge.argparse4j.inf.Namespace;
+import org.mmarini.qucomp.apis.Ket;
+import org.mmarini.qucomp.apis.Matrix;
+import org.mmarini.qucomp.apis.QuCircuitBuilder;
 import org.mmarini.qucomp.apis.QuGate;
 import org.mmarini.qucomp.swing.GatesPanel;
+import org.mmarini.qucomp.swing.KetEditor;
+import org.mmarini.qucomp.swing.KetPanel;
 import org.mmarini.qucomp.swing.Messages;
+import org.mmarini.swing.GridLayoutHelper;
 import org.mmarini.swing.SwingUtils;
 import org.mmarini.yaml.Locator;
 import org.mmarini.yaml.Utils;
@@ -43,37 +48,40 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
 
-import static org.mmarini.qucomp.apis.QuStateBuilder.loadGates;
+import static org.mmarini.qucomp.apis.QuCircuitBuilder.loadGates;
 
 /**
  * Computation GUI
  */
 public class ComputeGUI {
     private static final Logger logger = LoggerFactory.getLogger(ComputeGUI.class);
-    private final Namespace args;
     private final JFrame frame;
     private final JMenuItem exitMenu;
     private final JMenuItem openMenu;
     private final JFileChooser fileChooser;
     private final GatesPanel gatesPanel;
+    private final KetPanel inputPanel;
+    private final KetPanel outputPanel;
+    private final KetEditor inputEditor;
     private QuGate[] gates;
+    private Ket input;
 
     /**
      * Creates the application
      *
-     * @param args the parsed command line arguments
      */
-    public ComputeGUI(Namespace args) {
-        this.args = args;
+    public ComputeGUI() {
         this.frame = new JFrame();
         this.openMenu = SwingUtils.createMenuItem("ComputeGUI.openMenu");
         this.exitMenu = SwingUtils.createMenuItem("ComputeGUI.exitMenu");
         this.fileChooser = new JFileChooser();
         this.gatesPanel = new GatesPanel();
+        this.inputPanel = new KetPanel();
+        this.outputPanel = new KetPanel();
+        this.inputEditor = new KetEditor();
         createContent();
         createFlow();
     }
@@ -97,10 +105,11 @@ public class ComputeGUI {
      *
      * @param args command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(java.lang.String[] args) {
         ArgumentParser parser = createParser();
         try {
-            new ComputeGUI(parser.parseArgs(args)).start();
+            parser.parseArgs(args);
+            new ComputeGUI().start();
         } catch (ArgumentParserException e) {
             parser.handleError(e);
             System.exit(1);
@@ -116,6 +125,32 @@ public class ComputeGUI {
     private void createFlow() {
         openMenu.addActionListener(this::handleOpen);
         exitMenu.addActionListener(this::handleExit);
+        inputEditor.readKet()
+                .doOnNext(this::handleInputChanged)
+                .subscribe();
+    }
+
+    /**
+     * Creates the content
+     */
+    private void createContent() {
+        fileChooser.setCurrentDirectory(new File("."));
+        gatesPanel.setBorder(BorderFactory.createTitledBorder(Messages.getString("ComputeGUI.gatePanel.title")));
+        inputPanel.setBorder(BorderFactory.createTitledBorder(Messages.getString("ComputeGUI.inputPanel.title")));
+        outputPanel.setBorder(BorderFactory.createTitledBorder(Messages.getString("ComputeGUI.outputPanel.title")));
+        inputEditor.setBorder(BorderFactory.createTitledBorder(Messages.getString("ComputeGUI.inputEditor.title")));
+
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setTitle(Messages.getString("Compute.title"));
+        frame.setJMenuBar(createMenu());
+        frame.setResizable(true);
+        frame.setSize(1024, 800);
+
+        new GridLayoutHelper<>(frame.getContentPane()).modify("insets,2 center fill vw,1")
+                .modify("at,0,0").add(inputEditor)
+                .modify("at,1,0").add(inputPanel)
+                .modify("at,2,0 hw,1").add(gatesPanel)
+                .modify("at,3,0 hw,0").add(outputPanel);
     }
 
     /**
@@ -156,21 +191,34 @@ public class ComputeGUI {
     private void handleGatesChanged(QuGate[] gates) {
         this.gates = gates;
         gatesPanel.setGates(gates);
+        compute();
+        inputEditor.setNumQuBits(QuCircuitBuilder.numQuBits(gates));
+        frame.validate();
     }
 
     /**
-     * Creates the content
+     * Computes the result
      */
-    private void createContent() {
-        fileChooser.setCurrentDirectory(new File("."));
-        gatesPanel.setBorder(BorderFactory.createTitledBorder(Messages.getString("ComputeGUI.gatePanel.title")));
+    private void compute() {
+        if (gates != null && input != null) {
+            try {
+                Matrix m = QuCircuitBuilder.build(gates);
+                Ket result = input.mul(m);
+                outputPanel.setKet(result);
+            } catch (Exception e) {
+                logger.atError().setCause(e).log("Error computing");
+            }
+        }
+    }
 
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setTitle(Messages.getString("Compute.title"));
-        frame.setJMenuBar(createMenu());
-        frame.setSize(800, 600);
-        Container panel = frame.getContentPane();
-        panel.add(gatesPanel);
+    /**
+     * @param ket the ket
+     */
+    private void handleInputChanged(Ket ket) {
+        inputPanel.setKet(ket);
+        this.input = ket;
+        compute();
+        frame.validate();
     }
 
     /**

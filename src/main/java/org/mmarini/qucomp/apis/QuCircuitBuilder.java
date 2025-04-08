@@ -8,7 +8,7 @@ import java.util.Arrays;
 /**
  * Creates or load gates
  */
-public interface QuStateBuilder {
+public interface QuCircuitBuilder {
     String SCHEMA = "https://mmarini.org/qucomp/qucomp-schema-0.1";
 
     static QuGate[] loadGates(JsonNode root, Locator locator) {
@@ -28,7 +28,7 @@ public interface QuStateBuilder {
         int n = numQuBits(gates);
         return Arrays.stream(gates)
                 .map(g -> g.build(n))
-                .reduce(Matrix::mul)
+                .reduce((a, b) -> b.mul(a))
                 .orElseThrow();
     }
 

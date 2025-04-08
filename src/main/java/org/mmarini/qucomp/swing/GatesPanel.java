@@ -28,14 +28,13 @@
 
 package org.mmarini.qucomp.swing;
 
+import org.mmarini.qucomp.apis.QuCircuitBuilder;
 import org.mmarini.qucomp.apis.QuGate;
-import org.mmarini.qucomp.apis.QuStateBuilder;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.Arrays;
-
-import static java.lang.String.format;
+import java.util.Map;
+import java.util.function.BiFunction;
 
 /**
  * Displays the quantum gates
@@ -47,6 +46,31 @@ public class GatesPanel extends JPanel {
     public GatesPanel() {
     }
 
+    private static final Map<String, BiFunction<QuGate, Integer, JComponent>> BUILDERS = Map.of(
+            "s", (g, n) -> new BitGate("S", g.indices()[0], n),
+            "t", (g, n) -> new BitGate("T", g.indices()[0], n),
+            "h", (g, n) -> new BitGate("H", g.indices()[0], n),
+            "x", (g, n) -> new BitGate("X", g.indices()[0], n),
+            "y", (g, n) -> new BitGate("Y", g.indices()[0], n),
+            "z", (g, n) -> new BitGate("Z", g.indices()[0], n),
+            "swap", (g, n) -> new SwapGate(g.indices()[0], g.indices()[1], n),
+            "cnot", (g, n) -> new CNotGate(g.indices()[0], g.indices()[1], n),
+            "ccnot", (g, n) -> new CCNotGate(g.indices()[0], g.indices()[1], g.indices()[2], n)
+    );
+
+    /**
+     * Returns the bit gate for the given quantum gate
+     *
+     * @param gate      the quntum gate
+     * @param numQubits the number of qubits
+     */
+    private static JComponent createGate(QuGate gate, int numQubits) {
+        BiFunction<QuGate, Integer, JComponent> builder = BUILDERS.get(gate.type());
+        return builder != null
+                ? builder.apply(gate, numQubits)
+                : new BitGate("", -1, numQubits);
+    }
+
     /**
      * Set the gates to show
      *
@@ -54,32 +78,13 @@ public class GatesPanel extends JPanel {
      */
     public void setGates(QuGate[] gates) {
         removeAll();
-        int numQubits = QuStateBuilder.numQuBits(gates);
-        setLayout(new GridLayout(gates.length + 2, numQubits));
-        for (int col = 0; col < numQubits; col++) {
-            JLabel label = new JLabel(format(Messages.getString("GatesPanel.port.input"), col));
-            label.setBorder(BorderFactory.createEtchedBorder());
-            label.setHorizontalAlignment(SwingConstants.CENTER);
-            add(label);
-        }
+        int numQubits = QuCircuitBuilder.numQuBits(gates);
+        setLayout(new GridLayout(1, gates.length + 1));
+        add(new TerminalGate("I%d", numQubits, BitGate.RIGHT_CONNECTED));
         for (QuGate gate : gates) {
-            for (int col = 0; col < numQubits; col++) {
-                int finalCol = col;
-                JLabel label = Arrays.stream(gate.indices())
-                        .anyMatch(i -> i == finalCol)
-                        ? new JLabel(Messages.getString("GatesPanel.port." + gate.type()))
-                        : new JLabel("");
-                label.setHorizontalAlignment(SwingConstants.CENTER);
-                label.setBorder(BorderFactory.createEtchedBorder());
-                add(label);
-            }
+            add(createGate(gate, numQubits));
         }
-        for (int col = 0; col < numQubits; col++) {
-            JLabel label = new JLabel(format(Messages.getString("GatesPanel.port.output"), col));
-            label.setHorizontalAlignment(SwingConstants.CENTER);
-            label.setBorder(BorderFactory.createEtchedBorder());
-            add(label);
-        }
-        doLayout();
+        add(new TerminalGate("O%d", numQubits, BitGate.LEFT_CONNECTED));
+        invalidate();
     }
 }

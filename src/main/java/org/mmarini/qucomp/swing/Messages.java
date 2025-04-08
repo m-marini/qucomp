@@ -51,6 +51,9 @@ public class Messages {
         }
     }
 
+    public static String format(String key, Object... params) {
+        return String.format(getString(key), params);
+    }
     private Messages() {
     }
 }

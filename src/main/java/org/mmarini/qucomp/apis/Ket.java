@@ -28,12 +28,11 @@
 
 package org.mmarini.qucomp.apis;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Objects;
-import java.util.StringTokenizer;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static java.lang.Math.max;
 import static java.lang.Math.sqrt;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -86,17 +85,81 @@ public record Ket(Complex[] values) {
                 String tok1 = tokenizer.nextToken();
                 Ket keti = KET_DICTIONARY.get("|" + tok1);
                 if (keti == null) {
-                    throw new IllegalArgumentException(format("Unknow ket |%s", tok1));
+                    throw new IllegalArgumentException(format("Unknown ket |%s", tok1));
                 }
                 result = result == null ? keti : result.cross(keti);
             } else if (!tok.isBlank()) {
-                throw new IllegalArgumentException(format("Unknow token \"%s\"", tok));
+                throw new IllegalArgumentException(format("Unknown token \"%s\"", tok));
             }
         }
         if (result == null) {
             throw new IllegalArgumentException("Missing ket expression");
         }
         return result;
+    }
+
+    /**
+     * Returns the probabilities per bit
+     */
+    public double[] bitProbs() {
+        int n = numBits();
+        double[] stateProbs = prob();
+        double[] result = new double[n];
+        int mask = 1;
+        for (int i = 0; i < n; i++) {
+            double prob = 0;
+            for (int s = 0; s < stateProbs.length; s++) {
+                if ((s & mask) != 0) {
+                    double stateProb = stateProbs[s];
+                    prob += stateProb;
+                }
+            }
+            result[i] = prob;
+            mask <<= 1;
+        }
+        return result;
+    }
+
+    /**
+     * Returns the module square
+     */
+    public double moduleSquare() {
+        return Arrays.stream(values()).mapToDouble(Complex::moduleSquare).sum();
+    }
+
+    /**
+     * Returns the number of bits
+     */
+    public int numBits() {
+        int numStates = values.length;
+        int numBits = 0;
+        for (int i = numStates; i > 0; i >>= 1) {
+            numBits++;
+        }
+        return max(numBits - 1, 0);
+    }
+
+    /**
+     * Returns the two complementary kets by states
+     * result[0] is the not matching states values
+     * result[1] is the matching states values
+     *
+     * @param states the matching states
+     */
+    public Ket[] split(int... states) {
+        Set<Integer> stateSet = Arrays.stream(states).boxed().collect(Collectors.toSet());
+        Complex[] match = new Complex[values.length];
+        Complex[] notMatch = new Complex[values.length];
+        for (int i = 0; i < values.length; i++) {
+            if (stateSet.contains(i)) {
+                match[i] = values[i];
+                notMatch[i] = Complex.zero();
+            } else {
+                notMatch[i] = values[i];
+                match[i] = Complex.zero();
+            }
+        }
+        return new Ket[]{Ket.create(notMatch), Ket.create(match)};
     }
 
     /**
