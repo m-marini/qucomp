@@ -8,8 +8,8 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.mmarini.qucomp.apis.Ket;
 import org.mmarini.qucomp.apis.Matrix;
+import org.mmarini.qucomp.apis.QuCircuitBuilder;
 import org.mmarini.qucomp.apis.QuGate;
-import org.mmarini.qucomp.apis.QuStateBuilder;
 import org.mmarini.qucomp.swing.Messages;
 import org.mmarini.yaml.Locator;
 import org.slf4j.Logger;
@@ -44,7 +44,7 @@ public class Compute {
                 .help("specify yaml configuration file");
         parser.addArgument("inputs")
                 .metavar("INPUTS")
-                .type(String.class)
+                .type(java.lang.String.class)
                 .nargs(1)
                 .help("specify inputs ket expression");
         return parser;
@@ -55,7 +55,7 @@ public class Compute {
      *
      * @param args command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(java.lang.String[] args) {
         new Compute().start(args);
     }
 
@@ -64,13 +64,13 @@ public class Compute {
      *
      * @param args the argument
      */
-    private void start(String[] args) {
+    private void start(java.lang.String[] args) {
         ArgumentParser parser = createParser();
         try {
             Namespace args1 = parser.parseArgs(args);
             JsonNode config = fromFile(args1.getString("config"));
-            QuGate[] gates = QuStateBuilder.loadGates(config, Locator.root());
-            Matrix m = QuStateBuilder.build(gates);
+            QuGate[] gates = QuCircuitBuilder.loadGates(config, Locator.root());
+            Matrix m = QuCircuitBuilder.build(gates);
             List<String> inText = args1.get("inputs");
             Ket inputs = Ket.fromText(inText.getFirst());
             if (inputs.values().length != m.numCols()) {

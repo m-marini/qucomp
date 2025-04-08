@@ -34,6 +34,8 @@ import org.mmarini.qucomp.swing.Messages;
 import javax.swing.*;
 import java.util.Optional;
 
+import static java.lang.String.format;
+
 /**
  * Swing utility functions
  */
@@ -224,7 +226,7 @@ public interface SwingUtils {
      * @param titleKey the title key message
      * @param content  the content
      */
-    static boolean showConfirmDialog(String titleKey, JComponent content) {
+    static boolean showConfirmDialog(String titleKey, Object content) {
         int selectedValue = JOptionPane.showConfirmDialog(null, content, Messages.getString(titleKey),
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         return selectedValue == JOptionPane.OK_OPTION;
@@ -236,8 +238,31 @@ public interface SwingUtils {
      * @param titleKey the title key message
      * @param content  the content
      */
-    static void showMessageKey(String titleKey, JComponent content) {
+    static void showMessageKey(String titleKey, Object content) {
         JOptionPane.showMessageDialog(null, content, Messages.getString(titleKey),
                 JOptionPane.PLAIN_MESSAGE);
+    }
+
+    /**
+     * Shows an error message dialog
+     *
+     * @param titleKey  the title key message
+     * @param formatKey the format key
+     * @param params    the message parameters
+     */
+    static void showErrorKey(String titleKey, String formatKey, Object... params) {
+        JOptionPane.showMessageDialog(null, format(Messages.getString(formatKey), params), Messages.getString(titleKey),
+                JOptionPane.ERROR_MESSAGE);
+    }
+
+    /**
+     * Shows an error message dialog
+     *
+     * @param titleKey  the title key message
+     * @param exception the exception
+     */
+    static void showErrorKey(String titleKey, Throwable exception) {
+        JOptionPane.showMessageDialog(null, exception.getMessage(), Messages.getString(titleKey),
+                JOptionPane.ERROR_MESSAGE);
     }
 }
