@@ -11,14 +11,6 @@ import java.util.Arrays;
 public interface QuCircuitBuilder {
     String SCHEMA = "https://mmarini.org/qucomp/qucomp-schema-0.1";
 
-    static QuGate[] loadGates(JsonNode root, Locator locator) {
-        JsonSchemas.instance().validateOrThrow(root, SCHEMA);
-        return locator.path("gates").elements(root)
-                .map(l ->
-                        QuGate.fromJson(root, l)
-                ).toArray(QuGate[]::new);
-    }
-
     /**
      * Returns the state transformation matrix
      *
@@ -30,6 +22,14 @@ public interface QuCircuitBuilder {
                 .map(g -> g.build(n))
                 .reduce((a, b) -> b.mul(a))
                 .orElseThrow();
+    }
+
+    static QuGate[] loadGates(JsonNode root, Locator locator) {
+        JsonSchemas.instance().validateOrThrow(root, SCHEMA);
+        return locator.path("gates").elements(root)
+                .map(l ->
+                        QuGate.fromJson(root, l)
+                ).toArray(QuGate[]::new);
     }
 
     /**

@@ -32,6 +32,7 @@ import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
 import org.mmarini.qucomp.apis.Ket;
 import org.mmarini.qucomp.apis.Matrix;
 import org.mmarini.qucomp.apis.QuCircuitBuilder;
@@ -49,8 +50,11 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 
+import static java.util.Objects.requireNonNull;
 import static org.mmarini.qucomp.apis.QuCircuitBuilder.loadGates;
 
 /**
@@ -58,33 +62,6 @@ import static org.mmarini.qucomp.apis.QuCircuitBuilder.loadGates;
  */
 public class ComputeGUI {
     private static final Logger logger = LoggerFactory.getLogger(ComputeGUI.class);
-    private final JFrame frame;
-    private final JMenuItem exitMenu;
-    private final JMenuItem openMenu;
-    private final JFileChooser fileChooser;
-    private final GatesPanel gatesPanel;
-    private final KetPanel inputPanel;
-    private final KetPanel outputPanel;
-    private final KetEditor inputEditor;
-    private QuGate[] gates;
-    private Ket input;
-
-    /**
-     * Creates the application
-     *
-     */
-    public ComputeGUI() {
-        this.frame = new JFrame();
-        this.openMenu = SwingUtils.createMenuItem("ComputeGUI.openMenu");
-        this.exitMenu = SwingUtils.createMenuItem("ComputeGUI.exitMenu");
-        this.fileChooser = new JFileChooser();
-        this.gatesPanel = new GatesPanel();
-        this.inputPanel = new KetPanel();
-        this.outputPanel = new KetPanel();
-        this.inputEditor = new KetEditor();
-        createContent();
-        createFlow();
-    }
 
     /**
      * Returns the command line argument parser
@@ -94,6 +71,9 @@ public class ComputeGUI {
                 .defaultHelp(true)
                 .version(Messages.getString("Compute.title"))
                 .description("Compute the quantum state.");
+        parser.addArgument("-c", "--config")
+                .setDefault("qucomp.yml")
+                .help("specify yaml configuration file");
         parser.addArgument("-v", "--version")
                 .action(Arguments.version())
                 .help("show current version");
@@ -108,8 +88,8 @@ public class ComputeGUI {
     public static void main(java.lang.String[] args) {
         ArgumentParser parser = createParser();
         try {
-            parser.parseArgs(args);
-            new ComputeGUI().start();
+            Namespace parsedArgs = parser.parseArgs(args);
+            new ComputeGUI(parsedArgs).start();
         } catch (ArgumentParserException e) {
             parser.handleError(e);
             System.exit(1);
@@ -119,81 +99,38 @@ public class ComputeGUI {
         }
     }
 
-    /**
-     * Creates the action flow
-     */
-    private void createFlow() {
-        openMenu.addActionListener(this::handleOpen);
-        exitMenu.addActionListener(this::handleExit);
-        inputEditor.readKet()
-                .doOnNext(this::handleInputChanged)
-                .subscribe();
-    }
+    private final JFrame frame;
+    private final JMenuItem exitMenu;
+    private final JMenuItem openMenu;
+    private final JFileChooser fileChooser;
+    private final GatesPanel gatesPanel;
+    private final KetPanel inputPanel;
+    private final KetPanel outputPanel;
+    private final KetEditor inputEditor;
+    private final JSplitPane inGateOutSplitPanel;
+    private final JSplitPane gateOutSplitPanel;
+    private QuGate[] gates;
+    private Ket input;
+    private final Namespace args;
 
     /**
-     * Creates the content
+     * Creates the application
+     * @param parsedArgs the parsed command line arguments
      */
-    private void createContent() {
-        fileChooser.setCurrentDirectory(new File("."));
-        gatesPanel.setBorder(BorderFactory.createTitledBorder(Messages.getString("ComputeGUI.gatePanel.title")));
-        inputPanel.setBorder(BorderFactory.createTitledBorder(Messages.getString("ComputeGUI.inputPanel.title")));
-        outputPanel.setBorder(BorderFactory.createTitledBorder(Messages.getString("ComputeGUI.outputPanel.title")));
-        inputEditor.setBorder(BorderFactory.createTitledBorder(Messages.getString("ComputeGUI.inputEditor.title")));
-
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setTitle(Messages.getString("Compute.title"));
-        frame.setJMenuBar(createMenu());
-        frame.setResizable(true);
-        frame.setSize(1024, 800);
-
-        new GridLayoutHelper<>(frame.getContentPane()).modify("insets,2 center fill vw,1")
-                .modify("at,0,0").add(inputEditor)
-                .modify("at,1,0").add(inputPanel)
-                .modify("at,2,0 hw,1").add(gatesPanel)
-                .modify("at,3,0 hw,0").add(outputPanel);
-    }
-
-    /**
-     * Handle exit menu action
-     *
-     * @param actionEvent the event
-     */
-    private void handleExit(ActionEvent actionEvent) {
-        frame.dispose();
-    }
-
-    /**
-     * Handles the open action
-     *
-     * @param actionEvent the event
-     */
-    private void handleOpen(ActionEvent actionEvent) {
-        int rc = fileChooser.showOpenDialog(null);
-        if (rc == JFileChooser.APPROVE_OPTION) {
-            File file = fileChooser.getSelectedFile();
-            if (!file.canRead()) {
-                SwingUtils.showErrorKey("ComputGUI.errorDialog.title", "ComputGUI.fileCannotBeRead.text", file);
-            } else {
-                try {
-                    handleGatesChanged(loadGates(Utils.fromFile(file), Locator.root()));
-                } catch (Throwable e) {
-                    SwingUtils.showErrorKey("ComputGUI.errorDialog.title", e);
-                }
-            }
-        }
-    }
-
-    /**
-     * Handle the gates changed event
-     *
-     * @param gates the gates
-     */
-    private void handleGatesChanged(QuGate[] gates) {
-        this.gates = gates;
-        gatesPanel.setGates(gates);
-        compute();
-        inputEditor.setNumQuBits(QuCircuitBuilder.numQuBits(gates));
-        frame.validate();
+    public ComputeGUI(Namespace parsedArgs) {
+        this.args = requireNonNull(parsedArgs);
+        this.frame = new JFrame();
+        this.openMenu = SwingUtils.createMenuItem("ComputeGUI.openMenu");
+        this.exitMenu = SwingUtils.createMenuItem("ComputeGUI.exitMenu");
+        this.fileChooser = new JFileChooser();
+        this.gatesPanel = new GatesPanel();
+        this.inputPanel = new KetPanel();
+        this.outputPanel = new KetPanel();
+        this.inputEditor = new KetEditor();
+        this.inGateOutSplitPanel = new JSplitPane();
+        this.gateOutSplitPanel = new JSplitPane();
+        createContent();
+        createFlow();
     }
 
     /**
@@ -212,13 +149,53 @@ public class ComputeGUI {
     }
 
     /**
-     * @param ket the ket
+     * Creates the content
      */
-    private void handleInputChanged(Ket ket) {
-        inputPanel.setKet(ket);
-        this.input = ket;
-        compute();
-        frame.validate();
+    private void createContent() {
+        fileChooser.setCurrentDirectory(new File("."));
+        gatesPanel.setBorder(BorderFactory.createTitledBorder(Messages.getString("ComputeGUI.gatePanel.title")));
+        inputPanel.setBorder(BorderFactory.createTitledBorder(Messages.getString("ComputeGUI.inputPanel.title")));
+        outputPanel.setBorder(BorderFactory.createTitledBorder(Messages.getString("ComputeGUI.outputPanel.title")));
+        inputEditor.setBorder(BorderFactory.createTitledBorder(Messages.getString("ComputeGUI.inputEditor.title")));
+
+        inGateOutSplitPanel.setLeftComponent(inputPanel);
+        inGateOutSplitPanel.setRightComponent(gateOutSplitPanel);
+        inGateOutSplitPanel.setOneTouchExpandable(true);
+        inGateOutSplitPanel.setResizeWeight(0);
+        inGateOutSplitPanel.setContinuousLayout(true);
+
+        gateOutSplitPanel.setLeftComponent(gatesPanel);
+        gateOutSplitPanel.setRightComponent(outputPanel);
+        gateOutSplitPanel.setOneTouchExpandable(true);
+        gateOutSplitPanel.setResizeWeight(1);
+        gateOutSplitPanel.setContinuousLayout(true);
+
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setTitle(Messages.getString("Compute.title"));
+        frame.setJMenuBar(createMenu());
+        frame.setResizable(true);
+        frame.setSize(1024, 800);
+
+        new GridLayoutHelper<>(frame.getContentPane()).modify("insets,2 center fill vw,1")
+                .modify("at,0,0").add(inputEditor)
+                .modify("at,1,0 hw,1").add(inGateOutSplitPanel);
+    }
+
+    /**
+     * Creates the action flow
+     */
+    private void createFlow() {
+        openMenu.addActionListener(this::onOpen);
+        exitMenu.addActionListener(this::onExit);
+        inputEditor.readKet()
+                .doOnNext(this::onInputChanged)
+                .subscribe();
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowOpened(WindowEvent e) {
+                onFrameOpen();
+            }
+        });
     }
 
     /**
@@ -237,9 +214,82 @@ public class ComputeGUI {
     }
 
     /**
+     * Handle exit menu action
+     *
+     * @param actionEvent the event
+     */
+    private void onExit(ActionEvent actionEvent) {
+        frame.dispose();
+    }
+
+    /**
+     * Handle the frame open
+     */
+    private void onFrameOpen() {
+        gateOutSplitPanel.setDividerLocation(6d / 8d);
+        inGateOutSplitPanel.setDividerLocation(2d / 10d);
+    }
+
+    /**
+     * Handle the gates changed event
+     *
+     * @param gates the gates
+     */
+    private void onGatesChanged(QuGate[] gates) {
+        this.gates = gates;
+        this.input = null;
+        gatesPanel.setGates(gates);
+        compute();
+        inputEditor.setNumQuBits(QuCircuitBuilder.numQuBits(gates));
+        frame.invalidate();
+        frame.validate();
+    }
+
+    /**
+     * @param ket the ket
+     */
+    private void onInputChanged(Ket ket) {
+        inputPanel.setKet(ket);
+        this.input = ket;
+        compute();
+        frame.validate();
+    }
+
+    /**
+     * Handles the open action
+     *
+     * @param actionEvent the event
+     */
+    private void onOpen(ActionEvent actionEvent) {
+        int rc = fileChooser.showOpenDialog(null);
+        if (rc == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            open(file);
+        }
+    }
+
+    /**
+     * Open file
+     *
+     * @param file the file
+     */
+    private void open(File file) {
+        if (!file.canRead()) {
+            SwingUtils.showErrorKey("ComputGUI.errorDialog.title", "ComputGUI.fileCannotBeRead.text", file);
+        } else {
+            try {
+                onGatesChanged(loadGates(Utils.fromFile(file), Locator.root()));
+            } catch (Throwable e) {
+                SwingUtils.showErrorKey("ComputGUI.errorDialog.title", e);
+            }
+        }
+    }
+
+    /**
      * Starts the application
      */
     private void start() {
+        open(new File(args.getString("config")));
         frame.setVisible(true);
     }
 }

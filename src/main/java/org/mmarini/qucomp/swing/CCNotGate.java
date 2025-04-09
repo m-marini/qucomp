@@ -28,7 +28,6 @@
 
 package org.mmarini.qucomp.swing;
 
-import javax.swing.*;
 import java.awt.*;
 
 import static java.lang.Math.max;
@@ -37,10 +36,9 @@ import static java.lang.Math.min;
 /**
  * Draws the gate component
  */
-public class CCNotGate extends JComponent {
+public class CCNotGate extends AbstractGate {
     public static final int DATA_SIZE = 11;
     public static final int CONTROL_SIZE = 7;
-    private final int numBits;
     private final int data;
     private final int control0;
     private final int control1;
@@ -54,20 +52,18 @@ public class CCNotGate extends JComponent {
      * @param numBits  the number of bits
      */
     public CCNotGate(int control0, int control1, int data, int numBits) {
-        this.numBits = numBits;
+        super(numBits);
         this.control0 = control0;
         this.control1 = control1;
         this.data = data;
-        setBackground(Color.WHITE);
     }
 
     @Override
     protected void paintComponent(Graphics g) {
-        g.setColor(getBackground());
+        super.paintComponent(g);
         Dimension size = getSize();
         int width = size.width;
         int height = size.height;
-        g.fillRect(0, 0, width, height);
         int x0 = width / 2;
         g.setColor(getForeground());
         g.setFont(getFont());

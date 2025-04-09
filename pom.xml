@@ -32,7 +32,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.mmarini</groupId>
     <artifactId>qucomp</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
     <name>Qucomp</name>
     <description>Qucomp</description>
     <properties>

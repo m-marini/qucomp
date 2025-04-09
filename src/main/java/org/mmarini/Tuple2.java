@@ -66,6 +66,7 @@ public class Tuple2<T1, T2> {
     public static <K, V> Collector<Tuple2<K, V>, ?, Map<K, V>> toMap() {
         return Collectors.toMap(Tuple2<K, V>::getV1, Tuple2<K, V>::getV2);
     }
+
     public final T1 _1;
     public final T2 _2;
 

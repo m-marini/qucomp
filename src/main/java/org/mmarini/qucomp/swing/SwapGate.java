@@ -28,15 +28,13 @@
 
 package org.mmarini.qucomp.swing;
 
-import javax.swing.*;
 import java.awt.*;
 
 /**
  * Draws the gate component
  */
-public class SwapGate extends JComponent {
+public class SwapGate extends AbstractGate {
     public static final int CROSS_SIZE = 11;
-    private final int numBits;
     private final int port0;
     private final int port1;
 
@@ -48,19 +46,17 @@ public class SwapGate extends JComponent {
      * @param numBits the number of bits
      */
     public SwapGate(int port0, int port1, int numBits) {
-        this.numBits = numBits;
+        super(numBits);
         this.port0 = port0;
         this.port1 = port1;
-        setBackground(Color.WHITE);
     }
 
     @Override
     protected void paintComponent(Graphics g) {
-        g.setColor(getBackground());
+        super.paintComponent(g);
         Dimension size = getSize();
         int width = size.width;
         int height = size.height;
-        g.fillRect(0, 0, width, height);
         int x0 = width / 2;
         g.setColor(getForeground());
         g.setFont(getFont());

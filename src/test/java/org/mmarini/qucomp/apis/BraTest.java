@@ -99,33 +99,6 @@ class BraTest {
                 add.values());
     }
 
-    @Test
-    void conj() {
-        Bra bra = Bra.I;
-        Ket conj = bra.conj();
-        assertEquals(Ket.create(
-                Complex.create(HALF_SQRT2),
-                Complex.i(HALF_SQRT2)
-        ), conj);
-    }
-
-    @Test
-    void create() {
-        Bra ket = Bra.create(1, 1);
-        assertArrayEquals(new Complex[]{
-                        Complex.ONE,
-                        Complex.ONE},
-                ket.values());
-    }
-
-    @Test
-    void create1() {
-        Bra ket = Bra.create(Complex.ONE, Complex.ONE);
-        assertArrayEquals(new Complex[]{
-                        Complex.ONE,
-                        Complex.ONE},
-                ket.values());
-    }
     @ParameterizedTest
     @CsvSource({
             "0, 1",
@@ -155,6 +128,34 @@ class BraTest {
     }
 
     @Test
+    void conj() {
+        Bra bra = Bra.I;
+        Ket conj = bra.conj();
+        assertEquals(Ket.create(
+                Complex.create(HALF_SQRT2),
+                Complex.i(HALF_SQRT2)
+        ), conj);
+    }
+
+    @Test
+    void create() {
+        Bra ket = Bra.create(1, 1);
+        assertArrayEquals(new Complex[]{
+                        Complex.ONE,
+                        Complex.ONE},
+                ket.values());
+    }
+
+    @Test
+    void create1() {
+        Bra ket = Bra.create(Complex.ONE, Complex.ONE);
+        assertArrayEquals(new Complex[]{
+                        Complex.ONE,
+                        Complex.ONE},
+                ket.values());
+    }
+
+    @Test
     void cross() {
         Bra ket = Bra.zero().cross(Bra.zero());
         Complex[] values = ket.values();
@@ -163,22 +164,6 @@ class BraTest {
         assertThat(values[1], complexClose(0, EPSILON));
         assertThat(values[2], complexClose(0, EPSILON));
         assertThat(values[3], complexClose(0, EPSILON));
-    }
-
-    @Test
-    void testMul1() {
-        // Given
-        Matrix x = Matrix.create(2, 2,
-                0, 1,
-                1, 0);
-        // When
-        Bra notZero = Bra.zero().mul(x);
-        Bra notOne = Bra.one().mul(x);
-        // Then
-        assertThat(notZero.values()[0], complexClose(0, EPSILON));
-        assertThat(notZero.values()[1], complexClose(1, EPSILON));
-        assertThat(notOne.values()[0], complexClose(1, EPSILON));
-        assertThat(notOne.values()[1], complexClose(0, EPSILON));
     }
 
     @Test
@@ -276,6 +261,22 @@ class BraTest {
                         Complex.i(),
                         Complex.i()},
                 ket.values());
+    }
+
+    @Test
+    void testMul1() {
+        // Given
+        Matrix x = Matrix.create(2, 2,
+                0, 1,
+                1, 0);
+        // When
+        Bra notZero = Bra.zero().mul(x);
+        Bra notOne = Bra.one().mul(x);
+        // Then
+        assertThat(notZero.values()[0], complexClose(0, EPSILON));
+        assertThat(notZero.values()[1], complexClose(1, EPSILON));
+        assertThat(notOne.values()[0], complexClose(1, EPSILON));
+        assertThat(notOne.values()[1], complexClose(0, EPSILON));
     }
 
     @Test

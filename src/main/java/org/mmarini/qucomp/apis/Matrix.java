@@ -188,7 +188,7 @@ public class Matrix {
      *     B = M x A
      *
      *     b(p[i]) := a[i]
-     *</pre>
+     * </pre>
      * E.g.
      * <pre>
      *     p = [ 2 3 4 0 1 ]

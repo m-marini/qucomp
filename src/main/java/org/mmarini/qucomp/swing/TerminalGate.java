@@ -28,18 +28,15 @@
 
 package org.mmarini.qucomp.swing;
 
-import javax.swing.*;
 import java.awt.*;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.mmarini.qucomp.swing.BitGate.drawBox;
 
 /**
  * Draw the input gate
  */
-public class TerminalGate extends JComponent {
-    private final int numBits;
+public class TerminalGate extends AbstractGate {
     private final int connections;
     private final String format;
 
@@ -51,19 +48,17 @@ public class TerminalGate extends JComponent {
      * @param connections the connections
      */
     public TerminalGate(String format, int numQubits, int connections) {
+        super(numQubits);
         this.format = requireNonNull(format);
-        this.numBits = numQubits;
         this.connections = connections;
-        setBackground(Color.WHITE);
     }
 
     @Override
     protected void paintComponent(Graphics g) {
-        g.setColor(getBackground());
+        super.paintComponent(g);
         Dimension size = getSize();
         int width = size.width;
         int height = size.height;
-        g.fillRect(0, 0, width, height);
         int x0 = width / 2;
         g.setColor(getForeground());
         g.setFont(getFont().deriveFont(Font.BOLD));
