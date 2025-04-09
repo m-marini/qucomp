@@ -28,68 +28,16 @@
 
 package org.mmarini.qucomp.swing;
 
-import javax.swing.*;
 import java.awt.*;
-import java.awt.geom.Rectangle2D;
 
-import static java.lang.Math.max;
-import static java.lang.Math.round;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Draws the gate component
  */
-public class BitGate extends JComponent {
-    public static final int INSETS = 3;
-    public static final int LEFT_CONNECTED = 1;
-    public static final int RIGHT_CONNECTED = 2;
-    public static final int BOX_SIZE = 15;
-    private final int numBits;
+public class BitGate extends AbstractGate {
     private final String gate;
     private final int port;
-
-    /**
-     * Draws a boxed text connection
-     *
-     * @param g     the context
-     * @param text  the text
-     * @param x0    the center abscissa
-     * @param y0    the center ordinate
-     * @param width the width
-     */
-    public static void drawBox(Graphics g, java.lang.String text, int x0, int y0, int width) {
-        drawBox(g, text, x0, y0, width, LEFT_CONNECTED & RIGHT_CONNECTED);
-    }
-
-    /**
-     * Draws a boxed text connection
-     *
-     * @param g           the context
-     * @param text        the text
-     * @param x0          the center abscissa
-     * @param y0          the center ordinate
-     * @param width       the width
-     * @param connections connection mask
-     */
-    public static void drawBox(Graphics g, java.lang.String text, int x0, int y0, int width, int connections) {
-        FontMetrics fm = g.getFontMetrics();
-        Rectangle2D textBound = fm.getStringBounds(text, g);
-        int w = (int) round(textBound.getWidth());
-        int h = (int) round(textBound.getHeight());
-        int boxSize = max(max(w, h), BOX_SIZE) + INSETS * 2;
-        int xBox = x0 - boxSize / 2 - INSETS;
-        int yBox = y0 - boxSize / 2 - INSETS;
-        int xText = x0 - (int) round(textBound.getCenterX());
-        int yText = y0 - (int) round(textBound.getCenterY());
-        g.drawRect(xBox, yBox, boxSize, boxSize);
-        g.drawString(text, xText, yText);
-        if ((connections & LEFT_CONNECTED) != 0) {
-            g.drawLine(0, y0, xBox - 1, y0);
-        }
-        if ((connections & RIGHT_CONNECTED) != 0) {
-            g.drawLine(xBox + boxSize, y0, width - 1, y0);
-        }
-    }
 
     /**
      * Create the gate
@@ -99,19 +47,17 @@ public class BitGate extends JComponent {
      * @param numBits the number of bits
      */
     public BitGate(String gate, int port, int numBits) {
-        this.numBits = numBits;
+        super(numBits);
         this.port = port;
         this.gate = requireNonNull(gate);
-        setBackground(Color.WHITE);
     }
 
     @Override
     protected void paintComponent(Graphics g) {
-        g.setColor(getBackground());
+        super.paintComponent(g);
         Dimension size = getSize();
         int width = size.width;
         int height = size.height;
-        g.fillRect(0, 0, width, height);
         int x0 = width / 2;
         g.setColor(getForeground());
         g.setFont(getFont().deriveFont(Font.BOLD));

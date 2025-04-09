@@ -233,17 +233,6 @@ public interface SwingUtils {
     }
 
     /**
-     * Shows a message dialog
-     *
-     * @param titleKey the title key message
-     * @param content  the content
-     */
-    static void showMessageKey(String titleKey, Object content) {
-        JOptionPane.showMessageDialog(null, content, Messages.getString(titleKey),
-                JOptionPane.PLAIN_MESSAGE);
-    }
-
-    /**
      * Shows an error message dialog
      *
      * @param titleKey  the title key message
@@ -264,5 +253,16 @@ public interface SwingUtils {
     static void showErrorKey(String titleKey, Throwable exception) {
         JOptionPane.showMessageDialog(null, exception.getMessage(), Messages.getString(titleKey),
                 JOptionPane.ERROR_MESSAGE);
+    }
+
+    /**
+     * Shows a message dialog
+     *
+     * @param titleKey the title key message
+     * @param content  the content
+     */
+    static void showMessageKey(String titleKey, Object content) {
+        JOptionPane.showMessageDialog(null, content, Messages.getString(titleKey),
+                JOptionPane.PLAIN_MESSAGE);
     }
 }

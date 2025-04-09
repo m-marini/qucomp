@@ -34,21 +34,6 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
     );
 
     /**
-     * Returns the gate from json
-     *
-     * @param root    the document
-     * @param locator the locator
-     */
-    public static QuGate fromJson(JsonNode root, Locator locator) {
-        java.lang.String gate = locator.path("gate").getNode(root).asText();
-        BiFunction<JsonNode, Locator, QuGate> builder = BUILDERS.get(gate);
-        if (builder == null) {
-            throw new IllegalArgumentException(format("Unknown gate \"%s\"", gate));
-        }
-        return builder.apply(root, locator);
-    }
-
-    /**
      * Returns the ccnot gate definition
      *
      * @param c0   the control0 bit index
@@ -73,6 +58,28 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
                 .toArray();
         int data = locator.path("data").getNode(root).asInt();
         return ccnot(controls[0], controls[1], data);
+    }
+
+    /**
+     * Returns the cnot gate definition
+     *
+     * @param control the control bit index
+     * @param data    the data bit index
+     */
+    public static QuGate cnot(int control, int data) {
+        return new QuGate("cnot", new int[]{control, data}, Matrix.cnot());
+    }
+
+    /**
+     * Returns the gate from json
+     *
+     * @param root    the document
+     * @param locator the locator
+     */
+    public static QuGate cnotFromJson(JsonNode root, Locator locator) {
+        int control = locator.path("control").getNode(root).asInt();
+        int data = locator.path("data").getNode(root).asInt();
+        return cnot(control, data);
     }
 
     /**
@@ -145,79 +152,36 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
     }
 
     /**
+     * Returns the gate from json
+     *
+     * @param root    the document
+     * @param locator the locator
+     */
+    public static QuGate fromJson(JsonNode root, Locator locator) {
+        java.lang.String gate = locator.path("gate").getNode(root).asText();
+        BiFunction<JsonNode, Locator, QuGate> builder = BUILDERS.get(gate);
+        if (builder == null) {
+            throw new IllegalArgumentException(format("Unknown gate \"%s\"", gate));
+        }
+        return builder.apply(root, locator);
+    }
+
+    /**
+     * Returns the h gate (Hadamard) definition
+     *
+     * @param data the data bit index
+     */
+    public static QuGate h(int data) {
+        return new QuGate("h", new int[]{data}, Matrix.h());
+    }
+
+    /**
      * Returns the ccnot gate definition
      *
      * @param qubit the data bit
      */
     public static QuGate i(int qubit) {
         return new QuGate("i", new int[]{qubit}, Matrix.identity());
-    }
-
-    /**
-     * Returns the gate from json
-     *
-     * @param root    the document
-     * @param locator the locator
-     */
-    public static QuGate cnotFromJson(JsonNode root, Locator locator) {
-        int control = locator.path("control").getNode(root).asInt();
-        int data = locator.path("data").getNode(root).asInt();
-        return cnot(control, data);
-    }
-
-    /**
-     * Create the gate
-     *
-     * @param type      the type
-     * @param indices   the indices
-     * @param transform the transformation
-     */
-    public QuGate(java.lang.String type, int[] indices, Matrix transform) {
-        this.type = requireNonNull(type);
-        this.indices = requireNonNull(indices);
-        this.transform = requireNonNull(transform);
-        int n = 1 << indices.length;
-        if (!transform.hasShape(n, n)) {
-            throw new IllegalArgumentException(format("transform shape must be %dx%d (%dx%d)",
-                    n, n, transform.numRows(), transform.numCols()));
-        }
-    }
-
-    /**
-     * Returns the cnot gate definition
-     *
-     * @param control the control bit index
-     * @param data    the data bit index
-     */
-    public static QuGate cnot(int control, int data) {
-        return new QuGate("cnot", new int[]{control, data}, Matrix.cnot());
-    }
-
-    /**
-     * Returns the gate from json
-     *
-     * @param root    the document
-     * @param locator the locator
-     */
-    public static QuGate swapFromJson(JsonNode root, Locator locator) {
-        int[] qubit = locator.path("qubits")
-                .elements(root)
-                .mapToInt(l ->
-                        l.getNode(root).asInt())
-                .toArray();
-        return swap(qubit[0], qubit[1]);
-    }
-
-    /**
-     * Returns the gate from json
-     *
-     * @param root    the document
-     * @param locator the locator
-     * @param builder the general builder function
-     */
-    public static QuGate unaryFromJson(JsonNode root, Locator locator, IntFunction<QuGate> builder) {
-        int qubit = locator.path("qubit").getNode(root).asInt();
-        return builder.apply(qubit);
     }
 
     /**
@@ -231,15 +195,6 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
             reverse[s[i]] = i;
         }
         return reverse;
-    }
-
-    /**
-     * Returns the h gate (Hadamard) definition
-     *
-     * @param data the data bit index
-     */
-    public static QuGate h(int data) {
-        return new QuGate("h", new int[]{data}, Matrix.h());
     }
 
     /**
@@ -262,12 +217,39 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
     }
 
     /**
+     * Returns the gate from json
+     *
+     * @param root    the document
+     * @param locator the locator
+     */
+    public static QuGate swapFromJson(JsonNode root, Locator locator) {
+        int[] qubit = locator.path("qubits")
+                .elements(root)
+                .mapToInt(l ->
+                        l.getNode(root).asInt())
+                .toArray();
+        return swap(qubit[0], qubit[1]);
+    }
+
+    /**
      * Returns the t gate definition
      *
      * @param data the data bit index
      */
     public static QuGate t(int data) {
         return new QuGate("t", new int[]{data}, Matrix.t());
+    }
+
+    /**
+     * Returns the gate from json
+     *
+     * @param root    the document
+     * @param locator the locator
+     * @param builder the general builder function
+     */
+    public static QuGate unaryFromJson(JsonNode root, Locator locator, IntFunction<QuGate> builder) {
+        int qubit = locator.path("qubit").getNode(root).asInt();
+        return builder.apply(qubit);
     }
 
     /**
@@ -295,6 +277,24 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
      */
     public static QuGate z(int data) {
         return new QuGate("z", new int[]{data}, Matrix.z());
+    }
+
+    /**
+     * Create the gate
+     *
+     * @param type      the type
+     * @param indices   the indices
+     * @param transform the transformation
+     */
+    public QuGate(java.lang.String type, int[] indices, Matrix transform) {
+        this.type = requireNonNull(type);
+        this.indices = requireNonNull(indices);
+        this.transform = requireNonNull(transform);
+        int n = 1 << indices.length;
+        if (!transform.hasShape(n, n)) {
+            throw new IllegalArgumentException(format("transform shape must be %dx%d (%dx%d)",
+                    n, n, transform.numRows(), transform.numCols()));
+        }
     }
 
     /**

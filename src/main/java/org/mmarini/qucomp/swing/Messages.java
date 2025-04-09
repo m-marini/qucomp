@@ -39,6 +39,10 @@ public class Messages {
 
     public static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle.getBundle(BUNDLE_NAME);
 
+    public static String format(String key, Object... params) {
+        return String.format(getString(key), params);
+    }
+
     public static String getString(final String key) {
         return getStringOpt(key).orElseGet(() -> '!' + key + '!');
     }
@@ -51,9 +55,6 @@ public class Messages {
         }
     }
 
-    public static String format(String key, Object... params) {
-        return String.format(getString(key), params);
-    }
     private Messages() {
     }
 }

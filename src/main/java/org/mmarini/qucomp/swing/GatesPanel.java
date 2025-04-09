@@ -40,12 +40,6 @@ import java.util.function.BiFunction;
  * Displays the quantum gates
  */
 public class GatesPanel extends JPanel {
-    /**
-     * Creates the panel
-     */
-    public GatesPanel() {
-    }
-
     private static final Map<String, BiFunction<QuGate, Integer, JComponent>> BUILDERS = Map.of(
             "s", (g, n) -> new BitGate("S", g.indices()[0], n),
             "t", (g, n) -> new BitGate("T", g.indices()[0], n),
@@ -69,6 +63,12 @@ public class GatesPanel extends JPanel {
         return builder != null
                 ? builder.apply(gate, numQubits)
                 : new BitGate("", -1, numQubits);
+    }
+
+    /**
+     * Creates the panel
+     */
+    public GatesPanel() {
     }
 
     /**

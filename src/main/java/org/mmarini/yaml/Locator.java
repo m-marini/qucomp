@@ -56,6 +56,7 @@ public class Locator {
     public static Locator root() {
         return ROOT;
     }
+
     public final JsonPointer pointer;
 
     public Locator(JsonPointer pointer) {

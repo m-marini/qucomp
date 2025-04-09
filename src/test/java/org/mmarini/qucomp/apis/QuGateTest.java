@@ -233,6 +233,34 @@ class QuGateTest {
         assertThat(ket.values()[15], complexClose(expKet.values()[15], EPSILON));
     }
 
+    @Test
+    void ccnotFromJson() throws IOException {
+        // Given
+        JsonNode node = Utils.fromText(CCNOT_YAML);
+        // When
+        QuGate gate = QuGate.fromJson(node, Locator.root());
+        // Then
+        assertArrayEquals(new int[]{
+                1, 2, 3
+        }, gate.indices());
+        Matrix m = gate.transform();
+        assertSame(Matrix.ccnot(), m);
+    }
+
+    @Test
+    void cnotFromJson() throws IOException {
+        // Given
+        JsonNode node = Utils.fromText(CNOT_YAML);
+        // When
+        QuGate gate = QuGate.fromJson(node, Locator.root());
+        // Then
+        assertArrayEquals(new int[]{
+                1, 2
+        }, gate.indices());
+        Matrix m = gate.transform();
+        assertSame(Matrix.cnot(), m);
+    }
+
     @ParameterizedTest
     @CsvSource({
             "0,1, 0,1,2", // o[0]=i[0], o[1]=i[1], o[2]=i[2], p=(0 1 2)
@@ -309,34 +337,6 @@ class QuGateTest {
         int[] states = QuGate.computeStatePermutation(b0, b1, b2);
         // Then
         assertArrayEquals(new int[]{s0, s1, s2, s3, s4, s5, s6, s7}, states);
-    }
-
-    @Test
-    void ccnotFromJson() throws IOException {
-        // Given
-        JsonNode node = Utils.fromText(CCNOT_YAML);
-        // When
-        QuGate gate = QuGate.fromJson(node, Locator.root());
-        // Then
-        assertArrayEquals(new int[]{
-                1, 2, 3
-        }, gate.indices());
-        Matrix m = gate.transform();
-        assertSame(Matrix.ccnot(), m);
-    }
-
-    @Test
-    void cnotFromJson() throws IOException {
-        // Given
-        JsonNode node = Utils.fromText(CNOT_YAML);
-        // When
-        QuGate gate = QuGate.fromJson(node, Locator.root());
-        // Then
-        assertArrayEquals(new int[]{
-                1, 2
-        }, gate.indices());
-        Matrix m = gate.transform();
-        assertSame(Matrix.cnot(), m);
     }
 
     @Test

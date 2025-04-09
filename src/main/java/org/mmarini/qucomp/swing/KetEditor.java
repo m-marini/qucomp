@@ -38,15 +38,17 @@ import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+
+import static org.mmarini.qucomp.swing.Messages.format;
 
 /**
  * Handle the UI for ket editing
  */
 public class KetEditor extends JPanel {
-    private static final Logger logger = LoggerFactory.getLogger(KetEditor.class);
     public static final String[] QUBIT_VALUES = {"|0>", "|1>", "|+>", "|->", "|i>", "|-i>"};
-
+    private static final Logger logger = LoggerFactory.getLogger(KetEditor.class);
     private final PublishProcessor<Ket> kets;
     private final List<JComboBox<String>> quBits;
     private int numQuBits;
@@ -61,6 +63,23 @@ public class KetEditor extends JPanel {
         createContent();
         createFlow();
         setNumQuBits(0);
+    }
+
+    /**
+     * Creates the content
+     */
+    private void createContent() {
+        GridLayoutHelper<KetEditor> layout = new GridLayoutHelper<>(this)
+                .modify("insets,10 vw,1 hw,0");
+        for (int i = 0; i < numQuBits; i++) {
+            JComboBox<String> qubit = new JComboBox<>(QUBIT_VALUES);
+            quBits.add(qubit);
+            layout.at(0, i)
+                    .add(new JLabel(format("KetEditor.bit.label", i)));
+            layout.at(1, i)
+                    .add(qubit);
+        }
+        invalidate();
     }
 
     /**
@@ -85,10 +104,20 @@ public class KetEditor extends JPanel {
     public Optional<Ket> getOptionalKet() {
         return quBits.stream()
                 .map(combo ->
-                        Ket.fromText(combo.getSelectedItem().toString()))
+                        Ket.fromText(
+                                Objects.requireNonNull(
+                                        combo.getSelectedItem()).toString()
+                        ))
                 .reduce((a, b) ->
                         b.cross(a)
                 );
+    }
+
+    /**
+     * Returns the flow of ket
+     */
+    public Flowable<Ket> readKet() {
+        return kets;
     }
 
     /**
@@ -102,27 +131,7 @@ public class KetEditor extends JPanel {
         removeAll();
         createContent();
         createFlow();
-        generateKet();
-    }
-
-    /**
-     * Returns the flow of ket
-     */
-    public Flowable<Ket> readKet() {
-        return kets;
-    }
-
-    /**
-     * Creates the content
-     */
-    private void createContent() {
-        GridLayoutHelper<KetEditor> layout = new GridLayoutHelper<>(this)
-                .modify("insets,10 vw,1 hw,0");
-        for (int i = 0; i < numQuBits; i++) {
-            JComboBox<String> qubit = new JComboBox<>(QUBIT_VALUES);
-            quBits.add(qubit);
-            layout.at(0, i).add(qubit);
-        }
         invalidate();
+        generateKet();
     }
 }
