@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.1.0] 2025-04-09
+
 ### Added
 
 - Issue [#1](https://github.com/m-marini/qucomp/issues/1): Engine kernel
