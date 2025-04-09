@@ -92,7 +92,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.mmarini.qucomp.apps.Wheelly</mainClass>
+                            <mainClass>org.mmarini.qucomp.apps.ComputeGUI</mainClass>
                             <addClasspath>true</addClasspath>
                         </manifest>
                     </archive>
