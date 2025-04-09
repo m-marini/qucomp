@@ -1,13 +1,7 @@
 This project is a quantum computing emulation.
 
-It implements the basic quantum gates
+The documentaion is in the [Wiki section](https://github.com/m-marini/wheellyj/qucomp).
 
-- X (not)
-- Y
-- Z
-- T (phase gate)
-- S (phase gate)
-- H (Hadamard gate)
-- SWAP
-- CNOT
-- CCNOT (Toffoli gate)
+## Release 0.1.0
+
+- Engine kernel and GUI application
