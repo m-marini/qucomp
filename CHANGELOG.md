@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.1.1] 2025-04-11
+
 ### Changed
 
 - Issue [#8](https://github.com/m-marini/qucomp/issues/8): Add parallel processing
