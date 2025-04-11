@@ -34,6 +34,7 @@ import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static org.mmarini.qucomp.apis.VectorUtils.partMul;
 
 /**
  * Bra quantum operator
@@ -183,7 +184,7 @@ public record Bra(Complex[] values) {
      * @param ket the ket
      */
     public Complex mul(Ket ket) {
-        return VectorUtils.mul(values, ket.values());
+        return VectorUtils.mulScalar(values, ket.values());
     }
 
     /**
@@ -200,14 +201,7 @@ public record Bra(Complex[] values) {
         }
         int m = matrix.numCols();
         Complex[] cells = new Complex[m];
-        for (int i = 0; i < m; i++) {
-            Complex cell = Complex.zero();
-            for (int j = 0; j < n; j++) {
-                Complex c = matrix.at(j, i);
-                cell = cell.add(c.mul(values[j]));
-            }
-            cells[i] = cell;
-        }
+        partMul(cells, 0, 1, matrix.numCols(), this.values, 0, values.length, matrix.cells(), 0, matrix.numCols());
         return create(cells);
     }
 
@@ -217,7 +211,7 @@ public record Bra(Complex[] values) {
      * @param alpha scale
      */
     public Bra mul(float alpha) {
-        return new Bra(VectorUtils.mul(values, alpha));
+        return new Bra(VectorUtils.mulScalar(values, alpha));
     }
 
     /**
@@ -226,7 +220,7 @@ public record Bra(Complex[] values) {
      * @param alpha the factor
      */
     public Bra mul(Complex alpha) {
-        return new Bra(VectorUtils.mul(values, alpha));
+        return new Bra(VectorUtils.mulScalar(values, alpha));
     }
 
     /**

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Issue [#8](https://github.com/m-marini/qucomp/issues/8): Add parallel processing
 - Issue [#9](https://github.com/m-marini/qucomp/issues/9): Add scroll to state panel
 
 ## [0.1.0] 2025-04-09
