@@ -29,9 +29,11 @@
 package org.mmarini.swing;
 
 
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.mmarini.qucomp.swing.Messages;
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.Optional;
 
 import static java.lang.String.format;
@@ -65,27 +67,15 @@ public interface SwingUtils {
     }
 
     /**
-     * Returns a check box
+     * Center the window on screen
      *
-     * @param key the key
+     * @param window the window
      */
-    static JCheckBox createCheckBox(String key) {
-        JCheckBox button = new JCheckBox(Messages.getString(key + ".name"));
-
-        Messages.getStringOpt(key + ".icon")
-                .flatMap(s -> Optional.ofNullable(SwingUtils.class.getResource(s)))
-                .map(ImageIcon::new)
-                .ifPresent(button::setIcon);
-        Messages.getStringOpt(key + ".mnemonic")
-                .map(s -> s.charAt(0))
-                .ifPresent(button::setMnemonic);
-        Messages.getStringOpt(key + ".tip")
-                .ifPresent(button::setToolTipText);
-        Messages.getStringOpt(key + ".selectedIcon")
-                .flatMap(s -> Optional.ofNullable(SwingUtils.class.getResource(s)))
-                .map(ImageIcon::new)
-                .ifPresent(button::setSelectedIcon);
-        return button;
+    static void centerOnScreen(Window window) {
+        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+        int x = (screen.width - window.getWidth()) / 2;
+        int y = (screen.height - window.getHeight()) / 2;
+        window.setLocation(x, y);
     }
 
     /**
@@ -221,7 +211,31 @@ public interface SwingUtils {
     }
 
     /**
-     * Returns true if the confirm dialog has been closed by confirmation (OK button)
+     * Returns a checkbox
+     *
+     * @param key the key
+     */
+    static JCheckBox createCheckBox(String key) {
+        JCheckBox button = new JCheckBox(Messages.getString(key + ".name"));
+
+        Messages.getStringOpt(key + ".icon")
+                .flatMap(s -> Optional.ofNullable(SwingUtils.class.getResource(s)))
+                .map(ImageIcon::new)
+                .ifPresent(button::setIcon);
+        Messages.getStringOpt(key + ".mnemonic")
+                .map(s -> s.charAt(0))
+                .ifPresent(button::setMnemonic);
+        Messages.getStringOpt(key + ".tip")
+                .ifPresent(button::setToolTipText);
+        Messages.getStringOpt(key + ".selectedIcon")
+                .flatMap(s -> Optional.ofNullable(SwingUtils.class.getResource(s)))
+                .map(ImageIcon::new)
+                .ifPresent(button::setSelectedIcon);
+        return button;
+    }
+
+    /**
+     * Returns true if the confirm dialogue has been closed by confirmation (OK button)
      *
      * @param titleKey the title key message
      * @param content  the content
@@ -233,7 +247,33 @@ public interface SwingUtils {
     }
 
     /**
-     * Shows an error message dialog
+     * Show the modal dialogue while running computation
+     */
+    static JDialog showDialogMessage(String titleKey, String formatKey, Object... params) {
+        JDialog dialogMessage = new JDialog();
+        dialogMessage.setTitle(Messages.getString(titleKey));
+        dialogMessage.setModal(true);
+        dialogMessage.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        dialogMessage.setSize(400, 100);
+
+        JProgressBar progressBar = new JProgressBar();
+        progressBar.setStringPainted(true);
+        progressBar.setString(Messages.format(formatKey, params));
+        progressBar.setIndeterminate(true);
+
+        new GridLayoutHelper<>(dialogMessage.getContentPane())
+                .modify("insets,10 center vw,1 hw,1 hfill")
+                .modify("at,0,0").add(progressBar);
+
+        centerOnScreen(dialogMessage);
+
+        Schedulers.io().scheduleDirect(() ->
+                dialogMessage.setVisible(true));
+        return dialogMessage;
+    }
+
+    /**
+     * Shows an error message dialogue
      *
      * @param titleKey  the title key message
      * @param formatKey the format key
@@ -245,7 +285,7 @@ public interface SwingUtils {
     }
 
     /**
-     * Shows an error message dialog
+     * Shows an error message dialogue
      *
      * @param titleKey  the title key message
      * @param exception the exception
@@ -256,7 +296,7 @@ public interface SwingUtils {
     }
 
     /**
-     * Shows a message dialog
+     * Shows a message dialogue
      *
      * @param titleKey the title key message
      * @param content  the content

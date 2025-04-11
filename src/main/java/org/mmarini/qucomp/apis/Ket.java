@@ -36,6 +36,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.sqrt;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static org.mmarini.qucomp.apis.VectorUtils.partMul;
 
 /**
  * Ket quantum state
@@ -271,14 +272,7 @@ public record Ket(Complex[] values) {
         }
         int m = matrix.numRows();
         Complex[] cells = new Complex[m];
-        for (int i = 0; i < m; i++) {
-            Complex cell = Complex.zero();
-            for (int j = 0; j < n; j++) {
-                Complex c = matrix.at(i, j);
-                cell = cell.add(c.mul(values[j]));
-            }
-            cells[i] = cell;
-        }
+        partMul(cells, 0, matrix.numRows(), 1, matrix.cells(), 0, matrix.numCols(), this.values, 0, 1);
         return create(cells);
     }
 
@@ -288,7 +282,7 @@ public record Ket(Complex[] values) {
      * @param alpha scale
      */
     public Ket mul(float alpha) {
-        return new Ket(VectorUtils.mul(values, alpha));
+        return new Ket(VectorUtils.mulScalar(values, alpha));
     }
 
     /**
@@ -297,7 +291,7 @@ public record Ket(Complex[] values) {
      * @param alpha the factor
      */
     public Ket mul(Complex alpha) {
-        return new Ket(VectorUtils.mul(values, alpha));
+        return new Ket(VectorUtils.mulScalar(values, alpha));
     }
 
     /**

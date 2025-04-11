@@ -28,6 +28,8 @@
 
 package org.mmarini.qucomp.apps;
 
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -56,6 +58,8 @@ import java.io.File;
 
 import static java.util.Objects.requireNonNull;
 import static org.mmarini.qucomp.apis.QuCircuitBuilder.loadGates;
+import static org.mmarini.swing.SwingUtils.centerOnScreen;
+import static org.mmarini.swing.SwingUtils.showDialogMessage;
 
 /**
  * Computation GUI
@@ -109,12 +113,13 @@ public class ComputeGUI {
     private final KetEditor inputEditor;
     private final JSplitPane inGateOutSplitPanel;
     private final JSplitPane gateOutSplitPanel;
-    private QuGate[] gates;
-    private Ket input;
     private final Namespace args;
+    private Ket input;
+    private Matrix matrix;
 
     /**
      * Creates the application
+     *
      * @param parsedArgs the parsed command line arguments
      */
     public ComputeGUI(Namespace parsedArgs) {
@@ -137,14 +142,16 @@ public class ComputeGUI {
      * Computes the result
      */
     private void compute() {
-        if (gates != null && input != null) {
-            try {
-                Matrix m = QuCircuitBuilder.build(gates);
-                Ket result = input.mul(m);
-                outputPanel.setKet(result);
-            } catch (Exception e) {
-                logger.atError().setCause(e).log("Error computing");
-            }
+        if (matrix != null && input != null) {
+            Ket currentInput = this.input;
+            Matrix currentMatrix = this.matrix;
+            Single.fromSupplier(() ->
+                            currentInput.mul(currentMatrix))
+                    .subscribeOn(Schedulers.computation())
+                    .doOnSuccess(outputPanel::setKet)
+                    .doOnError(e ->
+                            logger.atError().setCause(e).log("Error computing")
+                    ).subscribe();
         }
     }
 
@@ -236,7 +243,7 @@ public class ComputeGUI {
      * @param gates the gates
      */
     private void onGatesChanged(QuGate[] gates) {
-        this.gates = gates;
+        this.matrix = QuCircuitBuilder.build(gates);
         this.input = null;
         gatesPanel.setGates(gates);
         compute();
@@ -264,7 +271,11 @@ public class ComputeGUI {
         int rc = fileChooser.showOpenDialog(null);
         if (rc == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
-            open(file);
+            JDialog d = showDialogMessage("ComputeGUI.loadingDialog.title", "ComputeGUI.loadingDialog.text");
+            Schedulers.io().scheduleDirect(() -> {
+                open(file);
+                d.dispose();
+            });
         }
     }
 
@@ -275,12 +286,12 @@ public class ComputeGUI {
      */
     private void open(File file) {
         if (!file.canRead()) {
-            SwingUtils.showErrorKey("ComputGUI.errorDialog.title", "ComputGUI.fileCannotBeRead.text", file);
+            SwingUtils.showErrorKey("ComputeGUI.errorDialog.title", "ComputeGUI.fileCannotBeRead.text", file);
         } else {
             try {
                 onGatesChanged(loadGates(Utils.fromFile(file), Locator.root()));
             } catch (Throwable e) {
-                SwingUtils.showErrorKey("ComputGUI.errorDialog.title", e);
+                SwingUtils.showErrorKey("ComputeGUI.errorDialog.title", e);
             }
         }
     }
@@ -290,6 +301,7 @@ public class ComputeGUI {
      */
     private void start() {
         open(new File(args.getString("config")));
+        centerOnScreen(frame);
         frame.setVisible(true);
     }
 }

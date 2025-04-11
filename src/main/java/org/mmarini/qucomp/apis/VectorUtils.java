@@ -103,16 +103,14 @@ public interface VectorUtils {
      * @param a the vector a
      * @param b the vector b
      */
-    static Complex mul(Complex[] a, Complex[] b) {
+    static Complex mulScalar(Complex[] a, Complex[] b) {
         if (a.length != b.length) {
             throw new IllegalArgumentException(format("Expected %d states (%d)",
                     a.length, b.length));
         }
-        Complex result = Complex.zero();
-        for (int i = 0; i < a.length; i++) {
-            result = result.add(a[i].mul(b[i]));
-        }
-        return result;
+        Complex[] result = new Complex[1];
+        partMul(result, 0, 1, 1, a, 0, a.length, b, 0, 1);
+        return result[0];
     }
 
     /**
@@ -121,7 +119,7 @@ public interface VectorUtils {
      * @param vector the vector
      * @param alpha  scale
      */
-    static Complex[] mul(Complex[] vector, Complex alpha) {
+    static Complex[] mulScalar(Complex[] vector, Complex alpha) {
         return Arrays.stream(vector)
                 .map(v -> v.mul(alpha))
                 .toArray(Complex[]::new);
@@ -133,10 +131,51 @@ public interface VectorUtils {
      * @param vector the vector
      * @param alpha  scale
      */
-    static Complex[] mul(Complex[] vector, float alpha) {
+    static Complex[] mulScalar(Complex[] vector, float alpha) {
         return Arrays.stream(vector)
                 .map(v -> v.mul(alpha))
                 .toArray(Complex[]::new);
+    }
+
+    /**
+     * Partial matrix multiplication
+     *
+     * @param d       the destination matrix
+     * @param dOffset the destination matrix offset
+     * @param numRow  the number of computation rows
+     * @param numCols the number of computation columns
+     * @param a       the left source matrix
+     * @param aOffset the left source matrix offset
+     * @param aStride the left source matrix stride (number of columns)
+     * @param b       the right source matrix
+     * @param bOffset the right source matrix offset
+     * @param bStride the right source matrix stride (number of colums)
+     */
+    static Complex[] partMul(Complex[] d, int dOffset, int numRow, int numCols,
+                             Complex[] a, int aOffset, int aStride,
+                             Complex[] b, int bOffset, int bStride) {
+        int di = dOffset;
+        int ai = aOffset;
+        for (int i = 0; i < numRow; i++) {
+            int dij = di;
+            int bj = bOffset;
+            for (int j = 0; j < numCols; j++) {
+                Complex cell = Complex.zero();
+                int aik = ai;
+                int bkj = bj;
+                for (int k = 0; k < aStride; k++) {
+                    cell = cell.add(a[aik].mul(b[bkj]));
+                    aik++;
+                    bkj += bStride;
+                }
+                d[dij] = cell;
+                dij++;
+                bj++;
+            }
+            di += bStride;
+            ai += aStride;
+        }
+        return d;
     }
 
     /**

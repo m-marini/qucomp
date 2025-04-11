@@ -3,6 +3,8 @@ package org.mmarini.qucomp.apis;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.IntStream;
@@ -15,6 +17,7 @@ import static org.mmarini.Matchers.complexClose;
 class MatrixTest {
     public static final float EPSILON = 1e-6F;
     public static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
+    private static final Logger logger = LoggerFactory.getLogger(MatrixTest.class);
 
     @Test
     void add() {
@@ -317,7 +320,6 @@ class MatrixTest {
         assertThat(res.at(3), complexClose(exp.at(3), EPSILON));
     }
 
-
     @ParameterizedTest
     @CsvSource({
             "0,1,2,3,4,5,6,7, 0,0",
@@ -527,6 +529,32 @@ class MatrixTest {
         assertThat(m21.at(2, 0), complexClose(15, EPSILON));
         assertThat(m21.at(2, 1), complexClose(24, EPSILON));
         assertThat(m21.at(2, 2), complexClose(33, EPSILON));
+    }
+
+    @Test
+    void testMulConc() {
+        // Given
+        int n0 = 64;
+        int n1 = 64;
+        int n2 = 64;
+        int noTests = 10;
+        Matrix m1 = Matrix.create(n0, n1,
+                IntStream.range(0, n0 * n1).mapToObj(Complex::create).toArray(Complex[]::new));
+        Matrix m2 = Matrix.create(n1, n2,
+                IntStream.range(0, n1 * n2).mapToObj(Complex::create).toArray(Complex[]::new));
+        // When
+        long t0 = System.nanoTime();
+        for (int i = 0; i < noTests; i++) {
+            m1.mulConc(m2);
+        }
+        long t1 = System.nanoTime();
+        logger.atInfo().log("Concurrent multiplication in {} us", (t1 - t0) / 1000L / noTests);
+        t0 = System.nanoTime();
+        for (int i = 0; i < noTests; i++) {
+            m1.mulSeq(m2);
+        }
+        t1 = System.nanoTime();
+        logger.atInfo().log("Sequence multiplication in {} us", (t1 - t0) / 1000L / noTests);
     }
 
     @Test

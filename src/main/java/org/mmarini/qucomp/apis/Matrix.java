@@ -28,6 +28,9 @@
 
 package org.mmarini.qucomp.apis;
 
+import io.reactivex.rxjava3.functions.Action;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+import org.mmarini.ParallelProcess;
 import org.mmarini.Tuple2;
 
 import java.util.Arrays;
@@ -35,9 +38,11 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static java.lang.Math.min;
 import static java.lang.Math.sqrt;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static org.mmarini.qucomp.apis.VectorUtils.partMul;
 
 /**
  * Complex matrix
@@ -66,6 +71,7 @@ public class Matrix {
     public static final Matrix T = create(2, 2,
             Complex.one(), Complex.zero(),
             Complex.zero(), new Complex(HALF_SQRT2, HALF_SQRT2));
+    private static final long ORDER_BY_CORE_THRESHOLD = 64 * 64 * 64 * 64 / 12;
 
     /**
      * Returns Toffoli operator
@@ -316,6 +322,13 @@ public class Matrix {
     }
 
     /**
+     * Returns the cells
+     */
+    public Complex[] cells() {
+        return cells;
+    }
+
+    /**
      * Returns the conjugated matrix
      */
     public Matrix conj() {
@@ -375,7 +388,7 @@ public class Matrix {
         }
         if (indices[0] < 0 || indices[0] >= numRows || indices[1] < 0 || indices[1] >= numCols) {
             throw new IllegalArgumentException(format(
-                    "index must have range (0-%d)x(0%d) (%dx%d)",
+                    "index must have range (0-%d)x(0%d) (%dx %d)",
                     numRows, numCols, indices[0], indices[1]));
         }
         return unsafeIndex(numCols, indices);
@@ -402,14 +415,69 @@ public class Matrix {
                     numRows, numCols,
                     other.numRows, other.numCols));
         }
+        long order = (long) numRows * numCols * numCols * other.numCols;
+        int cores = Runtime.getRuntime().availableProcessors();
+        return (order / cores) > ORDER_BY_CORE_THRESHOLD
+                ? mulConc(other)
+                : mulSeq(other);
+    }
 
-        return create(numRows, other.numCols, indices -> {
-            Complex cell = Complex.zero();
-            for (int i = 0; i < numCols; i++) {
-                cell = cell.add(at(indices[0], i).mul(other.at(i, indices[1])));
+    /**
+     * Returns the matrix multiplication (this x other) concurrency algorithm
+     *
+     * @param other the other matrix
+     */
+    Matrix mulConc(Matrix other) {
+        int cores = Runtime.getRuntime().availableProcessors();
+        int m = other.numCols;
+        int numCells = numRows * m;
+        int numCellsPerThread = (2 * numCells + cores) / cores / 2;
+        // no partition
+        int rowsPerThread;
+        int colsPerThread;
+
+        if (m > numCellsPerThread) {
+            // horizontal partition
+            colsPerThread = numCellsPerThread;
+            rowsPerThread = 1;
+        } else {
+            // vertical partition
+            rowsPerThread = (numCellsPerThread + m - 1) / m;
+            colsPerThread = m;
+        }
+        Complex[] results = new Complex[numRows * m];
+        ParallelProcess.TaskScheduler tasks = ParallelProcess.scheduler(Schedulers.computation());
+
+        for (int i = 0; i < numRows; i += rowsPerThread) {
+            int dOffset = i * m;
+            int aOffset = i * numCols;
+            int numTaskRow = min(numRows - i, rowsPerThread);
+            for (int j = 0; j < m; j += colsPerThread) {
+                int bOffset = j;
+                int numTaskCols = min(m - j, colsPerThread);
+                Action task = () ->
+                        partMul(results, dOffset,
+                                numTaskRow, numTaskCols,
+                                cells, aOffset, numCols,
+                                other.cells, bOffset, m);
+                tasks.add(task);
             }
-            return cell;
-        });
+        }
+        // Execute
+        tasks.run();
+        return new Matrix(numRows, m, results);
+    }
+
+    /**
+     * Returns the matrix multiplication (this x other) sequence algorithm
+     *
+     * @param other the other matrix
+     */
+    Matrix mulSeq(Matrix other) {
+        int n = numRows * other.numCols;
+        Complex[] cells = new Complex[n];
+        partMul(cells, 0, numRows, other.numCols, this.cells, 0, numCols, other.cells, 0, other.numCols);
+        return new Matrix(numRows, other.numCols, cells);
     }
 
     /**
