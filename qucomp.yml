@@ -1,6 +1,6 @@
 ---
 # Full adder
-$schema: https://mmarini.org/qucomp/qucomp-schema-0.1
+$schema: https://mmarini.org/qucomp/qucomp-schema-0.2
 gates:
   # A  -> A
   # B  -> B

@@ -291,7 +291,13 @@ public interface SwingUtils {
      * @param exception the exception
      */
     static void showErrorKey(String titleKey, Throwable exception) {
-        JOptionPane.showMessageDialog(null, exception.getMessage(), Messages.getString(titleKey),
+        JTextArea text = new JTextArea();
+        text.setLineWrap(true);
+        text.setEditable(false);
+        text.setColumns(50);
+        text.setRows(10);
+        text.setText(exception.getMessage());
+        JOptionPane.showMessageDialog(null, new JScrollPane(text), Messages.getString(titleKey),
                 JOptionPane.ERROR_MESSAGE);
     }
 

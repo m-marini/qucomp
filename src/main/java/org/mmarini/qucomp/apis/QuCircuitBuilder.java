@@ -9,7 +9,7 @@ import java.util.Arrays;
  * Creates or load gates
  */
 public interface QuCircuitBuilder {
-    String SCHEMA = "https://mmarini.org/qucomp/qucomp-schema-0.1";
+    String SCHEMA = "https://mmarini.org/qucomp/qucomp-schema-0.2";
 
     /**
      * Returns the state transformation matrix

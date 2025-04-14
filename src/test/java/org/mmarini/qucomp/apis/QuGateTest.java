@@ -71,6 +71,12 @@ class QuGateTest {
             data: 3
             """;
     private static final Logger logger = LoggerFactory.getLogger(QuGateTest.class);
+    private static final String STATE_MAP_YAML = """
+            ---
+            gate: map
+            qubits: [1, 2, 3]
+            mapping: [7, 6, 5, 4, 3, 2, 1, 0]
+            """;
 
     @ParameterizedTest
     @CsvSource({
@@ -238,7 +244,7 @@ class QuGateTest {
         // Given
         JsonNode node = Utils.fromText(CCNOT_YAML);
         // When
-        QuGate gate = QuGate.fromJson(node, Locator.root());
+        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
         // Then
         assertArrayEquals(new int[]{
                 3, 1, 2
@@ -252,7 +258,7 @@ class QuGateTest {
         // Given
         JsonNode node = Utils.fromText(CNOT_YAML);
         // When
-        QuGate gate = QuGate.fromJson(node, Locator.root());
+        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
         // Then
         assertArrayEquals(new int[]{
                 2, 1
@@ -344,7 +350,7 @@ class QuGateTest {
         // Given
         JsonNode node = Utils.fromText(H_YAML);
         // When
-        QuGate gate = QuGate.fromJson(node, Locator.root());
+        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
         // Then
         assertArrayEquals(new int[]{
                 1
@@ -358,13 +364,27 @@ class QuGateTest {
         // Given
         JsonNode node = Utils.fromText(I_YAML);
         // When
-        QuGate gate = QuGate.fromJson(node, Locator.root());
+        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
         // Then
         assertArrayEquals(new int[]{
                 1
         }, gate.indices());
         Matrix m = gate.transform();
         assertSame(Matrix.identity(), m);
+    }
+
+    @Test
+    void sFromJson() throws IOException {
+        // Given
+        JsonNode node = Utils.fromText(S_YAML);
+        // When
+        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
+        // Then
+        assertArrayEquals(new int[]{
+                1
+        }, gate.indices());
+        Matrix m = gate.transform();
+        assertSame(Matrix.s(), m);
     }
 
     @ParameterizedTest
@@ -384,18 +404,44 @@ class QuGateTest {
         assertArrayEquals(new int[]{e0, e1, e2, e3}, inv);
     }
 
-    @Test
-    void sFromJson() throws IOException {
+    @ParameterizedTest
+    @CsvSource({
+            "0, 1, 2, 3, 4, 5, 6, 7",
+            "0, 0, 0, 0, 1, 1, 1, 1",
+            "0, 0, 1, 1, 2, 2, 3, 3",
+    })
+    void stateMap(int m0, int m1, int m2, int m3, int m4, int m5, int m6, int m7) {
         // Given
-        JsonNode node = Utils.fromText(S_YAML);
+        int[] bits = new int[]{0, 1, 2};
+        int[] states = {m0, m1, m2, m3, m4, m5, m6, m7};
+        QuGate gate = QuGate.stateMap(bits, states);
+        Matrix m = gate.build(3);
+
+        for (int i = 0; i < 8; i++) {
+            // When
+            Ket k = Ket.base(i, 3).mul(m);
+            // Then
+            assertThat("on state " + i, k.at(0), complexClose(states[i] == 0 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(1), complexClose(states[i] == 1 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(2), complexClose(states[i] == 2 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(3), complexClose(states[i] == 3 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(4), complexClose(states[i] == 4 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(5), complexClose(states[i] == 5 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(6), complexClose(states[i] == 6 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(7), complexClose(states[i] == 7 ? 1 : 0, EPSILON));
+        }
+    }
+
+    @Test
+    void stateMapFromJson() throws IOException {
+        // Given
+        JsonNode node = Utils.fromText(STATE_MAP_YAML);
         // When
         QuGate gate = QuGate.fromJson(node, Locator.root());
         // Then
         assertArrayEquals(new int[]{
-                1
+                1, 2, 3
         }, gate.indices());
-        Matrix m = gate.transform();
-        assertSame(Matrix.s(), m);
     }
 
     @Test
@@ -403,7 +449,7 @@ class QuGateTest {
         // Given
         JsonNode node = Utils.fromText(SWAP_YAML);
         // When
-        QuGate gate = QuGate.fromJson(node, Locator.root());
+        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
         // Then
         assertArrayEquals(new int[]{
                 1, 2
@@ -417,7 +463,7 @@ class QuGateTest {
         // Given
         JsonNode node = Utils.fromText(T_YAML);
         // When
-        QuGate gate = QuGate.fromJson(node, Locator.root());
+        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
         // Then
         assertArrayEquals(new int[]{
                 1
@@ -531,7 +577,7 @@ class QuGateTest {
         // Given
         JsonNode node = Utils.fromText(X_YAML);
         // When
-        QuGate gate = QuGate.fromJson(node, Locator.root());
+        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
         // Then
         assertArrayEquals(new int[]{
                 1
@@ -545,7 +591,7 @@ class QuGateTest {
         // Given
         JsonNode node = Utils.fromText(Y_YAML);
         // When
-        QuGate gate = QuGate.fromJson(node, Locator.root());
+        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
         // Then
         assertArrayEquals(new int[]{
                 1
@@ -559,7 +605,7 @@ class QuGateTest {
         // Given
         JsonNode node = Utils.fromText(Z_YAML);
         // When
-        QuGate gate = QuGate.fromJson(node, Locator.root());
+        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
         // Then
         assertArrayEquals(new int[]{
                 1
