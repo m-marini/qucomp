@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Issue [#15](https://github.com/m-marini/qucomp/issues/15): Add function mapping state
+
 ### Fixed
 
 - Issue [#13](https://github.com/m-marini/qucomp/issues/13): Error on ccnot

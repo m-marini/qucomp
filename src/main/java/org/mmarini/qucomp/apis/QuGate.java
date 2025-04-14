@@ -14,23 +14,20 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Defines the gate transformation and the bit indices of the gate
- *
- * @param type      the port type
- * @param indices   the indices
- * @param transform the transformation
  */
-public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
-    private static final Map<java.lang.String, BiFunction<JsonNode, Locator, QuGate>> BUILDERS = Map.of(
-            "s", (r, l) -> unaryFromJson(r, l, QuGate::s),
-            "t", (r, l) -> unaryFromJson(r, l, QuGate::t),
-            "h", (r, l) -> unaryFromJson(r, l, QuGate::h),
-            "x", (r, l) -> unaryFromJson(r, l, QuGate::x),
-            "y", (r, l) -> unaryFromJson(r, l, QuGate::y),
-            "z", (r, l) -> unaryFromJson(r, l, QuGate::z),
-            "i", (r, l) -> unaryFromJson(r, l, QuGate::i),
-            "swap", QuGate::swapFromJson,
-            "cnot", QuGate::cnotFromJson,
-            "ccnot", QuGate::ccnotFromJson
+public interface QuGate {
+    Map<java.lang.String, BiFunction<JsonNode, Locator, QuGate>> BUILDERS = Map.ofEntries(
+            Map.entry("s", (r, l) -> unaryFromJson(r, l, QuGate::s)),
+            Map.entry("t", (r, l) -> unaryFromJson(r, l, QuGate::t)),
+            Map.entry("h", (r, l) -> unaryFromJson(r, l, QuGate::h)),
+            Map.entry("x", (r, l) -> unaryFromJson(r, l, QuGate::x)),
+            Map.entry("y", (r, l) -> unaryFromJson(r, l, QuGate::y)),
+            Map.entry("z", (r, l) -> unaryFromJson(r, l, QuGate::z)),
+            Map.entry("i", (r, l) -> unaryFromJson(r, l, QuGate::i)),
+            Map.entry("swap", QuGate::swapFromJson),
+            Map.entry("cnot", QuGate::cnotFromJson),
+            Map.entry("ccnot", QuGate::ccnotFromJson),
+            Map.entry("map", QuGate::stateMapFromJson)
     );
 
     /**
@@ -40,17 +37,17 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
      * @param c1   the control1 bit index
      * @param data the data bit index
      */
-    public static QuGate ccnot(int c0, int c1, int data) {
-        return new QuGate("ccnot", new int[]{data, c0, c1}, Matrix.ccnot());
+    static QuGate ccnot(int c0, int c1, int data) {
+        return new QuGateImpl("ccnot", new int[]{data, c0, c1}, Matrix.ccnot());
     }
 
     /**
-     * Returns the gate from json
+     * Returns the gate from JSON
      *
      * @param root    the document
      * @param locator the locator
      */
-    public static QuGate ccnotFromJson(JsonNode root, Locator locator) {
+    static QuGate ccnotFromJson(JsonNode root, Locator locator) {
         int[] controls = locator.path("controls")
                 .elements(root)
                 .mapToInt(l ->
@@ -66,17 +63,17 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
      * @param data    the data bit index
      * @param control the control bit index
      */
-    public static QuGate cnot(int data, int control) {
-        return new QuGate("cnot", new int[]{data, control}, Matrix.cnot());
+    static QuGate cnot(int data, int control) {
+        return new QuGateImpl("cnot", new int[]{data, control}, Matrix.cnot());
     }
 
     /**
-     * Returns the gate from json
+     * Returns the gate from JSON
      *
      * @param root    the document
      * @param locator the locator
      */
-    public static QuGate cnotFromJson(JsonNode root, Locator locator) {
+    static QuGate cnotFromJson(JsonNode root, Locator locator) {
         int control = locator.path("control").getNode(root).asInt();
         int data = locator.path("data").getNode(root).asInt();
         return cnot(data, control);
@@ -152,12 +149,12 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
     }
 
     /**
-     * Returns the gate from json
+     * Returns the gate from JSON
      *
      * @param root    the document
      * @param locator the locator
      */
-    public static QuGate fromJson(JsonNode root, Locator locator) {
+    static QuGate fromJson(JsonNode root, Locator locator) {
         java.lang.String gate = locator.path("gate").getNode(root).asText();
         BiFunction<JsonNode, Locator, QuGate> builder = BUILDERS.get(gate);
         if (builder == null) {
@@ -171,8 +168,8 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
      *
      * @param data the data bit index
      */
-    public static QuGate h(int data) {
-        return new QuGate("h", new int[]{data}, Matrix.h());
+    static QuGate h(int data) {
+        return new QuGateImpl("h", new int[]{data}, Matrix.h());
     }
 
     /**
@@ -180,8 +177,8 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
      *
      * @param qubit the data bit
      */
-    public static QuGate i(int qubit) {
-        return new QuGate("i", new int[]{qubit}, Matrix.identity());
+    static QuGate i(int qubit) {
+        return new QuGateImpl("i", new int[]{qubit}, Matrix.identity());
     }
 
     /**
@@ -202,8 +199,43 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
      *
      * @param data the data bit index
      */
-    public static QuGate s(int data) {
-        return new QuGate("s", new int[]{data}, Matrix.s());
+    static QuGate s(int data) {
+        return new QuGateImpl("s", new int[]{data}, Matrix.s());
+    }
+
+    /**
+     * Returns the gate implementing state mapping
+     *
+     * @param qubits  the qubits
+     * @param mapping the mapping
+     */
+    static QuGate stateMap(int[] qubits, int... mapping) {
+        int numStates = qubits.length;
+        if (requireNonNull(mapping).length != 1 << numStates) {
+            throw new IllegalArgumentException(format("the state mapping should have %d element (%d)",
+                    numStates, mapping.length));
+        }
+        return new QuGateImpl("map", qubits, Matrix.permute(mapping));
+    }
+
+    /**
+     * Returns the gate from JSON
+     *
+     * @param root    the document
+     * @param locator the locator
+     */
+    static QuGate stateMapFromJson(JsonNode root, Locator locator) {
+        int[] qubits = locator.path("qubits")
+                .elements(root)
+                .mapToInt(l ->
+                        l.getNode(root).asInt())
+                .toArray();
+        int[] mapping = locator.path("mapping")
+                .elements(root)
+                .mapToInt(l ->
+                        l.getNode(root).asInt())
+                .toArray();
+        return stateMap(qubits, mapping);
     }
 
     /**
@@ -212,17 +244,17 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
      * @param data0 the data0 bit index
      * @param data1 the data1 bit index
      */
-    public static QuGate swap(int data0, int data1) {
-        return new QuGate("swap", new int[]{data0, data1}, Matrix.swap());
+    static QuGate swap(int data0, int data1) {
+        return new QuGateImpl("swap", new int[]{data0, data1}, Matrix.swap());
     }
 
     /**
-     * Returns the gate from json
+     * Returns the gate from JSON
      *
      * @param root    the document
      * @param locator the locator
      */
-    public static QuGate swapFromJson(JsonNode root, Locator locator) {
+    static QuGate swapFromJson(JsonNode root, Locator locator) {
         int[] qubit = locator.path("qubits")
                 .elements(root)
                 .mapToInt(l ->
@@ -236,18 +268,18 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
      *
      * @param data the data bit index
      */
-    public static QuGate t(int data) {
-        return new QuGate("t", new int[]{data}, Matrix.t());
+    static QuGate t(int data) {
+        return new QuGateImpl("t", new int[]{data}, Matrix.t());
     }
 
     /**
-     * Returns the gate from json
+     * Returns the gate from JSON
      *
      * @param root    the document
      * @param locator the locator
      * @param builder the general builder function
      */
-    public static QuGate unaryFromJson(JsonNode root, Locator locator, IntFunction<QuGate> builder) {
+    static QuGate unaryFromJson(JsonNode root, Locator locator, IntFunction<QuGate> builder) {
         int qubit = locator.path("qubit").getNode(root).asInt();
         return builder.apply(qubit);
     }
@@ -257,8 +289,8 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
      *
      * @param data the data bit index
      */
-    public static QuGate x(int data) {
-        return new QuGate("x", new int[]{data}, Matrix.x());
+    static QuGate x(int data) {
+        return new QuGateImpl("x", new int[]{data}, Matrix.x());
     }
 
     /**
@@ -266,8 +298,8 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
      *
      * @param data the data bit index
      */
-    public static QuGate y(int data) {
-        return new QuGate("y", new int[]{data}, Matrix.y());
+    static QuGate y(int data) {
+        return new QuGateImpl("y", new int[]{data}, Matrix.y());
     }
 
     /**
@@ -275,26 +307,8 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
      *
      * @param data the data bit index
      */
-    public static QuGate z(int data) {
-        return new QuGate("z", new int[]{data}, Matrix.z());
-    }
-
-    /**
-     * Create the gate
-     *
-     * @param type      the type
-     * @param indices   the indices
-     * @param transform the transformation
-     */
-    public QuGate(java.lang.String type, int[] indices, Matrix transform) {
-        this.type = requireNonNull(type);
-        this.indices = requireNonNull(indices);
-        this.transform = requireNonNull(transform);
-        int n = 1 << indices.length;
-        if (!transform.hasShape(n, n)) {
-            throw new IllegalArgumentException(format("transform shape must be %dx%d (%dx%d)",
-                    n, n, transform.numRows(), transform.numCols()));
-        }
+    static QuGate z(int data) {
+        return new QuGateImpl("z", new int[]{data}, Matrix.z());
     }
 
     /**
@@ -302,33 +316,22 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
      *
      * @param numBits the number of bits
      */
-    public Matrix build(int numBits) {
-        int m = maxIndices();
-        if (m >= numBits) {
-            throw new IllegalArgumentException(format("num bits must be greater then %d (%d)",
-                    m, numBits));
-        }
-        // Swap the gate input to align to base transform
-        int[] inBits = computeMap(numBits, indices);
-        int[] statesPermutation = computeStatePermutation(inBits);
-        int[] reverseState = inversePermutation(statesPermutation);
-        Matrix inSwapMatrix = Matrix.permute(statesPermutation);
-        Matrix outSwapMatrix = Matrix.permute(reverseState);
-        // Create the full gate matrix
-        int n = indices.length;
-        Matrix gateMatrix = transform;
-        if (numBits > n) {
-            Matrix identities = Matrix.identity(1 << (numBits - n));
-            gateMatrix = identities.cross(gateMatrix);
-        }
-        // Create the full state transformation matrix
-        return outSwapMatrix.mul(gateMatrix).mul(inSwapMatrix);
-    }
+    Matrix build(int numBits);
+
+    /**
+     * Returns the indices of bits
+     */
+    int[] indices();
 
     /**
      * Returns the highest bit index of the gate
      */
-    int maxIndices() {
-        return Arrays.stream(indices).max().orElse(-1);
+    default int maxIndices() {
+        return Arrays.stream(indices()).max().orElse(-1);
     }
+
+    /**
+     * Returns the type of gate
+     */
+    String type();
 }

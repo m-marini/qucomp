@@ -22,7 +22,7 @@ class QuStateBuilderTest {
     public static final float EPSILON = 1e-6F;
     public static final java.lang.String YAML = """
             ---
-            $schema: https://mmarini.org/qucomp/qucomp-schema-0.1
+            $schema: https://mmarini.org/qucomp/qucomp-schema-0.2
             gates:
               - gate: s
                 qubit: 1
@@ -114,34 +114,34 @@ class QuStateBuilderTest {
         assertThat(gates, arrayWithSize(10));
 
         assertArrayEquals(new int[]{1}, gates[0].indices());
-        assertEquals(Matrix.s(), gates[0].transform());
+        assertEquals(Matrix.s(), ((QuGateImpl) gates[0]).transform());
 
         assertArrayEquals(new int[]{1}, gates[1].indices());
-        assertEquals(Matrix.t(), gates[1].transform());
+        assertEquals(Matrix.t(), ((QuGateImpl) gates[1]).transform());
 
         assertArrayEquals(new int[]{1}, gates[2].indices());
-        assertEquals(Matrix.h(), gates[2].transform());
+        assertEquals(Matrix.h(), ((QuGateImpl) gates[2]).transform());
 
         assertArrayEquals(new int[]{1}, gates[3].indices());
-        assertEquals(Matrix.identity(), gates[3].transform());
+        assertEquals(Matrix.identity(), ((QuGateImpl) gates[3]).transform());
 
         assertArrayEquals(new int[]{1}, gates[4].indices());
-        assertEquals(Matrix.x(), gates[4].transform());
+        assertEquals(Matrix.x(), ((QuGateImpl) gates[4]).transform());
 
         assertArrayEquals(new int[]{1}, gates[5].indices());
-        assertEquals(Matrix.y(), gates[5].transform());
+        assertEquals(Matrix.y(), ((QuGateImpl) gates[5]).transform());
 
         assertArrayEquals(new int[]{1}, gates[6].indices());
-        assertEquals(Matrix.z(), gates[6].transform());
+        assertEquals(Matrix.z(), ((QuGateImpl) gates[6]).transform());
 
         assertArrayEquals(new int[]{1, 2}, gates[7].indices());
-        assertEquals(Matrix.swap(), gates[7].transform());
+        assertEquals(Matrix.swap(), ((QuGateImpl) gates[7]).transform());
 
         assertArrayEquals(new int[]{2, 1}, gates[8].indices());
-        assertEquals(Matrix.cnot(), gates[8].transform());
+        assertEquals(Matrix.cnot(), ((QuGateImpl) gates[8]).transform());
 
         assertArrayEquals(new int[]{3, 1, 2}, gates[9].indices());
-        assertEquals(Matrix.ccnot(), gates[9].transform());
+        assertEquals(Matrix.ccnot(), ((QuGateImpl) gates[9]).transform());
     }
 
     @Test

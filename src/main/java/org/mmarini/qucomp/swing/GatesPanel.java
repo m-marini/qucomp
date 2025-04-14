@@ -49,7 +49,8 @@ public class GatesPanel extends JPanel {
             "z", (g, n) -> new BitGate("Z", g.indices()[0], n),
             "swap", (g, n) -> new SwapGate(g.indices()[0], g.indices()[1], n),
             "cnot", (g, n) -> new CNotGate(g.indices()[0], g.indices()[1], n),
-            "ccnot", (g, n) -> new CCNotGate(g.indices()[0], g.indices()[1], g.indices()[2], n)
+            "ccnot", (g, n) -> new CCNotGate(g.indices()[0], g.indices()[1], g.indices()[2], n),
+            "map", (g, n) -> new StateMapGate("f%d(s)", g.indices(), n)
     );
 
     /**

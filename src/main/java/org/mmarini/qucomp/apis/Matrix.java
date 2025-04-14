@@ -219,7 +219,8 @@ public class Matrix {
      * @param permutation the target mapping
      */
     public static Matrix permute(int... permutation) {
-        return create(permutation.length, permutation.length, indices -> {
+        int n = permutation.length;
+        return create(n, permutation.length, indices -> {
             int i = indices[0];
             int j = indices[1];
             return i == permutation[j]
