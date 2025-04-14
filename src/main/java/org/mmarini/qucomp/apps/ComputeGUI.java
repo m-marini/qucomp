@@ -28,8 +28,6 @@
 
 package org.mmarini.qucomp.apps;
 
-import io.reactivex.rxjava3.core.Single;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -56,6 +54,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 
+import static io.reactivex.rxjava3.schedulers.Schedulers.computation;
+import static io.reactivex.rxjava3.schedulers.Schedulers.io;
 import static java.util.Objects.requireNonNull;
 import static org.mmarini.qucomp.apis.QuCircuitBuilder.loadGates;
 import static org.mmarini.swing.SwingUtils.centerOnScreen;
@@ -145,13 +145,15 @@ public class ComputeGUI {
         if (matrix != null && input != null) {
             Ket currentInput = this.input;
             Matrix currentMatrix = this.matrix;
-            Single.fromSupplier(() ->
-                            currentInput.mul(currentMatrix))
-                    .subscribeOn(Schedulers.computation())
-                    .doOnSuccess(outputPanel::setKet)
-                    .doOnError(e ->
-                            logger.atError().setCause(e).log("Error computing")
-                    ).subscribe();
+            computation().scheduleDirect(() -> {
+                try {
+                    outputPanel.setKet(currentInput.mul(currentMatrix));
+                    frame.validate();
+                    frame.repaint();
+                } catch (Exception e) {
+                    logger.atError().setCause(e).log("Error computing");
+                }
+            });
         }
     }
 
@@ -246,10 +248,11 @@ public class ComputeGUI {
         this.matrix = QuCircuitBuilder.build(gates);
         this.input = null;
         gatesPanel.setGates(gates);
-        compute();
         inputEditor.setNumQuBits(QuCircuitBuilder.numQuBits(gates));
+        compute();
         frame.invalidate();
         frame.validate();
+        frame.repaint();
     }
 
     /**
@@ -260,6 +263,8 @@ public class ComputeGUI {
         this.input = ket;
         compute();
         frame.validate();
+        frame.repaint();
+
     }
 
     /**
@@ -272,7 +277,7 @@ public class ComputeGUI {
         if (rc == JFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
             JDialog d = showDialogMessage("ComputeGUI.loadingDialog.title", "ComputeGUI.loadingDialog.text");
-            Schedulers.io().scheduleDirect(() -> {
+            io().scheduleDirect(() -> {
                 open(file);
                 d.dispose();
             });

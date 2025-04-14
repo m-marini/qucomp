@@ -46,12 +46,12 @@ public class CCNotGate extends AbstractGate {
     /**
      * Create the gate
      *
+     * @param data     the data bit
      * @param control0 the control bit
      * @param control1 the control bit
-     * @param data     the data bit
      * @param numBits  the number of bits
      */
-    public CCNotGate(int control0, int control1, int data, int numBits) {
+    public CCNotGate(int data, int control0, int control1, int numBits) {
         super(numBits);
         this.control0 = control0;
         this.control1 = control1;
@@ -72,9 +72,9 @@ public class CCNotGate extends AbstractGate {
             g.drawLine(0, y0, width, y0);
             if (i == control0 || i == control1) {
                 g.fillOval(x0 - CONTROL_SIZE / 2, y0 - CONTROL_SIZE / 2, CONTROL_SIZE, CONTROL_SIZE);
-            }
-            if (i == data) {
+            } else if (i == data) {
                 g.drawOval(x0 - DATA_SIZE / 2, y0 - DATA_SIZE / 2, DATA_SIZE, DATA_SIZE);
+                g.drawLine(x0, y0 - DATA_SIZE / 2, x0, y0 + DATA_SIZE / 2);
             }
         }
         int lowestBit = min(min(control0, control1), data);

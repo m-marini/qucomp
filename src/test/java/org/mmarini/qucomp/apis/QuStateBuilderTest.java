@@ -137,10 +137,10 @@ class QuStateBuilderTest {
         assertArrayEquals(new int[]{1, 2}, gates[7].indices());
         assertEquals(Matrix.swap(), gates[7].transform());
 
-        assertArrayEquals(new int[]{1, 2}, gates[8].indices());
+        assertArrayEquals(new int[]{2, 1}, gates[8].indices());
         assertEquals(Matrix.cnot(), gates[8].transform());
 
-        assertArrayEquals(new int[]{1, 2, 3}, gates[9].indices());
+        assertArrayEquals(new int[]{3, 1, 2}, gates[9].indices());
         assertEquals(Matrix.ccnot(), gates[9].transform());
     }
 

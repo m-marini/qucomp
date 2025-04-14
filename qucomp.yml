@@ -1,8 +1,6 @@
 ---
 $schema: https://mmarini.org/qucomp/qucomp-schema-0.1
 gates:
-  - gate: swap
-    qubits: [ 0, 1 ]
-  - gate: swap
-    qubits: [ 1, 2 ]
----
+  - gate: cnot
+    data: 0
+    control: 1

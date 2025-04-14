@@ -241,7 +241,7 @@ class QuGateTest {
         QuGate gate = QuGate.fromJson(node, Locator.root());
         // Then
         assertArrayEquals(new int[]{
-                1, 2, 3
+                3, 1, 2
         }, gate.indices());
         Matrix m = gate.transform();
         assertSame(Matrix.ccnot(), m);
@@ -255,7 +255,7 @@ class QuGateTest {
         QuGate gate = QuGate.fromJson(node, Locator.root());
         // Then
         assertArrayEquals(new int[]{
-                1, 2
+                2, 1
         }, gate.indices());
         Matrix m = gate.transform();
         assertSame(Matrix.cnot(), m);
