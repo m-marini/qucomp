@@ -97,12 +97,16 @@ $defs:
         items:
           type: integer
           minimum: 0
-      mapping:
+      changes:
         type: array
         items:
-          type: integer
-          minimum: 0
+          type: array
+          itmes:
+            type: integer
+            minimum: 0
+        minItems: 2
+        maxItems: 2
     required:
       - gate
       - qubits
-      - mapping
+      - changes

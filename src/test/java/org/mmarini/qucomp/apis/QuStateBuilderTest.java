@@ -46,13 +46,11 @@ class QuStateBuilderTest {
               - gate: ccnot
                 controls: [1, 2]
                 data: 3
-            inputs:
-              - "|0>"
-              - "|1>"
-              - "|+>"
-              - "|->"
-              - "|i>"
-              - "|-i>"
+              - gate: map
+                qubits: [1, 2]
+                changes:
+                  - [0, 1]
+                  - [1, 0]
             """;
 
     @ParameterizedTest
@@ -111,7 +109,7 @@ class QuStateBuilderTest {
     void loadGates() throws IOException {
         JsonNode node = Utils.fromText(YAML);
         QuGate[] gates = QuCircuitBuilder.loadGates(node, Locator.root());
-        assertThat(gates, arrayWithSize(10));
+        assertThat(gates, arrayWithSize(11));
 
         assertArrayEquals(new int[]{1}, gates[0].indices());
         assertEquals(Matrix.s(), ((QuGateImpl) gates[0]).transform());
@@ -142,6 +140,24 @@ class QuStateBuilderTest {
 
         assertArrayEquals(new int[]{3, 1, 2}, gates[9].indices());
         assertEquals(Matrix.ccnot(), ((QuGateImpl) gates[9]).transform());
+
+        assertArrayEquals(new int[]{1, 2}, gates[10].indices());
+        assertThat(((QuGateImpl) gates[10]).transform().at(0, 0), complexClose(0, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(0, 1), complexClose(1, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(0, 2), complexClose(0, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(0, 3), complexClose(0, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(1, 0), complexClose(1, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(1, 1), complexClose(0, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(1, 2), complexClose(0, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(1, 3), complexClose(0, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(2, 0), complexClose(0, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(2, 1), complexClose(0, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(2, 2), complexClose(1, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(2, 3), complexClose(0, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(3, 0), complexClose(0, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(3, 1), complexClose(0, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(3, 2), complexClose(0, EPSILON));
+        assertThat(((QuGateImpl) gates[10]).transform().at(3, 3), complexClose(1, EPSILON));
     }
 
     @Test

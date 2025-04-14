@@ -75,7 +75,15 @@ class QuGateTest {
             ---
             gate: map
             qubits: [1, 2, 3]
-            mapping: [7, 6, 5, 4, 3, 2, 1, 0]
+            changes:
+              - [ 0, 7 ]
+              - [ 1, 6 ]
+              - [ 2, 5 ]
+              - [ 3, 4 ]
+              - [ 4, 3 ]
+              - [ 5, 2 ]
+              - [ 6, 1 ]
+              - [ 7, 0 ]
             """;
 
     @ParameterizedTest
