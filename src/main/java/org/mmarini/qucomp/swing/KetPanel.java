@@ -229,12 +229,12 @@ public class KetPanel extends JPanel {
         bitPanel.add(new JScrollPane(bitTable), BorderLayout.CENTER);
 
         JSplitPane splitPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        splitPanel.setTopComponent(statePanel);
-        splitPanel.setBottomComponent(bitPanel);
+        splitPanel.setTopComponent(bitPanel);
+        splitPanel.setBottomComponent(statePanel);
         splitPanel.setOneTouchExpandable(true);
         splitPanel.setContinuousLayout(true);
         splitPanel.setResizeWeight(0);
-        splitPanel.setDividerLocation(550);
+        splitPanel.setDividerLocation(250);
         setLayout(new BorderLayout());
         add(splitPanel, BorderLayout.CENTER);
     }

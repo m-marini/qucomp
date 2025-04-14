@@ -41,7 +41,7 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
      * @param data the data bit index
      */
     public static QuGate ccnot(int c0, int c1, int data) {
-        return new QuGate("ccnot", new int[]{c0, c1, data}, Matrix.ccnot());
+        return new QuGate("ccnot", new int[]{data, c0, c1}, Matrix.ccnot());
     }
 
     /**
@@ -63,11 +63,11 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
     /**
      * Returns the cnot gate definition
      *
-     * @param control the control bit index
      * @param data    the data bit index
+     * @param control the control bit index
      */
-    public static QuGate cnot(int control, int data) {
-        return new QuGate("cnot", new int[]{control, data}, Matrix.cnot());
+    public static QuGate cnot(int data, int control) {
+        return new QuGate("cnot", new int[]{data, control}, Matrix.cnot());
     }
 
     /**
@@ -79,7 +79,7 @@ public record QuGate(java.lang.String type, int[] indices, Matrix transform) {
     public static QuGate cnotFromJson(JsonNode root, Locator locator) {
         int control = locator.path("control").getNode(root).asInt();
         int data = locator.path("data").getNode(root).asInt();
-        return cnot(control, data);
+        return cnot(data, control);
     }
 
     /**

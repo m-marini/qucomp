@@ -42,11 +42,11 @@ public class CNotGate extends AbstractGate {
     /**
      * Create the gate
      *
-     * @param control the control bit
      * @param data    the data bit
+     * @param control the control bit
      * @param numBits the number of bits
      */
-    public CNotGate(int control, int data, int numBits) {
+    public CNotGate(int data, int control, int numBits) {
         super(numBits);
         this.control = control;
         this.data = data;
@@ -69,6 +69,7 @@ public class CNotGate extends AbstractGate {
             }
             if (i == data) {
                 g.drawOval(x0 - DATA_SIZE / 2, y0 - DATA_SIZE / 2, DATA_SIZE, DATA_SIZE);
+                g.drawLine(x0, y0 - DATA_SIZE / 2, x0, y0 + DATA_SIZE / 2);
             }
         }
         int y0 = (control * 2 + 1) * height / numBits / 2;

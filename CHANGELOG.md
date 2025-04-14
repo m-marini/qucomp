@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- Issue [#13](https://github.com/m-marini/qucomp/issues/13): Error on ccnot
+
 ## [0.1.1] 2025-04-11
 
 ### Changed

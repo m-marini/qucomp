@@ -1,8 +1,23 @@
 ---
+# Full adder
 $schema: https://mmarini.org/qucomp/qucomp-schema-0.1
 gates:
-  - gate: swap
-    qubits: [ 0, 1 ]
-  - gate: swap
-    qubits: [ 1, 2 ]
----
+  # A  -> A
+  # B  -> B
+  # Ci -> S (A+B)
+  # 0  -> Co
+  - gate: ccnot
+    data: 3
+    controls: [0, 1]
+  - gate: cnot
+    data: 1
+    control: 0
+  - gate: ccnot
+    data: 3
+    controls: [1, 2]
+  - gate: cnot
+    data: 2
+    control: 1
+  - gate: cnot
+    data: 1
+    control: 0
