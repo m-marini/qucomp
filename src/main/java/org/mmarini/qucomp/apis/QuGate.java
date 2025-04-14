@@ -230,11 +230,27 @@ public interface QuGate {
                 .mapToInt(l ->
                         l.getNode(root).asInt())
                 .toArray();
-        int[] mapping = locator.path("mapping")
+        int[][] changing = locator.path("changes")
                 .elements(root)
-                .mapToInt(l ->
-                        l.getNode(root).asInt())
-                .toArray();
+                .map(l ->
+                        l.elements(root)
+                                .mapToInt(l1 ->
+                                        l1.getNode(root).asInt())
+                                .toArray()
+                )
+                .toArray(int[][]::new);
+        int[] mapping = IntStream.range(0, 1 << qubits.length).toArray();
+        for (int[] change : changing) {
+            if (change[0] < 0 || change[0] >= mapping.length) {
+                throw new IllegalArgumentException(format("Source state must be between 0 and %d (%d)",
+                        mapping.length, change[0]));
+            }
+            if (change[1] < 0 || change[1] >= mapping.length) {
+                throw new IllegalArgumentException(format("Target state must be between 0 and %d (%d)",
+                        mapping.length, change[1]));
+            }
+            mapping[change[0]] = change[1];
+        }
         return stateMap(qubits, mapping);
     }
 
