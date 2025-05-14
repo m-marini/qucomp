@@ -1,12 +1,6 @@
 package org.mmarini.qucomp.apis;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import org.mmarini.yaml.Locator;
-
 import java.util.Arrays;
-import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 
 import static java.lang.String.format;
@@ -16,45 +10,16 @@ import static java.util.Objects.requireNonNull;
  * Defines the gate transformation and the bit indices of the gate
  */
 public interface QuGate {
-    Map<java.lang.String, BiFunction<JsonNode, Locator, QuGate>> BUILDERS = Map.ofEntries(
-            Map.entry("s", (r, l) -> unaryFromJson(r, l, QuGate::s)),
-            Map.entry("t", (r, l) -> unaryFromJson(r, l, QuGate::t)),
-            Map.entry("h", (r, l) -> unaryFromJson(r, l, QuGate::h)),
-            Map.entry("x", (r, l) -> unaryFromJson(r, l, QuGate::x)),
-            Map.entry("y", (r, l) -> unaryFromJson(r, l, QuGate::y)),
-            Map.entry("z", (r, l) -> unaryFromJson(r, l, QuGate::z)),
-            Map.entry("i", (r, l) -> unaryFromJson(r, l, QuGate::i)),
-            Map.entry("swap", QuGate::swapFromJson),
-            Map.entry("cnot", QuGate::cnotFromJson),
-            Map.entry("ccnot", QuGate::ccnotFromJson),
-            Map.entry("map", QuGate::stateMapFromJson)
-    );
 
     /**
      * Returns the ccnot gate definition
      *
+     * @param data the data bit index
      * @param c0   the control0 bit index
      * @param c1   the control1 bit index
-     * @param data the data bit index
      */
-    static QuGate ccnot(int c0, int c1, int data) {
+    static QuGate ccnot(int data, int c0, int c1) {
         return new QuGateImpl("ccnot", new int[]{data, c0, c1}, Matrix.ccnot());
-    }
-
-    /**
-     * Returns the gate from JSON
-     *
-     * @param root    the document
-     * @param locator the locator
-     */
-    static QuGate ccnotFromJson(JsonNode root, Locator locator) {
-        int[] controls = locator.path("controls")
-                .elements(root)
-                .mapToInt(l ->
-                        l.getNode(root).asInt())
-                .toArray();
-        int data = locator.path("data").getNode(root).asInt();
-        return ccnot(controls[0], controls[1], data);
     }
 
     /**
@@ -65,18 +30,6 @@ public interface QuGate {
      */
     static QuGate cnot(int data, int control) {
         return new QuGateImpl("cnot", new int[]{data, control}, Matrix.cnot());
-    }
-
-    /**
-     * Returns the gate from JSON
-     *
-     * @param root    the document
-     * @param locator the locator
-     */
-    static QuGate cnotFromJson(JsonNode root, Locator locator) {
-        int control = locator.path("control").getNode(root).asInt();
-        int data = locator.path("data").getNode(root).asInt();
-        return cnot(data, control);
     }
 
     /**
@@ -149,21 +102,6 @@ public interface QuGate {
     }
 
     /**
-     * Returns the gate from JSON
-     *
-     * @param root    the document
-     * @param locator the locator
-     */
-    static QuGate fromJson(JsonNode root, Locator locator) {
-        java.lang.String gate = locator.path("gate").getNode(root).asText();
-        BiFunction<JsonNode, Locator, QuGate> builder = BUILDERS.get(gate);
-        if (builder == null) {
-            throw new IllegalArgumentException(format("Unknown gate \"%s\"", gate));
-        }
-        return builder.apply(root, locator);
-    }
-
-    /**
      * Returns the h gate (Hadamard) definition
      *
      * @param data the data bit index
@@ -219,42 +157,6 @@ public interface QuGate {
     }
 
     /**
-     * Returns the gate from JSON
-     *
-     * @param root    the document
-     * @param locator the locator
-     */
-    static QuGate stateMapFromJson(JsonNode root, Locator locator) {
-        int[] qubits = locator.path("qubits")
-                .elements(root)
-                .mapToInt(l ->
-                        l.getNode(root).asInt())
-                .toArray();
-        int[][] changing = locator.path("changes")
-                .elements(root)
-                .map(l ->
-                        l.elements(root)
-                                .mapToInt(l1 ->
-                                        l1.getNode(root).asInt())
-                                .toArray()
-                )
-                .toArray(int[][]::new);
-        int[] mapping = IntStream.range(0, 1 << qubits.length).toArray();
-        for (int[] change : changing) {
-            if (change[0] < 0 || change[0] >= mapping.length) {
-                throw new IllegalArgumentException(format("Source state must be between 0 and %d (%d)",
-                        mapping.length, change[0]));
-            }
-            if (change[1] < 0 || change[1] >= mapping.length) {
-                throw new IllegalArgumentException(format("Target state must be between 0 and %d (%d)",
-                        mapping.length, change[1]));
-            }
-            mapping[change[0]] = change[1];
-        }
-        return stateMap(qubits, mapping);
-    }
-
-    /**
      * Returns the swap gate definition
      *
      * @param data0 the data0 bit index
@@ -265,39 +167,12 @@ public interface QuGate {
     }
 
     /**
-     * Returns the gate from JSON
-     *
-     * @param root    the document
-     * @param locator the locator
-     */
-    static QuGate swapFromJson(JsonNode root, Locator locator) {
-        int[] qubit = locator.path("qubits")
-                .elements(root)
-                .mapToInt(l ->
-                        l.getNode(root).asInt())
-                .toArray();
-        return swap(qubit[0], qubit[1]);
-    }
-
-    /**
      * Returns the t gate definition
      *
      * @param data the data bit index
      */
     static QuGate t(int data) {
         return new QuGateImpl("t", new int[]{data}, Matrix.t());
-    }
-
-    /**
-     * Returns the gate from JSON
-     *
-     * @param root    the document
-     * @param locator the locator
-     * @param builder the general builder function
-     */
-    static QuGate unaryFromJson(JsonNode root, Locator locator, IntFunction<QuGate> builder) {
-        int qubit = locator.path("qubit").getNode(root).asInt();
-        return builder.apply(qubit);
     }
 
     /**

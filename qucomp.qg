@@ -1,0 +1,5 @@
+ccnot(3,0,1)
+cnot(1,0)
+ccnot(3,1,2)
+cnot(2,1)
+cnot(1,0)

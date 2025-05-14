@@ -1,15 +1,11 @@
 package org.mmarini.qucomp.apis;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import org.mmarini.yaml.Locator;
-
-import java.util.Arrays;
+import java.util.List;
 
 /**
  * Creates or load gates
  */
 public interface QuCircuitBuilder {
-    String SCHEMA = "https://mmarini.org/qucomp/qucomp-schema-0.2";
 
     /**
      * Returns the state transformation matrix
@@ -17,19 +13,20 @@ public interface QuCircuitBuilder {
      * @param gates the list of gate
      */
     static Matrix build(QuGate... gates) {
+        return build(List.of(gates));
+    }
+
+    /**
+     * Returns the state transformation matrix
+     *
+     * @param gates the list of gate
+     */
+    static Matrix build(List<QuGate> gates) {
         int n = numQuBits(gates);
-        return Arrays.stream(gates)
+        return gates.stream()
                 .map(g -> g.build(n))
                 .reduce((a, b) -> b.mul(a))
                 .orElseThrow();
-    }
-
-    static QuGate[] loadGates(JsonNode root, Locator locator) {
-        JsonSchemas.instance().validateOrThrow(root, SCHEMA);
-        return locator.path("gates").elements(root)
-                .map(l ->
-                        QuGate.fromJson(root, l)
-                ).toArray(QuGate[]::new);
     }
 
     /**
@@ -38,7 +35,16 @@ public interface QuCircuitBuilder {
      * @param gates the list of gates
      */
     static int numQuBits(QuGate... gates) {
-        return Arrays.stream(gates).mapToInt(
+        return numQuBits(List.of(gates));
+    }
+
+    /**
+     * Returns the qubit numbers
+     *
+     * @param gates the list of gates
+     */
+    static int numQuBits(List<QuGate> gates) {
+        return gates.stream().mapToInt(
                         gate -> gate.maxIndices() + 1)
                 .max()
                 .orElse(0);

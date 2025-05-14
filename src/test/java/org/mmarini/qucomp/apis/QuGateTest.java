@@ -1,90 +1,19 @@
 package org.mmarini.qucomp.apis;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mmarini.yaml.Locator;
-import org.mmarini.yaml.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mmarini.Matchers.complexClose;
 
 class QuGateTest {
 
     public static final float EPSILON = 1e-6F;
-    public static final java.lang.String S_YAML = """
-            ---
-            gate: s
-            qubit: 1
-            """;
-    public static final java.lang.String T_YAML = """
-            ---
-            gate: t
-            qubit: 1
-            """;
-    public static final java.lang.String H_YAML = """
-            ---
-            gate: h
-            qubit: 1
-            """;
-    public static final java.lang.String X_YAML = """
-            ---
-            gate: x
-            qubit: 1
-            """;
-    public static final java.lang.String Y_YAML = """
-            ---
-            gate: y
-            qubit: 1
-            """;
-    public static final java.lang.String Z_YAML = """
-            ---
-            gate: z
-            qubit: 1
-            """;
-    public static final java.lang.String I_YAML = """
-            ---
-            gate: i
-            qubit: 1
-            """;
-    public static final java.lang.String SWAP_YAML = """
-            ---
-            gate: swap
-            qubits: [1, 2]
-            """;
-    public static final java.lang.String CNOT_YAML = """
-            ---
-            gate: cnot
-            control: 1
-            data: 2
-            """;
-    public static final java.lang.String CCNOT_YAML = """
-            ---
-            gate: ccnot
-            controls: [1, 2]
-            data: 3
-            """;
     private static final Logger logger = LoggerFactory.getLogger(QuGateTest.class);
-    private static final String STATE_MAP_YAML = """
-            ---
-            gate: map
-            qubits: [1, 2, 3]
-            changes:
-              - [ 0, 7 ]
-              - [ 1, 6 ]
-              - [ 2, 5 ]
-              - [ 3, 4 ]
-              - [ 4, 3 ]
-              - [ 5, 2 ]
-              - [ 6, 1 ]
-              - [ 7, 0 ]
-            """;
 
     @ParameterizedTest
     @CsvSource({
@@ -247,34 +176,6 @@ class QuGateTest {
         assertThat(ket.values()[15], complexClose(expKet.values()[15], EPSILON));
     }
 
-    @Test
-    void ccnotFromJson() throws IOException {
-        // Given
-        JsonNode node = Utils.fromText(CCNOT_YAML);
-        // When
-        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
-        // Then
-        assertArrayEquals(new int[]{
-                3, 1, 2
-        }, gate.indices());
-        Matrix m = gate.transform();
-        assertSame(Matrix.ccnot(), m);
-    }
-
-    @Test
-    void cnotFromJson() throws IOException {
-        // Given
-        JsonNode node = Utils.fromText(CNOT_YAML);
-        // When
-        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
-        // Then
-        assertArrayEquals(new int[]{
-                2, 1
-        }, gate.indices());
-        Matrix m = gate.transform();
-        assertSame(Matrix.cnot(), m);
-    }
-
     @ParameterizedTest
     @CsvSource({
             "0,1, 0,1,2", // o[0]=i[0], o[1]=i[1], o[2]=i[2], p=(0 1 2)
@@ -353,48 +254,6 @@ class QuGateTest {
         assertArrayEquals(new int[]{s0, s1, s2, s3, s4, s5, s6, s7}, states);
     }
 
-    @Test
-    void hFromJson() throws IOException {
-        // Given
-        JsonNode node = Utils.fromText(H_YAML);
-        // When
-        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
-        // Then
-        assertArrayEquals(new int[]{
-                1
-        }, gate.indices());
-        Matrix m = gate.transform();
-        assertSame(Matrix.h(), m);
-    }
-
-    @Test
-    void iFromJson() throws IOException {
-        // Given
-        JsonNode node = Utils.fromText(I_YAML);
-        // When
-        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
-        // Then
-        assertArrayEquals(new int[]{
-                1
-        }, gate.indices());
-        Matrix m = gate.transform();
-        assertSame(Matrix.identity(), m);
-    }
-
-    @Test
-    void sFromJson() throws IOException {
-        // Given
-        JsonNode node = Utils.fromText(S_YAML);
-        // When
-        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
-        // Then
-        assertArrayEquals(new int[]{
-                1
-        }, gate.indices());
-        Matrix m = gate.transform();
-        assertSame(Matrix.s(), m);
-    }
-
     @ParameterizedTest
     @CsvSource({
             "0,1,2,3, 0,1,2,3",
@@ -438,46 +297,6 @@ class QuGateTest {
             assertThat("on state " + i, k.at(6), complexClose(states[i] == 6 ? 1 : 0, EPSILON));
             assertThat("on state " + i, k.at(7), complexClose(states[i] == 7 ? 1 : 0, EPSILON));
         }
-    }
-
-    @Test
-    void stateMapFromJson() throws IOException {
-        // Given
-        JsonNode node = Utils.fromText(STATE_MAP_YAML);
-        // When
-        QuGate gate = QuGate.fromJson(node, Locator.root());
-        // Then
-        assertArrayEquals(new int[]{
-                1, 2, 3
-        }, gate.indices());
-    }
-
-    @Test
-    void swapFromJson() throws IOException {
-        // Given
-        JsonNode node = Utils.fromText(SWAP_YAML);
-        // When
-        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
-        // Then
-        assertArrayEquals(new int[]{
-                1, 2
-        }, gate.indices());
-        Matrix m = gate.transform();
-        assertSame(Matrix.swap(), m);
-    }
-
-    @Test
-    void tFromJson() throws IOException {
-        // Given
-        JsonNode node = Utils.fromText(T_YAML);
-        // When
-        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
-        // Then
-        assertArrayEquals(new int[]{
-                1
-        }, gate.indices());
-        Matrix m = gate.transform();
-        assertSame(Matrix.t(), m);
     }
 
     @ParameterizedTest(name = "[{index}] bitPerm=[{0} {1}] stateIn={2} stateout={3}")
@@ -578,47 +397,5 @@ class QuGateTest {
         assertThat(res.at(5), complexClose(expKet.at(5), EPSILON));
         assertThat(res.at(6), complexClose(expKet.at(6), EPSILON));
         assertThat(res.at(7), complexClose(expKet.at(7), EPSILON));
-    }
-
-    @Test
-    void xFromJson() throws IOException {
-        // Given
-        JsonNode node = Utils.fromText(X_YAML);
-        // When
-        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
-        // Then
-        assertArrayEquals(new int[]{
-                1
-        }, gate.indices());
-        Matrix m = gate.transform();
-        assertSame(Matrix.x(), m);
-    }
-
-    @Test
-    void yFromJson() throws IOException {
-        // Given
-        JsonNode node = Utils.fromText(Y_YAML);
-        // When
-        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
-        // Then
-        assertArrayEquals(new int[]{
-                1
-        }, gate.indices());
-        Matrix m = gate.transform();
-        assertSame(Matrix.y(), m);
-    }
-
-    @Test
-    void zFromJson() throws IOException {
-        // Given
-        JsonNode node = Utils.fromText(Z_YAML);
-        // When
-        QuGateImpl gate = (QuGateImpl) QuGate.fromJson(node, Locator.root());
-        // Then
-        assertArrayEquals(new int[]{
-                1
-        }, gate.indices());
-        Matrix m = gate.transform();
-        assertSame(Matrix.z(), m);
     }
 }

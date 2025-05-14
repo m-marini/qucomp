@@ -33,18 +33,13 @@ import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.mmarini.qucomp.apis.Ket;
-import org.mmarini.qucomp.apis.Matrix;
-import org.mmarini.qucomp.apis.QuCircuitBuilder;
-import org.mmarini.qucomp.apis.QuGate;
+import org.mmarini.qucomp.apis.*;
 import org.mmarini.qucomp.swing.GatesPanel;
 import org.mmarini.qucomp.swing.KetEditor;
 import org.mmarini.qucomp.swing.KetPanel;
 import org.mmarini.qucomp.swing.Messages;
 import org.mmarini.swing.GridLayoutHelper;
 import org.mmarini.swing.SwingUtils;
-import org.mmarini.yaml.Locator;
-import org.mmarini.yaml.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,11 +48,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.List;
 
 import static io.reactivex.rxjava3.schedulers.Schedulers.computation;
 import static io.reactivex.rxjava3.schedulers.Schedulers.io;
 import static java.util.Objects.requireNonNull;
-import static org.mmarini.qucomp.apis.QuCircuitBuilder.loadGates;
 import static org.mmarini.swing.SwingUtils.centerOnScreen;
 import static org.mmarini.swing.SwingUtils.showDialogMessage;
 
@@ -71,16 +67,17 @@ public class ComputeGUI {
      * Returns the command line argument parser
      */
     private static ArgumentParser createParser() {
-        ArgumentParser parser = ArgumentParsers.newFor(Compute.class.getName()).build()
+        ArgumentParser parser = ArgumentParsers.newFor(ComputeGUI.class.getName()).build()
                 .defaultHelp(true)
                 .version(Messages.getString("Compute.title"))
                 .description("Compute the quantum state.");
-        parser.addArgument("-c", "--config")
-                .setDefault("qucomp.yml")
-                .help("specify yaml configuration file");
         parser.addArgument("-v", "--version")
                 .action(Arguments.version())
                 .help("show current version");
+        parser.addArgument("gates")
+                .nargs("?")
+                .setDefault("qucomp.qg")
+                .help("specify gates configuration file");
         return parser;
     }
 
@@ -244,7 +241,7 @@ public class ComputeGUI {
      *
      * @param gates the gates
      */
-    private void onGatesChanged(QuGate[] gates) {
+    private void onGatesChanged(List<QuGate> gates) {
         this.matrix = QuCircuitBuilder.build(gates);
         this.input = null;
         gatesPanel.setGates(gates);
@@ -294,9 +291,15 @@ public class ComputeGUI {
             SwingUtils.showErrorKey("ComputeGUI.errorDialog.title", "ComputeGUI.fileCannotBeRead.text", file);
         } else {
             try {
-                onGatesChanged(loadGates(Utils.fromFile(file), Locator.root()));
-            } catch (Throwable e) {
-                SwingUtils.showErrorKey("ComputeGUI.errorDialog.title", e);
+                QuParser parser = QuParser.create(file);
+                try {
+                    List<QuGate> gates = parser.parse();
+                    onGatesChanged(gates);
+                } catch (IllegalArgumentException e) {
+                    SwingUtils.showFormattedError("ComputeGUI.errorDialog.title", parser.fullErrorMessages());
+                }
+            } catch (FileNotFoundException e) {
+                SwingUtils.showErrorKey("ComputeGUI.errorDialog.title", e.getMessage());
             }
         }
     }
@@ -305,7 +308,7 @@ public class ComputeGUI {
      * Starts the application
      */
     private void start() {
-        open(new File(args.getString("config")));
+        open(new File(args.getString("gates")));
         centerOnScreen(frame);
         frame.setVisible(true);
     }

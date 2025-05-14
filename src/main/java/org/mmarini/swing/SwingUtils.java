@@ -302,6 +302,21 @@ public interface SwingUtils {
     }
 
     /**
+     * Shows an error message dialogue
+     *
+     * @param titleKey the title key message
+     * @param messages the messages
+     */
+    static void showFormattedError(String titleKey, java.util.List<String> messages) {
+        JTextArea area = new JTextArea(messages.stream().reduce((a, b) -> a + "\n" + b).orElse(""));
+        area.setFont(Font.decode(Font.MONOSPACED).deriveFont(Font.BOLD));
+        area.setEditable(false);
+        area.setColumns(messages.stream().mapToInt(String::length).max().orElse(0) + 10);
+        JOptionPane.showMessageDialog(null, new JScrollPane(area), Messages.getString(titleKey),
+                JOptionPane.ERROR_MESSAGE);
+    }
+
+    /**
      * Shows a message dialogue
      *
      * @param titleKey the title key message
