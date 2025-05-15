@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.2.0] 2025-05-15
+
 ### Changed
 
 - Issue [#19](https://github.com/m-marini/qucomp/issues/19): Load gates from gate parser
