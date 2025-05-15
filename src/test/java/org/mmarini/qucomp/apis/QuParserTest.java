@@ -57,8 +57,8 @@ class QuParserTest {
 
     @ParameterizedTest
     @CsvSource({
-            "swap(0;1),swap,1,0",
-            "cnot(1;0),cnot,0,1",
+            "swap(0;1),swap,0,1",
+            "cnot(1;0),cnot,1,0",
     })
     void parseOptBinaryGate(String source, String expId, int expBit0, int expBit1) {
         QuParser parser = QuParser.create(source.replace(";", ","));

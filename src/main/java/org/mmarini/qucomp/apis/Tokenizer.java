@@ -46,7 +46,7 @@ public class Tokenizer {
     private int lineNumber;
 
     /**
-     * Creates the tokenizer
+     * Creates the tokeniser
      *
      * @param lines the iterator
      */
@@ -60,7 +60,7 @@ public class Tokenizer {
      * Returns current char
      */
     char currentChar() {
-        return currentLine.charAt(currentPos);
+        return currentLine != null ? currentLine.charAt(currentPos) : 0;
     }
 
     /**
@@ -79,6 +79,49 @@ public class Tokenizer {
     }
 
     /**
+     * Parse the identifier
+     */
+    private void parseIdentifier() {
+        StringBuilder bfr = new StringBuilder();
+        do {
+            bfr.append(currentChar());
+            popChar();
+        } while (!eof() && Character.isLetterOrDigit(currentChar()));
+        currentToken = bfr.toString();
+    }
+
+    /**
+     * Parse the number
+     */
+    private void parseNumber() {
+        StringBuilder bfr = new StringBuilder();
+        do {
+            bfr.append(currentChar());
+            popChar();
+        } while (!eof() && Character.isDigit(currentChar()));
+        currentToken = bfr.toString();
+    }
+
+    /**
+     * Parse slash character looking for comment
+     */
+    private void parseSlash() {
+        popChar();
+        if (eof()) {
+            currentToken = "/";
+        } else {
+            char ch = currentChar();
+            if (ch == '/') {
+                readNextLine();
+            } else if (ch == '*') {
+                skipComment();
+            } else {
+                currentToken = "/";
+            }
+        }
+    }
+
+    /**
      * Pops the current character
      */
     private Tokenizer popChar() {
@@ -86,13 +129,7 @@ public class Tokenizer {
             if (currentLine != null) {
                 currentPos++;
                 if (currentPos >= currentLine.length()) {
-                    if (readLine.hasNext()) {
-                        currentLine = readLine.next();
-                        currentPos = 0;
-                        lineNumber++;
-                    } else {
-                        currentLine = null;
-                    }
+                    readNextLine();
                 }
             }
         }
@@ -104,41 +141,62 @@ public class Tokenizer {
      */
     public Tokenizer popToken() {
         currentToken = null;
-        skipBlanks();
-        if (!eof()) {
+        while (currentToken == null && !eof()) {
             tokenLineNumber = lineNumber;
             tokenPos = currentPos;
-            tokenLine = currentLine;
+            tokenLine = currentLine.substring(0, currentLine.length() - 1);
             char ch = currentChar();
-            popChar();
-            StringBuilder bfr = new StringBuilder();
-            bfr.append(ch);
-            if (Character.isAlphabetic(ch)) {
-                // Read the identifier
-                while (!eof() && Character.isLetterOrDigit(currentChar())) {
-                    bfr.append(currentChar());
-                    popChar();
-                }
-            } else if (Character.isDigit(ch)) {
-                // Read the number
-                while (!eof() && Character.isDigit(currentChar())) {
-                    bfr.append(currentChar());
-                    popChar();
-                }
+            if (Character.isDigit(ch)) {
+                parseNumber();
+            } else if (Character.isAlphabetic(ch)) {
+                parseIdentifier();
+            } else if (ch == '/') {
+                parseSlash();
+            } else if (Character.isWhitespace(ch)) {
+                skipBlanks();
+            } else {
+                currentToken = String.valueOf(ch);
+                popChar();
             }
-            currentToken = bfr.toString();
         }
         return this;
     }
 
     /**
+     * Read the next line
+     */
+    private void readNextLine() {
+        if (readLine.hasNext()) {
+            currentLine = readLine.next() + "\n";
+            currentPos = 0;
+            lineNumber++;
+        } else {
+            currentLine = null;
+        }
+    }
+
+    /**
      * Skips all blank characters
      */
-    private Tokenizer skipBlanks() {
-        while (!eof() && Character.isSpaceChar(currentChar())) {
+    private void skipBlanks() {
+        while (!eof() && Character.isWhitespace(currentChar())) {
             popChar();
         }
-        return this;
+    }
+
+    /**
+     * Skip a comment block
+     */
+    private void skipComment() {
+        popChar();
+        while (!eof()) {
+            char ch = currentChar();
+            popChar();
+            if (ch == '*' && !eof() && currentChar() == '/') {
+                popChar();
+                break;
+            }
+        }
     }
 
     /**

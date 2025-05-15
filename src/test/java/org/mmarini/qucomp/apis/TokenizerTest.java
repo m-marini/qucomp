@@ -42,7 +42,14 @@ class TokenizerTest {
 
     @BeforeEach
     void setUp() {
-        this.tokenizer = new Tokenizer(List.of("  ii (12 )  ").iterator());
+        this.tokenizer = new Tokenizer(List.of(
+                "  ii (12 )", // ii ( 12 )
+                "",
+                " a // klsdjalsdjalkjdkal", // a
+                " b /* kasjdhasjhdaj", // b
+                "c kajsdhajdhakjd",
+                "asjdadsha */ d" // d
+        ).iterator());
     }
 
     @Test
@@ -63,8 +70,23 @@ class TokenizerTest {
 
         tokenizer.popToken();
         assertFalse(tokenizer.eof());
-        assertEquals(' ', tokenizer.currentChar());
+        assertEquals('\n', tokenizer.currentChar());
         assertEquals(")", tokenizer.currentToken());
+
+        tokenizer.popToken();
+        assertFalse(tokenizer.eof());
+        assertEquals(' ', tokenizer.currentChar());
+        assertEquals("a", tokenizer.currentToken());
+
+        tokenizer.popToken();
+        assertFalse(tokenizer.eof());
+        assertEquals(' ', tokenizer.currentChar());
+        assertEquals("b", tokenizer.currentToken());
+
+        tokenizer.popToken();
+        assertFalse(tokenizer.eof());
+        assertEquals('\n', tokenizer.currentChar());
+        assertEquals("d", tokenizer.currentToken());
 
         tokenizer.popToken();
         assertTrue(tokenizer.eof());
