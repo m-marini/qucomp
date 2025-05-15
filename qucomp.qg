@@ -1,0 +1,16 @@
+/*
+ * Half adder
+ *
+ * In 0 ---c---c-----------c--- Out 0
+ *         |   |           |
+ * In 1 ---c---X---c---c---X--- Out 1
+ *         |       |   |
+ * In 2 -----------c---X------- Out 2 Sum (In 0 + In 1)
+ *         |       |
+ * In 3 ---X-------X----------- Out 1 Carry
+ */
+
+cnot(1,0)
+ccnot(3,1,2)
+cnot(2,1) aaaa
+cnot(1,0)

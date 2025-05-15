@@ -77,10 +77,10 @@ public class GatesPanel extends JPanel {
      *
      * @param gates the gates
      */
-    public void setGates(QuGate[] gates) {
+    public void setGates(java.util.List<QuGate> gates) {
         removeAll();
         int numQubits = QuCircuitBuilder.numQuBits(gates);
-        setLayout(new GridLayout(1, gates.length + 1));
+        setLayout(new GridLayout(1, gates.size() + 1));
         add(new TerminalGate("I%d", numQubits, BitGate.RIGHT_CONNECTED));
         for (QuGate gate : gates) {
             add(createGate(gate, numQubits));
