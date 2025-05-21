@@ -29,8 +29,6 @@
 package org.mmarini.qucomp.apis;
 
 import java.util.Arrays;
-import java.util.Objects;
-import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -55,10 +53,7 @@ public record Bra(Complex[] values) {
      * @param size  the number of qubit
      */
     public static Bra base(int value, int size) {
-        int n = 1 << size;
-        return new Bra(IntStream.range(0, n)
-                .mapToObj(i -> value == i ? Complex.one() : Complex.zero())
-                .toArray(Complex[]::new));
+        return Ket.base(value, size).conj();
     }
 
     /**
@@ -170,7 +165,11 @@ public record Bra(Complex[] values) {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Bra bra = (Bra) o;
-        return Objects.deepEquals(values, bra.values);
+        return Arrays.equals(values, bra.values);
+    }
+
+    public Bra extend(int size) {
+        return new Bra(VectorUtils.extend(values, size));
     }
 
     @Override
@@ -241,6 +240,21 @@ public record Bra(Complex[] values) {
 
     @Override
     public String toString() {
-        return "Bra" + Arrays.toString(values);
+        StringBuilder builder = new StringBuilder();
+        boolean isZero = true;
+        for (int i = 0; i < values.length; i++) {
+            if (values[i].module() != 0) {
+                if (!isZero) {
+                    builder.append(" + ");
+                }
+                isZero = false;
+                builder.append("(");
+                builder.append(values[i]);
+                builder.append(") <");
+                builder.append(i);
+                builder.append("|");
+            }
+        }
+        return isZero ? "(0.0) <" + (values.length - 1) + "|" : builder.toString();
     }
 }

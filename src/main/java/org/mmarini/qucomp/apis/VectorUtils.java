@@ -97,6 +97,29 @@ public interface VectorUtils {
         return cells;
     }
 
+    static Complex[] extend(Complex[] values, int size) {
+        if (values.length >= size) {
+            return values;
+        }
+        Complex[] result = new Complex[size];
+        Arrays.fill(result, Complex.zero());
+        System.arraycopy(values, 0, result, 0, values.length);
+        return result;
+    }
+
+    /**
+     * Returns the number of bits from number of states
+     *
+     * @param numStates number of states
+     */
+    static int numBits(int numStates) {
+        int n = 0;
+        while ((numStates >>= 1) != 0) {
+            n++;
+        }
+        return n;
+    }
+
     /**
      * Returns the scalar product
      *

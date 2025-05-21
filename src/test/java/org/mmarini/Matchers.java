@@ -31,7 +31,10 @@ package org.mmarini;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.mmarini.qucomp.apis.Bra;
 import org.mmarini.qucomp.apis.Complex;
+import org.mmarini.qucomp.apis.Ket;
+import org.mmarini.qucomp.compiler.Command;
 
 import java.util.Optional;
 
@@ -40,6 +43,69 @@ import static java.util.Objects.requireNonNull;
 import static org.hamcrest.Matchers.equalTo;
 
 public interface Matchers {
+
+    static Matcher<Bra> braCloseTo(float epsilon, Complex... values) {
+        return braCloseTo(Bra.create(values), epsilon);
+    }
+
+    static Matcher<Bra> braCloseTo(float epsilon, float... values) {
+        return braCloseTo(Bra.create(values), epsilon);
+    }
+
+    static Matcher<Bra> braCloseTo(Bra expected, float epsilon) {
+        requireNonNull(expected);
+        return new CustomMatcher<>(format("Bra close to %s within +- %f",
+                expected,
+                epsilon)) {
+            @Override
+            public void describeMismatch(Object item, Description description) {
+                if (item instanceof Bra bra) {
+                    description.appendText("bra ")
+                            .appendValue(bra.toString())
+                            .appendText(" differs from ")
+                            .appendValue(expected.toString())
+                            .appendText(" (more then ")
+                            .appendValue(epsilon)
+                            .appendText(")");
+                } else {
+                    super.describeMismatch(item, description);
+                }
+            }
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof Bra bra)) return false;
+                Complex[] v1 = bra.values();
+                Complex[] v2 = expected.values();
+                if (v1.length != v2.length) return false;
+                for (int i = 0; i < v1.length; i++) {
+                    if (!v1[i].isClose(v2[i], epsilon)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        };
+    }
+
+    static Matcher<Command> command(Class<? extends Command> expected) {
+        return new CustomMatcher<>(format("Command %s",
+                expected)) {
+
+            @Override
+            public boolean matches(Object o) {
+                return expected.isInstance(o);
+            }
+        };
+    }
+
+    static Matcher<Complex> complexClose(float expectedReal, float expectedIm, float epsilon) {
+        return complexClose(new Complex(expectedReal, expectedIm), epsilon);
+    }
+
+    static Matcher<Ket> ketCloseTo(float epsilon, Complex... values) {
+        return ketCloseTo(Ket.create(values), epsilon);
+    }
 
     static Matcher<Complex> complexClose(Complex expected, float epsilon) {
         requireNonNull(expected);
@@ -69,8 +135,88 @@ public interface Matchers {
         };
     }
 
+    static Matcher<Ket> ketCloseTo(float epsilon, float... values) {
+        return ketCloseTo(Ket.create(values), epsilon);
+    }
+
+    static Matcher<Ket> ketCloseTo(Ket expected, float epsilon) {
+        requireNonNull(expected);
+        return new CustomMatcher<>(format("Ket close to %s within +- %f",
+                expected,
+                epsilon)) {
+            @Override
+            public void describeMismatch(Object item, Description description) {
+                if (item instanceof Bra bra) {
+                    description.appendText("ket ")
+                            .appendValue(bra.toString())
+                            .appendText(" differs from ")
+                            .appendValue(expected.toString())
+                            .appendText(" (more then ")
+                            .appendValue(epsilon)
+                            .appendText(")");
+                } else {
+                    super.describeMismatch(item, description);
+                }
+            }
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof Ket value)) return false;
+                Complex[] v1 = value.values();
+                Complex[] v2 = expected.values();
+                if (v1.length != v2.length) return false;
+                for (int i = 0; i < v1.length; i++) {
+                    if (!v1[i].isClose(v2[i], epsilon)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        };
+    }
+
+    static Matcher<Command> pushCommand(Complex expected, float epsilon) {
+        return new CustomMatcher<>(format("PushComplex(%s) command",
+                expected)) {
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof Command.PushComplex cmd)) return false;
+                return cmd.value().isClose(expected, epsilon);
+            }
+        };
+    }
+
+    static Matcher<Command> pushCommand(float expected, float epsilon) {
+        return pushCommand(Complex.create(expected), epsilon);
+    }
+
+    static Matcher<Command> pushCommand(int expected) {
+        return new CustomMatcher<>(format("PushInt(%d) command",
+                expected)) {
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof Command.PushInt cmd)) return false;
+                return cmd.value() == expected;
+            }
+        };
+    }
+
     static Matcher<Complex> complexClose(float expected, float epsilon) {
         return complexClose(Complex.create(expected), epsilon);
+    }
+
+    static Matcher<Command> pushCommand(String expected) {
+        return new CustomMatcher<>(format("PushInt(%s) command",
+                expected)) {
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof Command.PushString cmd)) return false;
+                return expected.equals(cmd.value());
+            }
+        };
     }
 
     static <T> Matcher<Optional<T>> emptyOptional() {

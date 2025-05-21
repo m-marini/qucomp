@@ -122,7 +122,7 @@ class BraTest {
         assertEquals(n, b.values().length);
         for (int i = 0; i < size; i++) {
             assertEquals(i == value
-                            ? Complex.one() : Complex.zero(),
+                            ? Complex.one().conj() : Complex.zero().conj(),
                     b.values()[i]);
         }
     }

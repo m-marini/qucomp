@@ -28,7 +28,10 @@
 
 package org.mmarini.qucomp.apis;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -243,7 +246,7 @@ public record Ket(Complex[] values) {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Ket ket = (Ket) o;
-        return Objects.deepEquals(values, ket.values);
+        return Arrays.equals(values, ket.values);
     }
 
     @Override
@@ -319,6 +322,15 @@ public record Ket(Complex[] values) {
     public double[] prob() {
         return Arrays.stream(values).mapToDouble(Complex::moduleSquare)
                 .toArray();
+    }
+
+    /**
+     * Return the promoted Ket
+     *
+     * @param size the new ket size
+     */
+    public Ket extend(int size) {
+        return new Ket(VectorUtils.extend(values, size));
     }
 
     /**
