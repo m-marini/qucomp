@@ -69,7 +69,7 @@ public class QuCompGUI {
      * Returns the command line argument parser
      */
     private static ArgumentParser createParser() {
-        ArgumentParser parser = ArgumentParsers.newFor(ComputeGUI.class.getName()).build()
+        ArgumentParser parser = ArgumentParsers.newFor(QuGatesGUI.class.getName()).build()
                 .defaultHelp(true)
                 .version(Messages.getString("QuCompute.title"))
                 .description("Process quantum code.");
@@ -118,7 +118,7 @@ public class QuCompGUI {
         this.args = requireNonNull(parsedArgs);
         this.frame = new JFrame();
         this.openMenu = SwingUtils.createMenuItem("ComputeGUI.openMenu");
-        this.runMenu = SwingUtils.createMenuItem("QuCompuGUI.runMenu");
+        this.runMenu = SwingUtils.createMenuItem("QuCompGUI.runMenu");
         this.exitMenu = SwingUtils.createMenuItem("ComputeGUI.exitMenu");
         this.fileChooser = new JFileChooser();
         this.codeEditor = new JEditorPane();
@@ -176,8 +176,11 @@ public class QuCompGUI {
         fileMenu.add(new JSeparator());
         fileMenu.add(exitMenu);
 
+        JMenu execMenu = SwingUtils.createMenu("QuCompGUI.execMenu");
+        execMenu.add(runMenu);
+
         menuBar.add(fileMenu);
-        menuBar.add(runMenu);
+        menuBar.add(execMenu);
         return menuBar;
     }
 

@@ -30,6 +30,7 @@ package org.mmarini.qucomp.apis;
 
 import java.util.Arrays;
 
+import static java.lang.Math.max;
 import static java.lang.String.format;
 
 /**
@@ -118,6 +119,19 @@ public interface VectorUtils {
             n++;
         }
         return n;
+    }
+
+    /**
+     * Returns the number of bits from state
+     *
+     * @param state the state
+     */
+    static int numBitsByState(int state) {
+        int n = 0;
+        do {
+            n++;
+        } while ((state >>= 1) != 0);
+        return max(n, 1);
     }
 
     /**

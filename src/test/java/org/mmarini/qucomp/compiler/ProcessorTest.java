@@ -76,15 +76,14 @@ class ProcessorTest {
 
     @ParameterizedTest
     @CsvSource({
-            "<1| + <10|;",
-            "<10| + <1|;",
-            "<10| + <01|;",
+            "<0| + <3|;, 1,0,0,1",
+            "<3| + <0|;, 1,0,0,1",
+            "<2| + <3|;, 0,0,1,1",
     })
-    void testAddBraBra2(String text) {
+    void testAddBraBra2(String text, float e0, float e1, float e2, float e3) {
         assertDoesNotThrow(() -> execute(text));
-        Bra expected = Bra.base(1, 2).add(Bra.base(2, 2));
         assertEquals(1, consumed.size());
-        assertThat((Bra) consumed.getFirst(), braCloseTo(expected, EPSILON));
+        assertThat((Bra) consumed.getFirst(), braCloseTo(EPSILON, e0, e1, e2, e3));
         assertThat(processor.stack, empty());
     }
 
@@ -125,13 +124,14 @@ class ProcessorTest {
 
     @ParameterizedTest
     @CsvSource({
-            "|1> + |10>;",
-            "|10> + |1>;",
-            "|10> + |01>;",
+            "|1> + |2>;, 0,1,1,0",
+            "|2> + |1>;, 0,1,1,0",
+            "|2> + |3>;, 0,0,1,1",
     })
-    void testAddKetKet2(String text) {
+    void testAddKetKet2(String text, float e0, float e1, float e2, float e3) {
         assertDoesNotThrow(() -> execute(text));
-        assertThat(consumed, contains(Ket.create(0, 1, 1, 0)));
+        assertThat(consumed, contains(isA(Ket.class)));
+        assertThat((Ket) consumed.getFirst(), ketCloseTo(EPSILON, e0, e1, e2, e3));
         assertThat(processor.stack, empty());
     }
 
@@ -516,9 +516,9 @@ class ProcessorTest {
 
     @ParameterizedTest
     @CsvSource({
-            "<1| - <10|;, 0,1,-1,0",
-            "<10| - <1|;, 0,-1,1,0",
-            "<10| - <01|;, 0,-1,1,0",
+            "<1| - <2|;, 0,1,-1,0",
+            "<2| - <1|;, 0,-1,1,0",
+            "<2| - <3|;, 0,0,1,-1",
     })
     void testSubBraBra2(String text, float e0, float e1, float e2, float e3) {
         assertDoesNotThrow(() -> execute(text));
@@ -565,9 +565,9 @@ class ProcessorTest {
 
     @ParameterizedTest
     @CsvSource({
-            "|1> - |10>;, 0,1,-1,0",
-            "|10> - |1>;, 0,-1,1,0",
-            "|10> - |01>;, 0,-1,1,0",
+            "|1> - |2>;, 0,1,-1,0",
+            "|2> - |1>;, 0,-1,1,0",
+            "|2> - |3>;, 0,0,1,-1",
     })
     void testSubKetKet2(String text, float e0, float e1, float e2, float e3) {
         assertDoesNotThrow(() -> execute(text));

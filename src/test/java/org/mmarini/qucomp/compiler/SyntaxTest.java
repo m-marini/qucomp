@@ -86,15 +86,10 @@ class SyntaxTest {
                 Arguments.of("-i", Ket.minus_i()),
                 Arguments.of("0", Ket.zero()),
                 Arguments.of("1", Ket.one()),
-                Arguments.of("00", Ket.base(0, 2)),
-                Arguments.of("01", Ket.base(1, 2)),
-                Arguments.of("10", Ket.base(2, 2)),
-                Arguments.of("11", Ket.base(3, 2)),
-                Arguments.of("000", Ket.base(0, 3)),
-                Arguments.of("001", Ket.base(1, 3)),
-                Arguments.of("010", Ket.base(2, 3)),
-                Arguments.of("100", Ket.base(4, 3)),
-                Arguments.of("111", Ket.base(7, 3))
+                Arguments.of("2", Ket.base(2, 2)),
+                Arguments.of("3", Ket.base(3, 2)),
+                Arguments.of("4", Ket.base(4, 3)),
+                Arguments.of("7", Ket.base(7, 3))
         );
     }
 
@@ -203,7 +198,6 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "<02|,State must contain only 0 or 1 digits (02)",
             "<a|,Missing state literal (a)",
             "<,Missing state literal (<EOF>)",
             "<0,Missing token | (<EOF>)",
@@ -312,7 +306,6 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "|02>,State must contain only 0 or 1 digits (02)",
             "|a>,Missing state literal (a)",
             "|,Missing state literal (<EOF>)",
             "|0,Missing token > (<EOF>)",
@@ -415,8 +408,9 @@ class SyntaxTest {
 
     @ParameterizedTest
     @MethodSource("argsOptBra")
-    void testOptBra(String text, Ket ket) throws Throwable {
-        assertTrue(parse(text, optBra));
+    void testOptBra(String text, Ket ket) {
+        boolean result = assertDoesNotThrow(() -> parse(text, optBra));
+        assertTrue(result);
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushKet.class),
@@ -452,8 +446,9 @@ class SyntaxTest {
 
     @ParameterizedTest
     @MethodSource("argsOptKet")
-    void testOptKet(String text, Ket ket) throws Throwable {
-        assertTrue(parse(text, optKet));
+    void testOptKet(String text, Ket ket) {
+        boolean result = assertDoesNotThrow(() -> parse(text, optKet));
+        assertTrue(result);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(isA(Command.PushKet.class)));
         assertEquals(ket, ((Command.PushKet) code.getFirst()).value());
@@ -491,8 +486,9 @@ class SyntaxTest {
 
     @ParameterizedTest
     @MethodSource("argsOptBra")
-    void testPrimaryExpBra(String text, Ket ket) throws Throwable {
-        assertTrue(parse(text, primaryExp));
+    void testPrimaryExpBra(String text, Ket ket) {
+        boolean result = assertDoesNotThrow(() -> parse(text, primaryExp));
+        assertTrue(result);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushKet.class),
@@ -527,8 +523,9 @@ class SyntaxTest {
 
     @ParameterizedTest
     @MethodSource("argsOptKet")
-    void testPrimaryExpKet(String text, Ket ket) throws Throwable {
-        assertTrue(parse(text, primaryExp));
+    void testPrimaryExpKet(String text, Ket ket) {
+        boolean result = assertDoesNotThrow(() -> parse(text, primaryExp));
+        assertTrue(result);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(isA(Command.PushKet.class)));
         assertEquals(ket, ((Command.PushKet) code.getFirst()).value());
@@ -571,8 +568,9 @@ class SyntaxTest {
 
     @ParameterizedTest
     @MethodSource("argsStateLiteral")
-    void testStateLiteral(String text, Ket ket) throws Throwable {
-        assertTrue(parse(text, stateLiteralExp));
+    void testStateLiteral(String text, Ket ket) {
+        boolean result = assertDoesNotThrow(() -> parse(text, stateLiteralExp));
+        assertTrue(result);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, Matchers.contains(isA(Command.PushKet.class)));
         assertEquals(ket, ((Command.PushKet) code.getFirst()).value());
@@ -581,7 +579,6 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "02,State must contain only 0 or 1 digits (02)",
             "a,Missing state literal (a)",
             ",Missing state literal (<EOF>)",
     })

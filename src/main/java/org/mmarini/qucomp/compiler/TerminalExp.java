@@ -36,11 +36,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
+import static org.mmarini.qucomp.apis.VectorUtils.numBitsByState;
+
 /**
  * Defines terminal expression grammars
  */
 public abstract class TerminalExp extends Expression {
     private static final Logger logger = LoggerFactory.getLogger(TerminalExp.class);
+
     /**
      * Pushes the state ket associated to the integer state literal
      * <pre>
@@ -53,20 +56,11 @@ public abstract class TerminalExp extends Expression {
             Token token = context.currentToken();
             logger.atDebug().log("{} entry token=\"{}\"", this, token);
             boolean result = false;
-            if (token instanceof Token.IntegerToken) {
+            if (token instanceof Token.IntegerToken integerToken) {
                 context.popToken();
-                String stateId = token.token();
+                int state = integerToken.value();
                 // Decode state
-                int nunBits = stateId.length();
-                int state = 0;
-                for (int i = 0; i < nunBits; i++) {
-                    state <<= 1;
-                    if (stateId.charAt(i) == '1') {
-                        state++;
-                    } else if (stateId.charAt(i) != '0') {
-                        throw token.context().exception("State must contain only 0 or 1 digits");
-                    }
-                }
+                int nunBits = numBitsByState(state);
                 context.add(new Command.PushKet(token.context(), Ket.base(state, nunBits)));
                 result = true;
             }
@@ -74,6 +68,7 @@ public abstract class TerminalExp extends Expression {
             return result;
         }
     };
+
     /**
      * Pushes imaginary unit in the stacks
      * <pre>
@@ -97,6 +92,7 @@ public abstract class TerminalExp extends Expression {
             return result;
         }
     };
+
     public static final TerminalExp optNotEmpty = new TerminalExp("<opt-not-empty>") {
         @Override
         public boolean test(ParseContext context) {
@@ -107,6 +103,7 @@ public abstract class TerminalExp extends Expression {
             return result;
         }
     };
+
     /**
      * Push real value in the stacks
      * <pre>
@@ -129,6 +126,7 @@ public abstract class TerminalExp extends Expression {
             return result;
         }
     };
+
     /**
      * Push integer value in the stacks
      * <pre>
@@ -151,6 +149,7 @@ public abstract class TerminalExp extends Expression {
             return result;
         }
     };
+
     /**
      * Reserved keywords
      */
@@ -164,6 +163,7 @@ public abstract class TerminalExp extends Expression {
             // Statements
             "let"
     );
+
     /**
      * Push the variable value by identifier
      */

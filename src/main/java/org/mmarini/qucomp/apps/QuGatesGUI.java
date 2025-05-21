@@ -60,14 +60,14 @@ import static org.mmarini.swing.SwingUtils.showDialogMessage;
 /**
  * Computation GUI
  */
-public class ComputeGUI {
-    private static final Logger logger = LoggerFactory.getLogger(ComputeGUI.class);
+public class QuGatesGUI {
+    private static final Logger logger = LoggerFactory.getLogger(QuGatesGUI.class);
 
     /**
      * Returns the command line argument parser
      */
     private static ArgumentParser createParser() {
-        ArgumentParser parser = ArgumentParsers.newFor(ComputeGUI.class.getName()).build()
+        ArgumentParser parser = ArgumentParsers.newFor(QuGatesGUI.class.getName()).build()
                 .defaultHelp(true)
                 .version(Messages.getString("Compute.title"))
                 .description("Compute the quantum state.");
@@ -90,7 +90,7 @@ public class ComputeGUI {
         ArgumentParser parser = createParser();
         try {
             Namespace parsedArgs = parser.parseArgs(args);
-            new ComputeGUI(parsedArgs).start();
+            new QuGatesGUI(parsedArgs).start();
         } catch (ArgumentParserException e) {
             parser.handleError(e);
             System.exit(1);
@@ -119,7 +119,7 @@ public class ComputeGUI {
      *
      * @param parsedArgs the parsed command line arguments
      */
-    public ComputeGUI(Namespace parsedArgs) {
+    public QuGatesGUI(Namespace parsedArgs) {
         this.args = requireNonNull(parsedArgs);
         this.frame = new JFrame();
         this.openMenu = SwingUtils.createMenuItem("ComputeGUI.openMenu");
