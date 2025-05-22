@@ -386,6 +386,81 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
+            "1. + 2. + 3., 1,0, 2,0, 3,0",
+            "1. + 2. + i, 1,0, 2,0, 0,1",
+            "1. + i + 3., 1,0, 0,1, 3,0",
+            "i + 2. + 3., 0,1, 2,0, 3,0",
+    })
+    void testAddComplexComplexComplex(String text, float expReal1, float expIm1, float expReal2, float expIm2, float expReal3, float expIm3) throws Throwable {
+        Complex exp1 = new Complex(expReal1, expIm1);
+        Complex exp2 = new Complex(expReal2, expIm2);
+        Complex exp3 = new Complex(expReal3, expIm3);
+        parse(text, sumExp);
+        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
+        assertThat(code, contains(
+                isA(Command.PushComplex.class),
+                isA(Command.PushComplex.class),
+                isA(Command.Add.class),
+                isA(Command.PushComplex.class),
+                isA(Command.Add.class)
+        ));
+        assertEquals(exp1, ((Command.PushComplex) code.getFirst()).value());
+        assertEquals(exp2, ((Command.PushComplex) code.get(1)).value());
+        assertEquals(exp3, ((Command.PushComplex) code.get(3)).value());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "1. - 2. - 3., 1,0, 2,0, 3,0",
+            "1. - 2. - i, 1,0, 2,0, 0,1",
+            "1. - i - 3., 1,0, 0,1, 3,0",
+            "i - 2. - 3., 0,1, 2,0, 3,0",
+    })
+    void SubComplexComplexComplex(String text, float expReal1, float expIm1, float expReal2, float expIm2, float expReal3, float expIm3) throws Throwable {
+        Complex exp1 = new Complex(expReal1, expIm1);
+        Complex exp2 = new Complex(expReal2, expIm2);
+        Complex exp3 = new Complex(expReal3, expIm3);
+        parse(text, sumExp);
+        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
+        assertThat(code, contains(
+                isA(Command.PushComplex.class),
+                isA(Command.PushComplex.class),
+                isA(Command.Sub.class),
+                isA(Command.PushComplex.class),
+                isA(Command.Sub.class)
+        ));
+        assertEquals(exp1, ((Command.PushComplex) code.getFirst()).value());
+        assertEquals(exp2, ((Command.PushComplex) code.get(1)).value());
+        assertEquals(exp3, ((Command.PushComplex) code.get(3)).value());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "1. + (2. + 3.), 1,0, 2,0, 3,0",
+            "1. + (2. + i), 1,0, 2,0, 0,1",
+            "1. + (i + 3.), 1,0, 0,1, 3,0",
+            "i + (2. + 3.), 0,1, 2,0, 3,0",
+    })
+    void testAddComplexComplexComplex2(String text, float expReal1, float expIm1, float expReal2, float expIm2, float expReal3, float expIm3) throws Throwable {
+        Complex exp1 = new Complex(expReal1, expIm1);
+        Complex exp2 = new Complex(expReal2, expIm2);
+        Complex exp3 = new Complex(expReal3, expIm3);
+        parse(text, sumExp);
+        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
+        assertThat(code, contains(
+                isA(Command.PushComplex.class),
+                isA(Command.PushComplex.class),
+                isA(Command.PushComplex.class),
+                isA(Command.Add.class),
+                isA(Command.Add.class)
+        ));
+        assertEquals(exp1, ((Command.PushComplex) code.getFirst()).value());
+        assertEquals(exp2, ((Command.PushComplex) code.get(1)).value());
+        assertEquals(exp3, ((Command.PushComplex) code.get(2)).value());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
             "1. * (2. * 3.), 1,0, 2,0, 3,0",
     })
     void testMulExpComplexComplexComplex1(String text, float expReal1, float expIm1, float expReal2, float expIm2, float expReal3, float expIm3) throws Throwable {

@@ -101,6 +101,28 @@ public interface Syntax {
 
     /**
      * <pre>
+     * &lt;primary-exp> ::= "(" &lt;exp> ")"
+     *                   | &lt;real-literal>
+     *                   | &lt;int-literal>
+     *                   | &lt;ket>
+     *                   | &lt;bra>
+     *                   | "i"
+     *                   | &lt;var-identifier>
+     * </pre>
+     */
+    Expression primaryExp = options("<primary-exp>",
+            TerminalExp.optOp("(").opt(exp(), TerminalExp.op(")")),
+            TerminalExp.optRealLiteral,
+            TerminalExp.optIntLiteral,
+            TerminalExp.optILiteral,
+            optKet,
+            optBra,
+            TerminalExp.optVarIdentifier.postOp(((context, token) ->
+                    context.add(new Command.RetrieveVar(token.context())))))
+            .require("Missing primary expression");
+
+    /**
+     * <pre>
      * &lt;unary-exp> ::= "+" &lt;unary-exp>
      *                 | "-"  &lt;unary-exp>
      *                 | &lt;primary-exp>
@@ -137,10 +159,10 @@ public interface Syntax {
      * </pre>
      */
     Expression prodTailExp = options("<prod-tail>",
-            TerminalExp.optOp("*").opt(
+            optOp("*").opt(
                     unaryExp.postOp((context, token) ->
                             context.add(new Command.Multiply(token.context())))),
-            TerminalExp.optOp("/").opt(
+            optOp("/").opt(
                     unaryExp.postOp((context, token) ->
                             context.add(new Command.Divide(token.context()))))
     ).whileMatch();
@@ -151,46 +173,27 @@ public interface Syntax {
      * </pre>
      */
     Expression prodExp = all("<prod-exp>", unaryExp, prodTailExp);
+
     /**
      * <pre>
      * &lt;mul-tail-exp> ::= "*" &lt;mul-tail-exp> | "/" &lt;mul-tail-exp> | ""
      * </pre>
      */
     Expression sumTailExp = options("<sum-tail>",
-            TerminalExp.optOp("+").opt(
+            optOp("+").opt(
                     prodExp.postOp((context, token) ->
                             context.add(new Command.Add(token.context())))),
-            TerminalExp.optOp("-").opt(
-                            prodExp.postOp((context, token) ->
-                                    context.add(new Command.Sub(token.context()))))
-                    .whileMatch());
+            optOp("-").opt(
+                    prodExp.postOp((context, token) ->
+                            context.add(new Command.Sub(token.context()))))
+    ).whileMatch();
+
     /**
      * <pre>
      * &lt;mul-exp> ::= &lt;unary-exp> &lt;mul-exp-tail>
      * </pre>
      */
     Expression sumExp = all("<sum-exp>", prodExp, sumTailExp);
-    /**
-     * <pre>
-     * &lt;primary-exp> ::= "(" &lt;exp> ")"
-     *                   | &lt;real-literal>
-     *                   | &lt;int-literal>
-     *                   | &lt;ket>
-     *                   | &lt;bra>
-     *                   | "i"
-     *                   | &lt;var-identifier>
-     * </pre>
-     */
-    Expression primaryExp = options("<primary-exp>",
-            TerminalExp.optOp("(").opt(exp(), TerminalExp.op(")")),
-            TerminalExp.optRealLiteral,
-            TerminalExp.optIntLiteral,
-            TerminalExp.optILiteral,
-            optKet,
-            optBra,
-            TerminalExp.optVarIdentifier.postOp(((context, token) ->
-                    context.add(new Command.RetrieveVar(token.context())))))
-            .require("Missing primary expression");
 
     Expression optAssignExp = TerminalExp.optIdentifier("let").opt(
             TerminalExp.optVarIdentifier.require("Missing variable identifier")
