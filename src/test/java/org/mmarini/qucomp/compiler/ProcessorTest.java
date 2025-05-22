@@ -291,41 +291,12 @@ class ProcessorTest {
         assertThat(processor.stack, empty());
     }
 
-    @ParameterizedTest
-    @CsvSource({
-            "a;,Variable \"a\" not found (a)",
-            "|0> * |0>;,Right operand must not be a ket (1.0) |0> (|)",
-            "|0> * <0|;,Right operand must not be a bra (1.0) <0| (<)",
-            "<0| * <0|;,Right operand must not be a bra (1.0) <0| (<)",
-            "<0| / |0>;,Right operand must not be a ket (1.0) |0> (|)",
-            "|0> / <0|;,Right operand must not be a bra (1.0) <0| (<)",
-            "1 + <0|;,Right operand must not be a bra (1.0) <0| (<)",
-            "i + <0|;,Right operand must not be a bra (1.0) <0| (<)",
-            "|0> + <0|;,Right operand must not be a bra (1.0) <0| (<)",
-            "1 + |0>;,Right operand must not be a ket (1.0) |0> (|)",
-            "i + |0>;,Right operand must not be a ket (1.0) |0> (|)",
-            "<0| + |0>;,Right operand must not be a ket (1.0) |0> (|)",
-            "|0> + 1;,Right operand must not be a complex 1 (1)",
-            "|0> + i;,Right operand must not be a complex i (i)",
-            "<0| + 1;,Right operand must not be a complex 1 (1)",
-            "<0| + i;,Right operand must not be a complex i (i)",
-
-            "1 - <0|;,Right operand must not be a bra (1.0) <0| (<)",
-            "i - <0|;,Right operand must not be a bra (1.0) <0| (<)",
-            "|0> - <0|;,Right operand must not be a bra (1.0) <0| (<)",
-            "1 - |0>;,Right operand must not be a ket (1.0) |0> (|)",
-            "i - |0>;,Right operand must not be a ket (1.0) |0> (|)",
-            "<0| - |0>;,Right operand must not be a ket (1.0) |0> (|)",
-            "|0> - 1;,Right operand must not be a complex 1 (1)",
-            "|0> - i;,Right operand must not be a complex i (i)",
-            "<0| - 1;,Right operand must not be a complex 1 (1)",
-            "<0| - i;,Right operand must not be a complex i (i)",
-            "sqrt(|0>);,Argument must not be a ket (1.0) |0> (()",
-            "sqrt(<0|);,Argument must not be a bra (1.0) <0| (()",
-    })
-    void testError(String text, String error) {
-        Throwable ex = assertThrows(Throwable.class, () -> execute(text));
-        assertEquals(error.replace("$", ","), ex.getMessage());
+    @Test
+    void testClearComplex() {
+        assertDoesNotThrow(() -> execute("let a = 0;clear();"));
+        assertThat(consumed, contains(0));
+        assertThat(processor.stack, empty());
+        assertTrue(processor.variables.isEmpty());
     }
 
     @ParameterizedTest
@@ -472,6 +443,67 @@ class ProcessorTest {
         assertDoesNotThrow(() -> execute("2*|0>;"));
         assertThat(consumed, contains(Ket.zero().mul(2)));
         assertThat(processor.stack, empty());
+    }
+
+    @Test
+    void testCrossBra() {
+        assertDoesNotThrow(() -> execute("<1| x <0|;"));
+        assertThat(consumed, contains(isA(Bra.class)));
+        assertThat((Bra) consumed.getFirst(), braCloseTo(Bra.base(2, 2), EPSILON));
+        assertThat(processor.stack, empty());
+    }
+
+    @Test
+    void testCrossKet() {
+        assertDoesNotThrow(() -> execute("|1> x |0>;"));
+        assertThat(consumed, contains(isA(Ket.class)));
+        assertThat((Ket) consumed.getFirst(), ketCloseTo(Ket.base(2, 2), EPSILON));
+        assertThat(processor.stack, empty());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "a;,Variable \"a\" not found (a)",
+            "|0> * |0>;,Right operand must not be a ket (1.0) |0> (|)",
+            "|0> * <0|;,Right operand must not be a bra (1.0) <0| (<)",
+            "<0| * <0|;,Right operand must not be a bra (1.0) <0| (<)",
+            "<0| / |0>;,Right operand must not be a ket (1.0) |0> (|)",
+            "|0> / <0|;,Right operand must not be a bra (1.0) <0| (<)",
+            "1 + <0|;,Right operand must not be a bra (1.0) <0| (<)",
+            "i + <0|;,Right operand must not be a bra (1.0) <0| (<)",
+            "|0> + <0|;,Right operand must not be a bra (1.0) <0| (<)",
+            "1 + |0>;,Right operand must not be a ket (1.0) |0> (|)",
+            "i + |0>;,Right operand must not be a ket (1.0) |0> (|)",
+            "<0| + |0>;,Right operand must not be a ket (1.0) |0> (|)",
+            "|0> + 1;,Right operand must not be a complex 1 (1)",
+            "|0> + i;,Right operand must not be a complex i (i)",
+            "<0| + 1;,Right operand must not be a complex 1 (1)",
+            "<0| + i;,Right operand must not be a complex i (i)",
+
+            "1 - <0|;,Right operand must not be a bra (1.0) <0| (<)",
+            "i - <0|;,Right operand must not be a bra (1.0) <0| (<)",
+            "|0> - <0|;,Right operand must not be a bra (1.0) <0| (<)",
+            "1 - |0>;,Right operand must not be a ket (1.0) |0> (|)",
+            "i - |0>;,Right operand must not be a ket (1.0) |0> (|)",
+            "<0| - |0>;,Right operand must not be a ket (1.0) |0> (|)",
+            "|0> - 1;,Right operand must not be a complex 1 (1)",
+            "|0> - i;,Right operand must not be a complex i (i)",
+            "<0| - 1;,Right operand must not be a complex 1 (1)",
+            "<0| - i;,Right operand must not be a complex i (i)",
+            "sqrt(|0>);,Argument must not be a ket (1.0) |0> (()",
+            "sqrt(<0|);,Argument must not be a bra (1.0) <0| (()",
+            "1 x 1;, Left operand must not be an integer 1 (1)",
+            "i x 1;, Left operand must not be a complex i (1)",
+            "|0> x 1;, Right operand must not be an integer 1 (1)",
+            "|0> x i;, Right operand must not be a complex i (i)",
+            "|0> x <0|;, Right operand must not be a bra (1.0) <0| (<)",
+            "<0| x 1;, Right operand must not be an integer 1 (1)",
+            "<0| x i;, Right operand must not be a complex i (i)",
+            "<0| x |0>;, Right operand must not be a ket (1.0) |0> (|)",
+    })
+    void testError(String text, String error) {
+        Throwable ex = assertThrows(Throwable.class, () -> execute(text));
+        assertEquals(error.replace("$", ","), ex.getMessage());
     }
 
     @Test

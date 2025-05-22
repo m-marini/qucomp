@@ -155,7 +155,8 @@ public abstract class TerminalExp extends Expression {
             // Functions
             "sqrt",
             // Statements
-            "let"
+            "let",
+            "clear"
     );
 
     /**

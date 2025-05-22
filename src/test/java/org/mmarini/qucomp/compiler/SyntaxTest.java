@@ -50,10 +50,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mmarini.Matchers.ketCloseTo;
 import static org.mmarini.qucomp.compiler.Syntax.*;
 import static org.mmarini.qucomp.compiler.TerminalExp.*;
 
 class SyntaxTest {
+
+    public static final float EPSILON = 1e-3f;
 
     public static Stream<Arguments> argsOptBra() {
         return argsStateLiteral().map(
@@ -135,7 +138,7 @@ class SyntaxTest {
         Complex exp1 = new Complex(expReal1, expIm1);
         Complex exp2 = new Complex(expReal2, expIm2);
         Complex exp3 = new Complex(expReal3, expIm3);
-        parse(text, sumExp);
+        parse(text, exp8_add);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushComplex.class),
@@ -160,7 +163,7 @@ class SyntaxTest {
         Complex exp1 = new Complex(expReal1, expIm1);
         Complex exp2 = new Complex(expReal2, expIm2);
         Complex exp3 = new Complex(expReal3, expIm3);
-        parse(text, sumExp);
+        parse(text, exp8_add);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushComplex.class),
@@ -182,7 +185,7 @@ class SyntaxTest {
             "+i, 0,1",
     })
     void testAddExpComplex(String text, float expReal1, float expIm1) throws Throwable {
-        parse(text, sumExp);
+        parse(text, exp8_add);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushComplex.class)
@@ -206,7 +209,7 @@ class SyntaxTest {
     void testAddExpComplexComplex(String text, float expReal1, float expIm1, float expReal2, float expIm2) throws Throwable {
         Complex exp1 = new Complex(expReal1, expIm1);
         Complex exp2 = new Complex(expReal2, expIm2);
-        parse(text, sumExp);
+        parse(text, exp8_add);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushComplex.class),
@@ -222,7 +225,7 @@ class SyntaxTest {
             "let a=1.;,a,1",
     })
     void testAssignVar(String text, String expId, float expValue) throws Throwable {
-        assertTrue(parse(text, optAssignExp));
+        assertTrue(parse(text, exp1_assignExp));
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushString.class),
@@ -243,7 +246,7 @@ class SyntaxTest {
     })
     void testAssignVarError(String text, String expMsg) {
         ParseException ex = assertThrows(ParseException.class, () ->
-                parse(text, optAssignExp));
+                parse(text, exp1_assignExp));
         assertEquals(expMsg, ex.getMessage());
     }
 
@@ -255,7 +258,29 @@ class SyntaxTest {
     })
     void testBraError(String text, String expMsg) {
         ParseException ex = assertThrows(ParseException.class, () ->
-                parse(text, optBra));
+                parse(text, exp2_bra));
+        assertEquals(expMsg, ex.getMessage());
+    }
+
+    @Test
+    void testClear() {
+        boolean result = assertDoesNotThrow(() -> parse("clear();", exp1_clear));
+        assertTrue(result);
+        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
+        assertThat(code, contains(
+                isA(Command.Clear.class)
+        ));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "clear,Missing token ( (<EOF>)",
+            "clear (,Missing token ) (<EOF>)",
+            "clear (),Missing token ; (<EOF>)",
+    })
+    void testClearError(String text, String expMsg) {
+        ParseException ex = assertThrows(ParseException.class, () ->
+                parse(text, exp1_clear));
         assertEquals(expMsg, ex.getMessage());
     }
 
@@ -263,8 +288,9 @@ class SyntaxTest {
     @CsvSource({
             "let a = 1; a;, a, 1",
     })
-    void testCodeUnit(String text, String expId, int expInt) throws Throwable {
-        assertTrue(parse(text, codeUnitExp));
+    void testCodeUnit(String text, String expId, int expInt) {
+        boolean result = assertDoesNotThrow(() -> parse(text, codeUnitExp));
+        assertTrue(result);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushString.class),
@@ -278,6 +304,110 @@ class SyntaxTest {
         assertEquals(expId, ((Command.PushString) code.getFirst()).value());
         assertEquals(expInt, ((Command.PushInt) code.get(1)).value());
         assertEquals(expId, ((Command.PushString) code.get(4)).value());
+    }
+
+    @Test
+    void testConjExp() {
+        boolean result = assertDoesNotThrow(() -> parse("1^", exp4_conj));
+        assertTrue(result);
+        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
+        assertThat(code, contains(
+                isA(Command.PushInt.class),
+                isA(Command.Conj.class)));
+        assertEquals(1, ((Command.PushInt) code.getFirst()).value());
+    }
+
+    @Test
+    void testConjExp2() {
+        boolean result = assertDoesNotThrow(() -> parse("1^^", exp4_conj));
+        assertTrue(result);
+        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
+        assertThat(code, contains(
+                isA(Command.PushInt.class),
+                isA(Command.Conj.class),
+                isA(Command.Conj.class)));
+        assertEquals(1, ((Command.PushInt) code.getFirst()).value());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "1., 1,0",
+            "i, 0,1",
+            "+1., 1,0",
+            "+i, 0,1",
+    })
+    void testCross(String text, float expReal1, float expIm1) {
+        boolean result = assertDoesNotThrow(() -> parse(text, exp6_cross));
+        assertTrue(result);
+        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
+        assertThat(code, contains(
+                isA(Command.PushComplex.class)
+        ));
+        assertEquals(new Complex(expReal1, expIm1), ((Command.PushComplex) code.getFirst()).value());
+    }
+
+    @Test
+    void testCrossBraBra() {
+        boolean result = assertDoesNotThrow(() -> parse("<0| x <1|", exp6_cross));
+        assertTrue(result);
+        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
+        assertThat(code, contains(
+                isA(Command.PushKet.class),
+                isA(Command.Conj.class),
+                isA(Command.PushKet.class),
+                isA(Command.Conj.class),
+                isA(Command.Cross.class)
+        ));
+        assertThat(((Command.PushKet) code.getFirst()).value(), ketCloseTo(Ket.zero(), EPSILON));
+        assertThat(((Command.PushKet) code.get(2)).value(), ketCloseTo(Ket.one(), EPSILON));
+    }
+
+    @Test
+    void testCrossKetKet() {
+        boolean result = assertDoesNotThrow(() -> parse("|0> x |1>", exp6_cross));
+        assertTrue(result);
+        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
+        assertThat(code, contains(
+                isA(Command.PushKet.class),
+                isA(Command.PushKet.class),
+                isA(Command.Cross.class)
+        ));
+        assertThat(((Command.PushKet) code.getFirst()).value(), ketCloseTo(Ket.zero(), EPSILON));
+        assertThat(((Command.PushKet) code.get(1)).value(), ketCloseTo(Ket.one(), EPSILON));
+    }
+
+    @Test
+    void testCrossKetKetKet() {
+        boolean result = assertDoesNotThrow(() -> parse("|0> x |1> x |2>", exp6_cross));
+        assertTrue(result);
+        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
+        assertThat(code, contains(
+                isA(Command.PushKet.class),
+                isA(Command.PushKet.class),
+                isA(Command.Cross.class),
+                isA(Command.PushKet.class),
+                isA(Command.Cross.class)
+        ));
+        assertThat(((Command.PushKet) code.getFirst()).value(), ketCloseTo(Ket.zero(), EPSILON));
+        assertThat(((Command.PushKet) code.get(1)).value(), ketCloseTo(Ket.one(), EPSILON));
+        assertThat(((Command.PushKet) code.get(3)).value(), ketCloseTo(Ket.base(2, 2), EPSILON));
+    }
+
+    @Test
+    void testCrossKetKetKet1() {
+        boolean result = assertDoesNotThrow(() -> parse("|0> x (|1> x |2>)", exp6_cross));
+        assertTrue(result);
+        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
+        assertThat(code, contains(
+                isA(Command.PushKet.class),
+                isA(Command.PushKet.class),
+                isA(Command.PushKet.class),
+                isA(Command.Cross.class),
+                isA(Command.Cross.class)
+        ));
+        assertThat(((Command.PushKet) code.getFirst()).value(), ketCloseTo(Ket.zero(), EPSILON));
+        assertThat(((Command.PushKet) code.get(1)).value(), ketCloseTo(Ket.one(), EPSILON));
+        assertThat(((Command.PushKet) code.get(2)).value(), ketCloseTo(Ket.base(2, 2), EPSILON));
     }
 
     @ParameterizedTest
@@ -296,7 +426,7 @@ class SyntaxTest {
     void testDivExpComplexComplex(String text, float expReal1, float expIm1, float expReal2, float expIm2) throws Throwable {
         Complex exp1 = new Complex(expReal1, expIm1);
         Complex exp2 = new Complex(expReal2, expIm2);
-        parse(text, prodExp);
+        parse(text, exp7_prod);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
@@ -319,7 +449,7 @@ class SyntaxTest {
         Complex exp1 = new Complex(expReal1, expIm1);
         Complex exp2 = new Complex(expReal2, expIm2);
         Complex exp3 = new Complex(expReal3, expIm3);
-        parse(text, prodExp);
+        parse(text, exp7_prod);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushComplex.class),
@@ -341,7 +471,7 @@ class SyntaxTest {
         Complex exp1 = new Complex(expReal1, expIm1);
         Complex exp2 = new Complex(expReal2, expIm2);
         Complex exp3 = new Complex(expReal3, expIm3);
-        parse(text, prodExp);
+        parse(text, exp7_prod);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushComplex.class),
@@ -363,7 +493,7 @@ class SyntaxTest {
     })
     void testKetError(String text, String expMsg) {
         ParseException ex = assertThrows(ParseException.class, () ->
-                parse(text, optKet));
+                parse(text, exp2_ket));
         assertEquals(expMsg, ex.getMessage());
     }
 
@@ -375,7 +505,7 @@ class SyntaxTest {
             "+i, 0,1",
     })
     void testMulExpComplex(String text, float expReal1, float expIm1) throws Throwable {
-        parse(text, prodExp);
+        parse(text, exp7_prod);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushComplex.class)
@@ -399,7 +529,7 @@ class SyntaxTest {
     void testMulExpComplexComplex(String text, float expReal1, float expIm1, float expReal2, float expIm2) throws Throwable {
         Complex exp1 = new Complex(expReal1, expIm1);
         Complex exp2 = new Complex(expReal2, expIm2);
-        parse(text, prodExp);
+        parse(text, exp7_prod);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushComplex.class),
@@ -421,7 +551,7 @@ class SyntaxTest {
         Complex exp1 = new Complex(expReal1, expIm1);
         Complex exp2 = new Complex(expReal2, expIm2);
         Complex exp3 = new Complex(expReal3, expIm3);
-        parse(text, prodExp);
+        parse(text, exp7_prod);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushComplex.class),
@@ -433,40 +563,6 @@ class SyntaxTest {
         assertEquals(exp1, ((Command.PushComplex) code.getFirst()).value());
         assertEquals(exp2, ((Command.PushComplex) code.get(1)).value());
         assertEquals(exp3, ((Command.PushComplex) code.get(3)).value());
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "1. * (2. * 3.), 1,0, 2,0, 3,0",
-    })
-    void testMulExpComplexComplexComplex1(String text, float expReal1, float expIm1, float expReal2, float expIm2, float expReal3, float expIm3) throws Throwable {
-        Complex exp1 = new Complex(expReal1, expIm1);
-        Complex exp2 = new Complex(expReal2, expIm2);
-        Complex exp3 = new Complex(expReal3, expIm3);
-        parse(text, prodExp);
-        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
-        assertThat(code, contains(
-                isA(Command.PushComplex.class),
-                isA(Command.PushComplex.class),
-                isA(Command.PushComplex.class),
-                isA(Command.Multiply.class),
-                isA(Command.Multiply.class)
-        ));
-        assertEquals(exp1, ((Command.PushComplex) code.getFirst()).value());
-        assertEquals(exp2, ((Command.PushComplex) code.get(1)).value());
-        assertEquals(exp3, ((Command.PushComplex) code.get(2)).value());
-    }
-
-    @ParameterizedTest
-    @MethodSource("argsOptBra")
-    void testOptBra(String text, Ket ket) {
-        boolean result = assertDoesNotThrow(() -> parse(text, optBra));
-        assertTrue(result);
-        assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
-        assertThat(code, contains(
-                isA(Command.PushKet.class),
-                isA(Command.Conj.class)));
-        assertEquals(ket, ((Command.PushKet) code.getFirst()).value());
     }
 
     @ParameterizedTest
@@ -496,13 +592,25 @@ class SyntaxTest {
     }
 
     @ParameterizedTest
-    @MethodSource("argsOptKet")
-    void testOptKet(String text, Ket ket) {
-        boolean result = assertDoesNotThrow(() -> parse(text, optKet));
-        assertTrue(result);
+    @CsvSource({
+            "1. * (2. * 3.), 1,0, 2,0, 3,0",
+    })
+    void testMulExpComplexComplexComplex1(String text, float expReal1, float expIm1, float expReal2, float expIm2, float expReal3, float expIm3) throws Throwable {
+        Complex exp1 = new Complex(expReal1, expIm1);
+        Complex exp2 = new Complex(expReal2, expIm2);
+        Complex exp3 = new Complex(expReal3, expIm3);
+        parse(text, exp7_prod);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
-        assertThat(code, contains(isA(Command.PushKet.class)));
-        assertEquals(ket, ((Command.PushKet) code.getFirst()).value());
+        assertThat(code, contains(
+                isA(Command.PushComplex.class),
+                isA(Command.PushComplex.class),
+                isA(Command.PushComplex.class),
+                isA(Command.Multiply.class),
+                isA(Command.Multiply.class)
+        ));
+        assertEquals(exp1, ((Command.PushComplex) code.getFirst()).value());
+        assertEquals(exp2, ((Command.PushComplex) code.get(1)).value());
+        assertEquals(exp3, ((Command.PushComplex) code.get(2)).value());
     }
 
     @ParameterizedTest
@@ -537,8 +645,30 @@ class SyntaxTest {
 
     @ParameterizedTest
     @MethodSource("argsOptBra")
+    void testOptBra(String text, Ket ket) {
+        boolean result = assertDoesNotThrow(() -> parse(text, exp2_bra));
+        assertTrue(result);
+        assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
+        assertThat(code, contains(
+                isA(Command.PushKet.class),
+                isA(Command.Conj.class)));
+        assertEquals(ket, ((Command.PushKet) code.getFirst()).value());
+    }
+
+    @ParameterizedTest
+    @MethodSource("argsOptKet")
+    void testOptKet(String text, Ket ket) {
+        boolean result = assertDoesNotThrow(() -> parse(text, exp2_ket));
+        assertTrue(result);
+        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
+        assertThat(code, contains(isA(Command.PushKet.class)));
+        assertEquals(ket, ((Command.PushKet) code.getFirst()).value());
+    }
+
+    @ParameterizedTest
+    @MethodSource("argsOptBra")
     void testPrimaryExpBra(String text, Ket ket) {
-        boolean result = assertDoesNotThrow(() -> parse(text, primaryExp));
+        boolean result = assertDoesNotThrow(() -> parse(text, exp3_primary));
         assertTrue(result);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
@@ -554,33 +684,10 @@ class SyntaxTest {
             "( 3. ), 3,0",
     })
     void testPrimaryExpComplex(String text, float real, float im) throws Throwable {
-        assertTrue(parse(text, primaryExp));
+        assertTrue(parse(text, exp3_primary));
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(isA(Command.PushComplex.class)));
         assertEquals(new Complex(real, im), ((Command.PushComplex) code.getFirst()).value());
-    }
-
-    @Test
-    void testConjExp() {
-        boolean result = assertDoesNotThrow(() -> parse("1^", conjExp));
-        assertTrue(result);
-        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
-        assertThat(code, contains(
-                isA(Command.PushInt.class),
-                isA(Command.Conj.class)));
-        assertEquals(1, ((Command.PushInt) code.getFirst()).value());
-    }
-
-    @Test
-    void testConjExp2() {
-        boolean result = assertDoesNotThrow(() -> parse("1^^", conjExp));
-        assertTrue(result);
-        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
-        assertThat(code, contains(
-                isA(Command.PushInt.class),
-                isA(Command.Conj.class),
-                isA(Command.Conj.class)));
-        assertEquals(1, ((Command.PushInt) code.getFirst()).value());
     }
 
     @ParameterizedTest
@@ -591,14 +698,14 @@ class SyntaxTest {
     })
     void testPrimaryExpError(String text, String expMsg) {
         ParseException ex = assertThrows(ParseException.class, () ->
-                parse(text, primaryExp));
+                parse(text, exp3_primary));
         assertEquals(expMsg, ex.getMessage());
     }
 
     @ParameterizedTest
     @MethodSource("argsOptKet")
     void testPrimaryExpKet(String text, Ket ket) {
-        boolean result = assertDoesNotThrow(() -> parse(text, primaryExp));
+        boolean result = assertDoesNotThrow(() -> parse(text, exp3_primary));
         assertTrue(result);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(isA(Command.PushKet.class)));
@@ -611,7 +718,7 @@ class SyntaxTest {
             "a2,a2",
     })
     void testPrimaryExpVar(String text, String expId) throws Throwable {
-        assertTrue(parse(text, primaryExp));
+        assertTrue(parse(text, exp3_primary));
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushString.class),
@@ -622,7 +729,7 @@ class SyntaxTest {
 
     @Test
     void testSqrt() {
-        boolean result = assertDoesNotThrow(() -> parse("sqrt(1)", optSqrt));
+        boolean result = assertDoesNotThrow(() -> parse("sqrt(1)", exp1_sqrt));
         assertTrue(result);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
@@ -641,7 +748,7 @@ class SyntaxTest {
     })
     void testSqrtError(String text, String expMsg) {
         ParseException ex = assertThrows(ParseException.class, () ->
-                parse(text, primaryExp));
+                parse(text, exp3_primary));
         assertEquals(expMsg, ex.getMessage());
     }
 
@@ -668,7 +775,7 @@ class SyntaxTest {
     @ParameterizedTest
     @MethodSource("argsStateLiteral")
     void testStateLiteral(String text, Ket ket) {
-        boolean result = assertDoesNotThrow(() -> parse(text, stateLiteralExp));
+        boolean result = assertDoesNotThrow(() -> parse(text, exp1_stateLiteral));
         assertTrue(result);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, Matchers.contains(isA(Command.PushKet.class)));
@@ -683,7 +790,7 @@ class SyntaxTest {
     })
     void testStateLiteralError(String text, String expMsg) {
         ParseException ex = assertThrows(ParseException.class, () ->
-                parse(text, stateLiteralExp));
+                parse(text, exp1_stateLiteral));
         assertEquals(expMsg, ex.getMessage());
     }
 
@@ -698,7 +805,7 @@ class SyntaxTest {
         Complex exp1 = new Complex(expReal1, expIm1);
         Complex exp2 = new Complex(expReal2, expIm2);
         Complex exp3 = new Complex(expReal3, expIm3);
-        parse(text, sumExp);
+        parse(text, exp8_add);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, contains(
                 isA(Command.PushComplex.class),
@@ -728,7 +835,7 @@ class SyntaxTest {
     void testSubExpComplexComplex(String text, float expReal1, float expIm1, float expReal2, float expIm2) throws Throwable {
         Complex exp1 = new Complex(expReal1, expIm1);
         Complex exp2 = new Complex(expReal2, expIm2);
-        parse(text, sumExp);
+        parse(text, exp8_add);
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertThat(code, Matchers.contains(
                 isA(Command.PushComplex.class),
@@ -754,7 +861,7 @@ class SyntaxTest {
             "- - - ( 3. ), 3,0, 3",
     })
     void testUnaryExpComplex(String text, float real, float im, int expNumNegation) throws Throwable {
-        assertTrue(parse(text, unaryExp));
+        assertTrue(parse(text, exp5_unary));
         assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
         assertEquals(1 + expNumNegation, code.size());
         assertThat(code.getFirst(), Matchers.isA(Command.PushComplex.class));

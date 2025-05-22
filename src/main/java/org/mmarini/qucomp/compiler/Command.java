@@ -219,6 +219,18 @@ public interface Command {
         }
     }
 
+    class Cross extends AbstractCommand {
+
+        /**
+         * Creates the abstract command
+         *
+         * @param sourceContext the source context
+         */
+        public Cross(SourceContext sourceContext) {
+            super(sourceContext);
+        }
+    }
+
     class Assign extends AbstractCommand {
 
         /**
@@ -270,11 +282,23 @@ public interface Command {
     class Consume extends AbstractCommand {
 
         /**
-         * Creates the abstract command
+         * Creates the consume command
          *
          * @param sourceContext the source context
          */
         public Consume(SourceContext sourceContext) {
+            super(sourceContext);
+        }
+    }
+
+    class Clear extends AbstractCommand {
+
+        /**
+         * Creates the clear command
+         *
+         * @param sourceContext the source context
+         */
+        public Clear(SourceContext sourceContext) {
             super(sourceContext);
         }
     }

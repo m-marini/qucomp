@@ -42,12 +42,25 @@ import static org.mmarini.qucomp.compiler.TerminalExp.*;
 public interface Syntax {
     Logger logger = LoggerFactory.getLogger(Syntax.class);
 
+
+    /**
+     * <pre>
+     * &lt;clear-exp> ::= "clear" "(" ")" ";" | ""
+     * </pre>
+     */
+    Expression exp1_clear = optIdentifier("clear").ifMatch(
+            op("("),
+            op(")"),
+            op(";"),
+            operate("<clear>", (context, token) ->
+                    context.add(new Command.Clear(token.context()))));
+
     /**
      * <pre>
      * &lt;primary-exp> ::= "i" | "+" | "-" | "-" "i" | &lt;int-literal>
      * </pre>
      */
-    Expression stateLiteralExp = options("<state-literal>",
+    Expression exp1_stateLiteral = options("<state-literal>",
             optOp("+").ifMatch(
                     operate("<plus-state-literal>", (context, token) ->
                             context.add(new Command.PushKet(token.context(), Ket.plus())))),
@@ -70,15 +83,15 @@ public interface Syntax {
      * &lt;opt-ket-literal> ::= "|" &lt;state-literal> ">" | ""
      * </pre>
      */
-    Expression optKet = optOp("|").ifMatch(stateLiteralExp, op(">"));
+    Expression exp2_ket = optOp("|").ifMatch(exp1_stateLiteral, op(">"));
 
     /**
      * <pre>
      * &lt;opt-ket-literal> ::= "<" &lt;state-literal> "|" | ""
      * </pre>
      */
-    Expression optBra = optOp("<").ifMatch(
-            stateLiteralExp.postOp((context, token) ->
+    Expression exp2_bra = optOp("<").ifMatch(
+            exp1_stateLiteral.postOp((context, token) ->
                     context.add(new Command.Conj(token.context()))),
             op("|"));
 
@@ -91,7 +104,7 @@ public interface Syntax {
         return new NonTerminalExp("<exp>") {
             @Override
             public boolean test(ParseContext context) throws Throwable {
-                boolean result = sumExp.test(context);
+                boolean result = exp8_add.test(context);
                 if (result) {
                     logger.atDebug().log("{}", this);
                 }
@@ -101,56 +114,13 @@ public interface Syntax {
     }
 
     /**
-     *
-     */
-    Expression optSqrt = optIdentifier("sqrt")
-            .ifMatch(all("<sqrt>",
-                    op("("), exp(), op(")"))
-                    .postOp(((context, token) ->
-                            context.add(new Command.CallFunction(token.context(), "sqrt")))));
-
-    /**
-     * <pre>
-     * &lt;primary-exp> ::= "(" &lt;exp> ")"
-     *                   | &lt;real-literal>
-     *                   | &lt;int-literal>
-     *                   | &lt;ket>
-     *                   | &lt;bra>
-     *                   | "i"
-     *                   | &ltfunc-exp>
-     *                   | &lt;var-identifier>
-     * </pre>
-     */
-    Expression primaryExp = options("<primary-exp>",
-            optOp("(").ifMatch(exp(), op(")")),
-            optRealLiteral,
-            optIntLiteral,
-            optILiteral,
-            optKet,
-            optBra,
-            optSqrt,
-            optVarIdentifier.postOp(((context, token) ->
-                    context.add(new Command.RetrieveVar(token.context())))))
-            .require("Missing primary expression");
-    /**
-     * <pre>
-     * &lt;conj-exp> ::= &lt;conj-exp> "^"
-     *                 | &ltprimary-exp>
-     * </pre>
-     */
-    Expression conjExp = all("<conjExp>",
-            primaryExp,
-            optOp("^").ifMatch(operate("<conj>",
-                    (context, token) -> context.add(new Command.Conj(token.context())))
-            ).whileMatch());
-    /**
      * <pre>
      * &lt;unary-exp> ::= "+" &lt;unary-exp>
      *                 | "-"  &lt;unary-exp>
      *                 | &lt;conj-exp>
      * </pre>
      */
-    Expression unaryExp = new Expression("<unary-exp>") {
+    Expression exp5_unary = new Expression("<unary-exp>") {
         @Override
         public boolean test(ParseContext context) throws Throwable {
             boolean result = switch (context.currentToken()) {
@@ -165,7 +135,7 @@ public interface Syntax {
                     context.add(new Command.Negate(opTok.context()));
                     yield true;
                 }
-                case null, default -> conjExp.test(context);
+                case null, default -> exp4_conj.test(context);
             };
             if (result) {
                 logger.atDebug().log("{}", this);
@@ -173,51 +143,110 @@ public interface Syntax {
             return result;
         }
     };
+
     /**
      * <pre>
-     * &lt;mul-tail-exp> ::= "*" &lt;mul-tail-exp> | "/" &lt;mul-tail-exp> | ""
+     * &lt;cross-exp> ::= &lt;unary-exp> "x" &lt;cross-exp> | &lt;unary-exp>"
      * </pre>
      */
-    Expression prodTailExp = options("<prod-tail>",
-            optOp("*").ifMatch(
-                    unaryExp.postOp((context, token) ->
-                            context.add(new Command.Multiply(token.context())))),
-            optOp("/").ifMatch(
-                    unaryExp.postOp((context, token) ->
-                            context.add(new Command.Divide(token.context()))))
-    ).whileMatch();
-
+    Expression exp6_cross = all("cross-exp>",
+            exp5_unary,
+            optIdentifier("x").ifMatch(
+                    exp5_unary.postOp((context, toket) ->
+                            context.add(new Command.Cross(toket.context()))
+                    )
+            ).whileMatch()
+    );
     /**
      * <pre>
      * &lt;prod-exp> ::= &lt;unary-exp> &lt;mul-exp-tail>
      * </pre>
      */
-    Expression prodExp = all("<prod-exp>", unaryExp, prodTailExp);
-
-    /**
-     * <pre>
-     * &lt;sum-tail-exp> ::= "+" &lt;sum-tail-exp> | "-" &lt;sum-tail-exp> | ""
-     * </pre>
-     */
-    Expression sumTailExp = options("<sum-tail>",
-            optOp("+").ifMatch(
-                    prodExp.postOp((context, token) ->
-                            context.add(new Command.Add(token.context())))),
-            optOp("-").ifMatch(
-                    prodExp.postOp((context, token) ->
-                            context.add(new Command.Sub(token.context()))))
-    ).whileMatch();
-
+    Expression exp7_prod = all("<prod-exp>",
+            exp6_cross,
+            options("<prod-tail>",
+                    optOp("*").ifMatch(
+                            exp6_cross.postOp((context, token) ->
+                                    context.add(new Command.Multiply(token.context())))),
+                    optOp("/").ifMatch(
+                            exp6_cross.postOp((context, token) ->
+                                    context.add(new Command.Divide(token.context()))))
+            ).whileMatch());
     /**
      * <pre>
      * &lt;sum-exp> ::= &lt;prod-exp> &lt;sum-exp-tail>
      * </pre>
      */
-    Expression sumExp = all("<sum-exp>", prodExp, sumTailExp);
-    Expression optAssignExp = optIdentifier("let").ifMatch(
+    Expression exp8_add = all("<add-exp>",
+            exp7_prod,
+            options("<add-tail>",
+                    optOp("+").ifMatch(
+                            exp7_prod.postOp((context, token) ->
+                                    context.add(new Command.Add(token.context())))),
+                    optOp("-").ifMatch(
+                            exp7_prod.postOp((context, token) ->
+                                    context.add(new Command.Sub(token.context()))))
+            ).whileMatch());
+
+    /**
+     * <pre>
+     * &lt;opt-sqrt> ::= "sqrt" "(" &lt;exp> ")"
+     *                | ""
+     * </pre>
+     */
+    Expression exp1_sqrt = optIdentifier("sqrt")
+            .ifMatch(all("<sqrt>",
+                    op("("), exp(), op(")"))
+                    .postOp(((context, token) ->
+                            context.add(new Command.CallFunction(token.context(), "sqrt")))));
+    /**
+     * <pre>
+     * &lt;func-exp> ::= &lt;opt-sqrt>
+     * </pre>
+     */
+    Expression exp2_func = exp1_sqrt;
+    /**
+     * <pre>
+     * &lt;primary-exp> ::= "(" &lt;exp> ")"
+     *                   | &lt;real-literal>
+     *                   | &lt;int-literal>
+     *                   | &lt;ket>
+     *                   | &lt;bra>
+     *                   | "i"
+     *                   | &ltfunc-exp>
+     *                   | &lt;var-identifier>
+     * </pre>
+     */
+    Expression exp3_primary = options("<primary-exp>",
+            optOp("(").ifMatch(exp(), op(")")),
+            optRealLiteral,
+            optIntLiteral,
+            optILiteral,
+            exp2_ket,
+            exp2_bra,
+            exp2_func,
+            optVarIdentifier.postOp(((context, token) ->
+                    context.add(new Command.RetrieveVar(token.context())))))
+            .require("Missing primary expression");
+    /**
+     * <pre>
+     * &lt;conj-exp> ::= &lt;conj-exp> "^"
+     *                 | &ltprimary-exp>
+     * </pre>
+     */
+    Expression exp4_conj = all("<conjExp>",
+            exp3_primary,
+            optOp("^").ifMatch(operate("<conj>",
+                    (context, token) -> context.add(new Command.Conj(token.context())))
+            ).whileMatch());
+    /**
+     *
+     */
+    Expression exp1_assignExp = optIdentifier("let").ifMatch(
             optVarIdentifier.require("Missing variable identifier")
-                    .ifMatch(op("="), exp(), op(";"))
-                    .postOp((context, token) -> {
+                    .ifMatch(op("="),
+                            exp(),
+                            op(";")).postOp((context, token) -> {
                         context.add(new Command.Assign(token.context()));
                         context.add(new Command.Consume(token.context()));
                     }));
@@ -229,11 +258,10 @@ public interface Syntax {
      */
     Expression codeUnitExp = optNotEmpty.ifMatch(
                     options("<code-unit>",
-                            optAssignExp,
+                            exp1_assignExp,
+                            exp1_clear,
                             all("<code-exp>", exp(),
                                     op(";").postOp((context, token) ->
                                             context.add(new Command.Consume(token.context()))))))
             .whileMatch();
-
-
 }
