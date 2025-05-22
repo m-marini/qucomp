@@ -47,11 +47,10 @@ public abstract class NonTerminalExp extends Expression {
         return new NonTerminalExp(id) {
             @Override
             public boolean test(ParseContext context) throws Throwable {
-                logger.atDebug().log("{} entry token=\"{}\"", this, context.currentToken());
                 for (Expression expression : expressions) {
                     expression.test(context);
                 }
-                logger.atDebug().log("{} exit={}", this, true);
+                logger.atDebug().log("{}", this);
                 return true;
             }
         };
@@ -67,7 +66,6 @@ public abstract class NonTerminalExp extends Expression {
         return new NonTerminalExp(id) {
             @Override
             public boolean test(ParseContext context) throws Throwable {
-                logger.atDebug().log("{} entry token=\"{}\"", this, context.currentToken());
                 boolean result = false;
                 for (Expression expression : expressions) {
                     result = expression.test(context);
@@ -75,7 +73,9 @@ public abstract class NonTerminalExp extends Expression {
                         break;
                     }
                 }
-                logger.atDebug().log("{} exit={}", this, result);
+                if (result) {
+                    logger.atDebug().log("{}", this);
+                }
                 return result;
             }
         };

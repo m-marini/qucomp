@@ -47,7 +47,7 @@ public abstract class Expression implements Predicate<ParseContext> {
     /**
      * Create the expression
      *
-     * @param id the expressin identifier
+     * @param id the expressing identifier
      */
     protected Expression(String id) {
         this.id = requireNonNull(id);
@@ -66,22 +66,24 @@ public abstract class Expression implements Predicate<ParseContext> {
     /**
      * Returns the condition expression
      * that applies all the expression if the condition expression matches
+     * <pre>
+     *     &lt;opt-exp> ::= &lt;opt-cond-exp> &lt;expression-list> | ""
+     * </pre>
      *
      * @param expressions the list of expressions
      */
-    public NonTerminalExp opt(Expression... expressions) {
+    public NonTerminalExp ifMatch(Expression... expressions) {
         Expression cond = this;
         return new NonTerminalExp(cond.id + "?") {
             @Override
             public boolean test(ParseContext context) throws Throwable {
-                logger.atDebug().log("{} entry toke=\"{}\"", this, context.currentToken());
                 boolean result = cond.test(context);
                 if (result) {
+                    logger.atDebug().log("{}", this);
                     for (Expression expression : expressions) {
                         expression.test(context);
                     }
                 }
-                logger.atDebug().log("{} exit={}", this, result);
                 return result;
             }
         };
@@ -89,6 +91,9 @@ public abstract class Expression implements Predicate<ParseContext> {
 
     /**
      * Evaluates the expression changing the process context with source context just before expression evaluation
+     * <pre>
+     *     &lt;postOp> ::= &lt;exp>
+     * </pre>
      *
      * @param op the process context operator
      */
@@ -98,19 +103,22 @@ public abstract class Expression implements Predicate<ParseContext> {
             @Override
             public boolean test(ParseContext context) throws Throwable {
                 Token tok = context.currentToken();
-                logger.atDebug().log("{} entry token=\"{}\"", this, context.currentToken());
                 boolean result = expression.test(context);
                 if (result) {
                     op.accept(context, tok);
+                    logger.atDebug().log("{}", this);
                 }
-                logger.atDebug().log("{} exit={}", this, result);
                 return result;
             }
         };
     }
 
     /**
-     * Returns the expression generating the message error if the expression does not match;
+     * Returns the expression requiring the match of optional expression.
+     * If the expression does not match, the message error is generated
+     * <pre>
+     *     &lt;require-exp> ::= &lt;exp>
+     * </pre>
      *
      * @param pattern the error message pattern
      * @param args    the error message arguments
@@ -120,11 +128,10 @@ public abstract class Expression implements Predicate<ParseContext> {
         return new NonTerminalExp(expression.id) {
             @Override
             public boolean test(ParseContext context) throws Throwable {
-                logger.atDebug().log("{} entry token=\"{}\"", this, context.currentToken());
                 if (!expression.test(context)) {
                     throw context.currentToken().context().exception(pattern, args);
                 }
-                logger.atDebug().log("{} exit={}", this, true);
+                logger.atDebug().log("{}", this);
                 return true;
             }
         };
@@ -136,20 +143,24 @@ public abstract class Expression implements Predicate<ParseContext> {
     }
 
     /**
-     * Returns the expression that repetitively applys the expression while it matches
+     * Returns the expression that repetitively applies the expression while it matches
      * The resulting expression returns true if the expression matches at least one time
+     * <pre>
+     *     &lt;while-exp> ::= &lt;while-exp> | &lt;exp> | ""
+     * </pre>
      */
     public NonTerminalExp whileMatch() {
         Expression expression = this;
         return new NonTerminalExp(expression.id + "*") {
             @Override
             public boolean test(ParseContext context) throws Throwable {
-                logger.atDebug().log("{} entry token=\"{}\"", this, context.currentToken());
                 boolean result = false;
                 while (expression.test(context)) {
                     result = true;
                 }
-                logger.atDebug().log("{} exit={}", this, result);
+                if (result) {
+                    logger.atDebug().log("{}", this);
+                }
                 return result;
             }
         };

@@ -42,8 +42,7 @@ import java.util.List;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mmarini.Matchers.braCloseTo;
-import static org.mmarini.Matchers.ketCloseTo;
+import static org.mmarini.Matchers.*;
 
 class ProcessorTest {
     public static final float EPSILON = 1e-3f;
@@ -573,6 +572,37 @@ class ProcessorTest {
         assertDoesNotThrow(() -> execute(text));
         assertThat(consumed, contains(isA(Ket.class)));
         assertThat((Ket) consumed.getFirst(), ketCloseTo(EPSILON, e0, e1, e2, e3));
+        assertThat(processor.stack, empty());
+    }
+
+    @Test
+    void testBraComplex() {
+        assertDoesNotThrow(() -> execute("<0|^;"));
+        assertThat(consumed, contains(isA(Ket.class)));
+        assertThat((Ket) consumed.getFirst(), ketCloseTo(Ket.zero(), EPSILON));
+        assertThat(processor.stack, empty());
+    }
+
+    @Test
+    void testConjComplex() {
+        assertDoesNotThrow(() -> execute("i^;"));
+        assertThat(consumed, contains(isA(Complex.class)));
+        assertThat((Complex) consumed.getFirst(), complexClose(0, -1, EPSILON));
+        assertThat(processor.stack, empty());
+    }
+
+    @Test
+    void testConjInt() {
+        assertDoesNotThrow(() -> execute("1^;"));
+        assertThat(consumed, contains(1));
+        assertThat(processor.stack, empty());
+    }
+
+    @Test
+    void testKetComplex() {
+        assertDoesNotThrow(() -> execute("|0>^;"));
+        assertThat(consumed, contains(isA(Bra.class)));
+        assertThat((Bra) consumed.getFirst(), braCloseTo(Bra.zero(), EPSILON));
         assertThat(processor.stack, empty());
     }
 

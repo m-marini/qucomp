@@ -54,7 +54,6 @@ public abstract class TerminalExp extends Expression {
         @Override
         public boolean test(ParseContext context) throws Throwable {
             Token token = context.currentToken();
-            logger.atDebug().log("{} entry token=\"{}\"", this, token);
             boolean result = false;
             if (token instanceof Token.IntegerToken integerToken) {
                 context.popToken();
@@ -63,8 +62,8 @@ public abstract class TerminalExp extends Expression {
                 int nunBits = numBitsByState(state);
                 context.add(new Command.PushKet(token.context(), Ket.base(state, nunBits)));
                 result = true;
+                logger.atDebug().log("{}", this);
             }
-            logger.atDebug().log("{} exit={}", this, result);
             return result;
         }
     };
@@ -80,15 +79,13 @@ public abstract class TerminalExp extends Expression {
         public boolean test(ParseContext context) throws Throwable {
             // <imaginary-literal>::= "i" || ""
             Token tok = context.currentToken();
-            logger.atDebug().log("{} entry token=\"{}\"", this, tok);
             boolean result = false;
             if (tok instanceof Token.IdentifierToken && tok.token().equals("i")) {
-                logger.atDebug().log("{}  match", this);
                 context.popToken();
                 context.add(new Command.PushComplex(tok.context(), Complex.i()));
                 result = true;
+                logger.atDebug().log("{}", this);
             }
-            logger.atDebug().log("{} exit={}", this, result);
             return result;
         }
     };
@@ -97,9 +94,10 @@ public abstract class TerminalExp extends Expression {
         @Override
         public boolean test(ParseContext context) {
             Token token = context.currentToken();
-            logger.atDebug().log("{} entry token=\"{}\"", this, token);
             boolean result = !(token instanceof Token.EOFToken);
-            logger.atDebug().log("{}  exit={}", this, result);
+            if (result) {
+                logger.atDebug().log("{}", this);
+            }
             return result;
         }
     };
@@ -114,15 +112,13 @@ public abstract class TerminalExp extends Expression {
         @Override
         public boolean test(ParseContext context) throws Throwable {
             Token token = context.currentToken();
-            logger.atDebug().log("{} entry token=\"{}\"", this, token);
             boolean result = false;
             if (token instanceof Token.RealToken rToken) {
-                logger.atDebug().log("{}  match", this);
                 context.popToken();
                 context.add(new Command.PushComplex(token.context(), Complex.create(rToken.value())));
                 result = true;
+                logger.atDebug().log("{}", this);
             }
-            logger.atDebug().log("{}  exit={}", this, result);
             return result;
         }
     };
@@ -137,15 +133,13 @@ public abstract class TerminalExp extends Expression {
         @Override
         public boolean test(ParseContext context) throws Throwable {
             Token token = context.currentToken();
-            logger.atDebug().log("{} entry token=\"{}\"", this, token);
             boolean result = false;
             if (token instanceof Token.IntegerToken iToken) {
-                logger.atDebug().log("{}  match", this);
                 context.popToken();
                 context.add(new Command.PushInt(token.context(), iToken.value()));
                 result = true;
+                logger.atDebug().log("{}", this);
             }
-            logger.atDebug().log("{}  exit={}", this, result);
             return result;
         }
     };
@@ -171,18 +165,16 @@ public abstract class TerminalExp extends Expression {
         @Override
         public boolean test(ParseContext context) throws Throwable {
             Token token = context.currentToken();
-            logger.atDebug().log("{} entry token=\"{}\"", this, token);
             boolean result = false;
             if (token instanceof Token.IdentifierToken) {
                 if (RESERVED_KEYWORDS.contains(token.token())) {
                     throw token.context().exception("%s is a reserved keyword", token);
                 }
-                logger.atDebug().log("{}  match", this);
                 context.popToken();
                 context.add(new Command.PushString(token.context(), token.token()));
+                logger.atDebug().log("{}", this);
                 result = true;
             }
-            logger.atDebug().log("{} exit={}", this, result);
             return result;
         }
     };
@@ -207,9 +199,8 @@ public abstract class TerminalExp extends Expression {
             @Override
             public boolean test(ParseContext context) throws Throwable {
                 Token tok = context.currentToken();
-                logger.atDebug().log("{} entry token=\"{}\"", this, context.currentToken());
                 op.accept(context, tok);
-                logger.atDebug().log("{} exit={}", this, true);
+                logger.atDebug().log("{}", this);
                 return true;
             }
         };
@@ -225,14 +216,13 @@ public abstract class TerminalExp extends Expression {
             @Override
             public boolean test(ParseContext context) throws Throwable {
                 Token token = context.currentToken();
-                logger.atDebug().log("{} entry token=\"{}\"", this, token);
                 boolean result = false;
                 if (token instanceof Token.IdentifierToken && token.token().equals(identifier)) {
                     logger.atDebug().log("{}  match", this);
                     context.popToken();
                     result = true;
+                    logger.atDebug().log("{}", this);
                 }
-                logger.atDebug().log("{} exit={}", this, result);
                 return result;
             }
         };
@@ -248,14 +238,13 @@ public abstract class TerminalExp extends Expression {
             @Override
             public boolean test(ParseContext context) throws Throwable {
                 Token token = context.currentToken();
-                logger.atDebug().log("{} entry token=\"{}\"", this, token);
                 boolean result = false;
                 if (token instanceof Token.OperatorToken && token.token().equals(op)) {
                     logger.atDebug().log("{}  match", this);
                     context.popToken();
                     result = true;
+                    logger.atDebug().log("{}", this);
                 }
-                logger.atDebug().log("{} exit={}", this, result);
                 return result;
             }
         };

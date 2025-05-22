@@ -48,15 +48,15 @@ public interface Syntax {
      * </pre>
      */
     Expression stateLiteralExp = options("<state-literal>",
-            TerminalExp.optOp("+").opt(
+            TerminalExp.optOp("+").ifMatch(
                     operate("<plus-state-literal>", (context, token) ->
                             context.add(new Command.PushKet(token.context(), Ket.plus())))),
-            TerminalExp.optIdentifier("i").opt(
+            TerminalExp.optIdentifier("i").ifMatch(
                     operate("<i-state-literal>", (context, token) ->
                             context.add(new Command.PushKet(token.context(), Ket.i())))),
-            TerminalExp.optOp("-").opt(
+            TerminalExp.optOp("-").ifMatch(
                     options("<minus-state-exp-literal>",
-                            TerminalExp.optIdentifier("i").opt(
+                            TerminalExp.optIdentifier("i").ifMatch(
                                     operate("<minus-i-state-literal>", ((context, token) ->
                                             context.add(new Command.PushKet(token.context(), Ket.minus_i()))))),
                             operate("<minus-state-literal>", ((context, token) ->
@@ -70,14 +70,14 @@ public interface Syntax {
      * &lt;opt-ket-literal> ::= "|" &lt;state-literal> ">" | ""
      * </pre>
      */
-    Expression optKet = TerminalExp.optOp("|").opt(stateLiteralExp, TerminalExp.op(">"));
+    Expression optKet = TerminalExp.optOp("|").ifMatch(stateLiteralExp, TerminalExp.op(">"));
 
     /**
      * <pre>
      * &lt;opt-ket-literal> ::= "<" &lt;state-literal> "|" | ""
      * </pre>
      */
-    Expression optBra = TerminalExp.optOp("<").opt(
+    Expression optBra = TerminalExp.optOp("<").ifMatch(
             stateLiteralExp.postOp((context, token) ->
                     context.add(new Command.Conj(token.context()))),
             TerminalExp.op("|"));
@@ -91,9 +91,10 @@ public interface Syntax {
         return new NonTerminalExp("<exp>") {
             @Override
             public boolean test(ParseContext context) throws Throwable {
-                logger.atDebug().log("{} entry token=\"{}\"", this, context.currentToken());
                 boolean result = sumExp.test(context);
-                logger.atDebug().log("{} exit={}", this, result);
+                if (result) {
+                    logger.atDebug().log("{}", this);
+                }
                 return result;
             }
         };
@@ -111,7 +112,7 @@ public interface Syntax {
      * </pre>
      */
     Expression primaryExp = options("<primary-exp>",
-            TerminalExp.optOp("(").opt(exp(), TerminalExp.op(")")),
+            TerminalExp.optOp("(").ifMatch(exp(), TerminalExp.op(")")),
             TerminalExp.optRealLiteral,
             TerminalExp.optIntLiteral,
             TerminalExp.optILiteral,
@@ -123,9 +124,21 @@ public interface Syntax {
 
     /**
      * <pre>
+     * &lt;conj-exp> ::= &lt;conj-exp> "^"
+     *                 | &ltprimary-exp>
+     * </pre>
+     */
+    Expression conjExp = all("<conjExp>",
+            primaryExp,
+            optOp("^").ifMatch(operate("<conj>",
+                    (context, token) -> context.add(new Command.Conj(token.context())))
+            ).whileMatch());
+
+    /**
+     * <pre>
      * &lt;unary-exp> ::= "+" &lt;unary-exp>
      *                 | "-"  &lt;unary-exp>
-     *                 | &lt;primary-exp>
+     *                 | &lt;conj-exp>
      * </pre>
      */
     Expression unaryExp = new Expression("<unary-exp>") {
@@ -134,70 +147,67 @@ public interface Syntax {
             logger.atDebug().log("{} entry token=\"{}\"", this, context.currentToken());
             boolean result = switch (context.currentToken()) {
                 case Token.OperatorToken opTok when opTok.token().equals("+") -> {
-                    logger.atDebug().log("{}   match", this);
                     context.popToken();
                     test(context);
                     yield true;
                 }
                 case Token.OperatorToken opTok when opTok.token().equals("-") -> {
-                    logger.atDebug().log("{}   match", this);
                     context.popToken();
                     test(context);
                     context.add(new Command.Negate(opTok.context()));
                     yield true;
                 }
-                case null, default -> primaryExp.test(context);
+                case null, default -> conjExp.test(context);
             };
             logger.atDebug().log("{} exit={}", this, result);
             return result;
         }
     };
-
     /**
      * <pre>
      * &lt;mul-tail-exp> ::= "*" &lt;mul-tail-exp> | "/" &lt;mul-tail-exp> | ""
      * </pre>
      */
     Expression prodTailExp = options("<prod-tail>",
-            optOp("*").opt(
+            optOp("*").ifMatch(
                     unaryExp.postOp((context, token) ->
                             context.add(new Command.Multiply(token.context())))),
-            optOp("/").opt(
+            optOp("/").ifMatch(
                     unaryExp.postOp((context, token) ->
                             context.add(new Command.Divide(token.context()))))
     ).whileMatch();
 
     /**
      * <pre>
-     * &lt;mul-exp> ::= &lt;unary-exp> &lt;mul-exp-tail>
+     * &lt;prod-exp> ::= &lt;unary-exp> &lt;mul-exp-tail>
      * </pre>
      */
     Expression prodExp = all("<prod-exp>", unaryExp, prodTailExp);
 
     /**
      * <pre>
-     * &lt;mul-tail-exp> ::= "*" &lt;mul-tail-exp> | "/" &lt;mul-tail-exp> | ""
+     * &lt;sum-tail-exp> ::= "+" &lt;sum-tail-exp> | "-" &lt;sum-tail-exp> | ""
      * </pre>
      */
     Expression sumTailExp = options("<sum-tail>",
-            optOp("+").opt(
+            optOp("+").ifMatch(
                     prodExp.postOp((context, token) ->
                             context.add(new Command.Add(token.context())))),
-            optOp("-").opt(
+            optOp("-").ifMatch(
                     prodExp.postOp((context, token) ->
                             context.add(new Command.Sub(token.context()))))
     ).whileMatch();
 
     /**
      * <pre>
-     * &lt;mul-exp> ::= &lt;unary-exp> &lt;mul-exp-tail>
+     * &lt;sum-exp> ::= &lt;prod-exp> &lt;sum-exp-tail>
      * </pre>
      */
     Expression sumExp = all("<sum-exp>", prodExp, sumTailExp);
 
-    Expression optAssignExp = TerminalExp.optIdentifier("let").opt(
-            TerminalExp.optVarIdentifier.require("Missing variable identifier")
-                    .opt(TerminalExp.op("="), exp(), TerminalExp.op(";"))
+    Expression optAssignExp = optIdentifier("let").ifMatch(
+            optVarIdentifier.require("Missing variable identifier")
+                    .ifMatch(TerminalExp.op("="), exp(), TerminalExp.op(";"))
                     .postOp((context, token) -> {
                         context.add(new Command.Assign(token.context()));
                         context.add(new Command.Consume(token.context()));
@@ -208,11 +218,13 @@ public interface Syntax {
      * &lt;code-unit> ::= <assign
      * </pre>
      */
-    Expression codeUnitExp = optNotEmpty.opt(
+    Expression codeUnitExp = optNotEmpty.ifMatch(
                     options("<code-unit>",
                             optAssignExp,
                             all("<code-exp>", exp(),
                                     op(";").postOp((context, token) ->
                                             context.add(new Command.Consume(token.context()))))))
             .whileMatch();
+
+
 }
