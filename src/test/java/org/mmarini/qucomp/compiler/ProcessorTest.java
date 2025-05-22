@@ -320,10 +320,32 @@ class ProcessorTest {
             "|0> - i;,Right operand must not be a complex i (i)",
             "<0| - 1;,Right operand must not be a complex 1 (1)",
             "<0| - i;,Right operand must not be a complex i (i)",
+            "sqrt(|0>);,Argument must not be a ket (1.0) |0> (()",
+            "sqrt(<0|);,Argument must not be a bra (1.0) <0| (()",
     })
     void testError(String text, String error) {
         Throwable ex = assertThrows(Throwable.class, () -> execute(text));
         assertEquals(error.replace("$", ","), ex.getMessage());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "sqrt(4);, 2,0",
+            "sqrt(4.);, 2,0",
+            "sqrt(0.);, 0,0",
+            "sqrt(-4.);, 0,2",
+            "sqrt(8. * i);, 2,2",
+            "sqrt(-8. * i);, 2,-2",
+            "sqrt(8. +6* i);, 3,1",
+            "sqrt(8. -6* i);, 3,-1",
+            "sqrt(-8. +6* i);, 1,3",
+            "sqrt(-8. -6* i);, -1,3",
+    })
+    void testSqrt(String text, float re, float im) {
+        assertDoesNotThrow(() -> execute(text));
+        assertThat(consumed, contains(isA(Complex.class)));
+        assertThat((Complex) consumed.getFirst(), complexClose(re, im, EPSILON));
+        assertThat(processor.stack, empty());
     }
 
     @Test

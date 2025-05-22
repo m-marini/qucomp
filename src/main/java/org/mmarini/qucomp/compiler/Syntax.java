@@ -48,21 +48,21 @@ public interface Syntax {
      * </pre>
      */
     Expression stateLiteralExp = options("<state-literal>",
-            TerminalExp.optOp("+").ifMatch(
+            optOp("+").ifMatch(
                     operate("<plus-state-literal>", (context, token) ->
                             context.add(new Command.PushKet(token.context(), Ket.plus())))),
-            TerminalExp.optIdentifier("i").ifMatch(
+            optIdentifier("i").ifMatch(
                     operate("<i-state-literal>", (context, token) ->
                             context.add(new Command.PushKet(token.context(), Ket.i())))),
-            TerminalExp.optOp("-").ifMatch(
+            optOp("-").ifMatch(
                     options("<minus-state-exp-literal>",
-                            TerminalExp.optIdentifier("i").ifMatch(
+                            optIdentifier("i").ifMatch(
                                     operate("<minus-i-state-literal>", ((context, token) ->
                                             context.add(new Command.PushKet(token.context(), Ket.minus_i()))))),
                             operate("<minus-state-literal>", ((context, token) ->
                                     context.add(new Command.PushKet(token.context(), Ket.minus())))
                             ))),
-            TerminalExp.optStateIntLiteral)
+            optStateIntLiteral)
             .require("Missing state literal");
 
     /**
@@ -70,17 +70,17 @@ public interface Syntax {
      * &lt;opt-ket-literal> ::= "|" &lt;state-literal> ">" | ""
      * </pre>
      */
-    Expression optKet = TerminalExp.optOp("|").ifMatch(stateLiteralExp, TerminalExp.op(">"));
+    Expression optKet = optOp("|").ifMatch(stateLiteralExp, op(">"));
 
     /**
      * <pre>
      * &lt;opt-ket-literal> ::= "<" &lt;state-literal> "|" | ""
      * </pre>
      */
-    Expression optBra = TerminalExp.optOp("<").ifMatch(
+    Expression optBra = optOp("<").ifMatch(
             stateLiteralExp.postOp((context, token) ->
                     context.add(new Command.Conj(token.context()))),
-            TerminalExp.op("|"));
+            op("|"));
 
     /**
      * <pre>
@@ -101,6 +101,15 @@ public interface Syntax {
     }
 
     /**
+     *
+     */
+    Expression optSqrt = optIdentifier("sqrt")
+            .ifMatch(all("<sqrt>",
+                    op("("), exp(), op(")"))
+                    .postOp(((context, token) ->
+                            context.add(new Command.CallFunction(token.context(), "sqrt")))));
+
+    /**
      * <pre>
      * &lt;primary-exp> ::= "(" &lt;exp> ")"
      *                   | &lt;real-literal>
@@ -108,20 +117,21 @@ public interface Syntax {
      *                   | &lt;ket>
      *                   | &lt;bra>
      *                   | "i"
+     *                   | &ltfunc-exp>
      *                   | &lt;var-identifier>
      * </pre>
      */
     Expression primaryExp = options("<primary-exp>",
-            TerminalExp.optOp("(").ifMatch(exp(), TerminalExp.op(")")),
-            TerminalExp.optRealLiteral,
-            TerminalExp.optIntLiteral,
-            TerminalExp.optILiteral,
+            optOp("(").ifMatch(exp(), op(")")),
+            optRealLiteral,
+            optIntLiteral,
+            optILiteral,
             optKet,
             optBra,
-            TerminalExp.optVarIdentifier.postOp(((context, token) ->
+            optSqrt,
+            optVarIdentifier.postOp(((context, token) ->
                     context.add(new Command.RetrieveVar(token.context())))))
             .require("Missing primary expression");
-
     /**
      * <pre>
      * &lt;conj-exp> ::= &lt;conj-exp> "^"
@@ -133,7 +143,6 @@ public interface Syntax {
             optOp("^").ifMatch(operate("<conj>",
                     (context, token) -> context.add(new Command.Conj(token.context())))
             ).whileMatch());
-
     /**
      * <pre>
      * &lt;unary-exp> ::= "+" &lt;unary-exp>
@@ -144,7 +153,6 @@ public interface Syntax {
     Expression unaryExp = new Expression("<unary-exp>") {
         @Override
         public boolean test(ParseContext context) throws Throwable {
-            logger.atDebug().log("{} entry token=\"{}\"", this, context.currentToken());
             boolean result = switch (context.currentToken()) {
                 case Token.OperatorToken opTok when opTok.token().equals("+") -> {
                     context.popToken();
@@ -159,7 +167,9 @@ public interface Syntax {
                 }
                 case null, default -> conjExp.test(context);
             };
-            logger.atDebug().log("{} exit={}", this, result);
+            if (result) {
+                logger.atDebug().log("{}", this);
+            }
             return result;
         }
     };
@@ -204,10 +214,9 @@ public interface Syntax {
      * </pre>
      */
     Expression sumExp = all("<sum-exp>", prodExp, sumTailExp);
-
     Expression optAssignExp = optIdentifier("let").ifMatch(
             optVarIdentifier.require("Missing variable identifier")
-                    .ifMatch(TerminalExp.op("="), exp(), TerminalExp.op(";"))
+                    .ifMatch(op("="), exp(), op(";"))
                     .postOp((context, token) -> {
                         context.add(new Command.Assign(token.context()));
                         context.add(new Command.Consume(token.context()));

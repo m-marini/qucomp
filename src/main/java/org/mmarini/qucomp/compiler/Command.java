@@ -126,6 +126,29 @@ public interface Command {
         }
     }
 
+    class CallFunction extends AbstractCommand {
+        private final String value;
+
+        /**
+         * Creates the abstract command
+         *
+         * @param sourceContext the source context
+         * @param value         the value to push
+         */
+        public CallFunction(SourceContext sourceContext, String value) {
+            super(sourceContext);
+            this.value = requireNonNull(value);
+        }
+
+        /**
+         * Returns the value
+         */
+        public String value() {
+            return value;
+        }
+
+    }
+
     class PushString extends AbstractCommand {
         private final String value;
 

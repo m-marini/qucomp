@@ -218,7 +218,6 @@ public abstract class TerminalExp extends Expression {
                 Token token = context.currentToken();
                 boolean result = false;
                 if (token instanceof Token.IdentifierToken && token.token().equals(identifier)) {
-                    logger.atDebug().log("{}  match", this);
                     context.popToken();
                     result = true;
                     logger.atDebug().log("{}", this);
@@ -240,7 +239,6 @@ public abstract class TerminalExp extends Expression {
                 Token token = context.currentToken();
                 boolean result = false;
                 if (token instanceof Token.OperatorToken && token.token().equals(op)) {
-                    logger.atDebug().log("{}  match", this);
                     context.popToken();
                     result = true;
                     logger.atDebug().log("{}", this);

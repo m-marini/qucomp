@@ -620,6 +620,31 @@ class SyntaxTest {
         assertEquals(expId, ((Command.PushString) code.getFirst()).value());
     }
 
+    @Test
+    void testSqrt() {
+        boolean result = assertDoesNotThrow(() -> parse("sqrt(1)", optSqrt));
+        assertTrue(result);
+        assertThat(parseContext.currentToken(), Matchers.isA(Token.EOFToken.class));
+        assertThat(code, contains(
+                isA(Command.PushInt.class),
+                isA(Command.CallFunction.class)
+        ));
+        assertEquals(1, ((Command.PushInt) code.getFirst()).value());
+        assertEquals("sqrt", ((Command.CallFunction) code.get(1)).value());
+    }
+
+    @ParameterizedTest
+    @CsvSource(value = {
+            "sqrt +;, Missing token ( (+)",
+            "sqrt();, Missing primary expression ())",
+            "'sqrt(1, 2);','Missing token ) (,)'"
+    })
+    void testSqrtError(String text, String expMsg) {
+        ParseException ex = assertThrows(ParseException.class, () ->
+                parse(text, primaryExp));
+        assertEquals(expMsg, ex.getMessage());
+    }
+
     @ParameterizedTest
     @CsvSource({
             "/,",
