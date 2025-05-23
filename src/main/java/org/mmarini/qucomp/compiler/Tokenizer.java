@@ -33,11 +33,22 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.StringReader;
 
 import static java.util.Objects.requireNonNull;
 
 public class Tokenizer {
     private static final Logger logger = LoggerFactory.getLogger(Tokenizer.class);
+
+    /**
+     * Returns the tokenizer of a text
+     *
+     * @param text the text
+     */
+    public static Tokenizer create(String text) {
+        return new Tokenizer(new BufferedReader(new StringReader(text)));
+    }
+
     public BufferedReader reader;
     public Token currentToken;
     public String tokenLine;

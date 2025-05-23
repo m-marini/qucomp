@@ -194,7 +194,7 @@ class TokenizerTest {
     @MethodSource("testErrorData")
     void testError(String text, String expMsg) {
         createTokenizer(text);
-        ParseException ex = assertThrows(ParseException.class, () ->
+        SourceParseException ex = assertThrows(SourceParseException.class, () ->
                 tokenizer.open());
         assertEquals(expMsg, ex.getMessage());
     }

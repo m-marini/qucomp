@@ -28,47 +28,44 @@
 
 package org.mmarini.qucomp.compiler;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.isA;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mmarini.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class CompilerTest {
-    CommandNode code;
+class SyntaxBuilderTest {
+    private SyntaxBuilder builder;
 
-    private void compile(String text) throws Throwable {
-        code = Compiler.compile(text);
+    @Test
+    void buildError() {
+        ParseException ex = assertThrows(ParseException.class, () -> {
+            builder.intLiteral("10");
+            builder.options("10", "10");
+        });
+        assertEquals("Rule <10> already defined", ex.getMessage());
     }
 
     @Test
-    void test1() {
-        String text = "1;";
-        assertDoesNotThrow(() -> compile(text));
-        assertThat(code, isA(CommandNode.CodeUnit.class));
-        assertThat(code, containsArgsSize(1));
-        assertThat(code, hasArgAt(0, isA(CommandNode.Consume.class)));
+    void buildRecursive() {
+        SyntaxRule rule = assertDoesNotThrow(() -> {
+            builder.intLiteral("int-literal");
+            builder.options("int-literal-head", "int-literal", "int-literal-head");
+            return builder.build().rule("int-literal-head");
+        });
+        assertNotNull(rule);
+        assertEquals("int-literal-head", rule.id());
+        assertThat(rule, isA(SyntaxRule.NonTerminalRule.class));
+        SyntaxRule.NonTerminalRule r = (SyntaxRule.NonTerminalRule) rule;
+        assertThat(r.rules(), hasSize(2));
+        assertEquals("int-literal", r.rules().getFirst().id());
+        assertSame(rule, r.rules().get(1));
     }
 
-
-    @Test
-    void test2() throws Throwable {
-        String text = "let a=1;a+i;";
-        compile(text);
-        assertThat(code, isA(CommandNode.CodeUnit.class));
-        CommandNode.CodeUnit cu = (CommandNode.CodeUnit) code;
-        assertThat(cu.commands(), contains(
-                isA(CommandNode.Assign.class),
-                isA(CommandNode.Consume.class)
-        ));
-
-        CommandNode.Assign cmd0 = (CommandNode.Assign) cu.commands().getFirst();
-        assertThat(cmd0.left(), isValueCommand("a"));
-        assertThat(cmd0.right(), isA(CommandNode.Consume.class));
-
-
-        CommandNode.Consume cmd1 = (CommandNode.Consume) cu.commands().get(1);
+    @BeforeEach
+    void setUp() {
+        this.builder = new SyntaxBuilder();
     }
 }

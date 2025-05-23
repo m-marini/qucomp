@@ -30,36 +30,22 @@ package org.mmarini.qucomp.compiler;
 
 import java.io.IOException;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * Captures the exception during the parsing
  */
 public class ParseException extends IOException {
-    private final SourceContext context;
-
-    /**
-     * Create the exception
-     *
-     * @param message the message
-     * @param context the context
-     */
-    public ParseException(String message, SourceContext context) {
-        super(requireNonNull(message));
-        this.context = (requireNonNull(context));
+    public ParseException() {
     }
 
-    /**
-     * Returns the source context
-     */
-    public SourceContext context() {
-        return context;
+    public ParseException(String message) {
+        super(message);
     }
 
-    /**
-     * Returns the source context
-     */
-    public String getMessage() {
-        return context.reportMessage(super.getMessage());
+    public ParseException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public ParseException(Throwable cause) {
+        super(cause);
     }
 }

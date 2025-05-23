@@ -34,7 +34,8 @@ import java.util.Map;
 import java.util.function.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+import java.util.function.Predicate;
+import java.util.function.Function;
 import static java.util.Objects.requireNonNull;
 
 /**

@@ -35,12 +35,14 @@ import org.mmarini.qucomp.apis.Bra;
 import org.mmarini.qucomp.apis.Complex;
 import org.mmarini.qucomp.apis.Ket;
 import org.mmarini.qucomp.compiler.Command;
+import org.mmarini.qucomp.compiler.CommandNode;
 
 import java.util.Optional;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasToString;
 
 public interface Matchers {
 
@@ -219,6 +221,120 @@ public interface Matchers {
         };
     }
 
+    static Matcher<CommandNode> containsArgsSize(Matcher<Integer> expected) {
+        return new CustomMatcher<>(format("CodeUnit with %s",
+                expected)) {
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof CommandNode.CodeUnit cmd)) return false;
+                return expected.matches(cmd.commands().size());
+            }
+        };
+    }
+
+    static Matcher<CommandNode> containsArgsSize(int expected) {
+        return containsArgsSize(equalTo(expected));
+    }
+
+    static Matcher<CommandNode> hasArgAt(int index, Matcher<CommandNode> expected) {
+        return new CustomMatcher<>(format("CodeUnit with argument at %d that %s",
+                index, expected)) {
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof CommandNode.CodeUnit cmd)) return false;
+                if (index >= cmd.commands().size()) return false;
+                CommandNode arg = cmd.commands().get(index);
+                return expected.matches(arg);
+            }
+        };
+    }
+
+    static Matcher<CommandNode> isAddCommand(Matcher<CommandNode> leftExpected, Matcher<CommandNode> rightExpected) {
+        return new CustomMatcher<>(format("Add %s, %s",
+                leftExpected, rightExpected)) {
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof CommandNode.Add cmd)) return false;
+                return leftExpected.matches(cmd.left()) && rightExpected.matches(cmd.right());
+            }
+        };
+    }
+
+    static Matcher<CommandNode> isAssignCommand(Matcher<CommandNode> leftExpected, Matcher<CommandNode> rightExpected) {
+        return new CustomMatcher<>(format("Assign %s, %s",
+                leftExpected, rightExpected)) {
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof CommandNode.Assign cmd)) return false;
+                return leftExpected.matches(cmd.left()) && rightExpected.matches(cmd.right());
+            }
+        };
+    }
+
+    static <T> Matcher<CommandNode> isConsumeCommand(Matcher<T> expected) {
+        return new CustomMatcher<>(format("Consume %s",
+                expected)) {
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof CommandNode.Consume cmd)) return false;
+                return expected.matches(cmd.arg());
+            }
+        };
+    }
+
+    static <T> Matcher<CommandNode> isRetrieveVarCommand(Matcher<T> expected) {
+        return new CustomMatcher<>(format("RetrieveVar %s",
+                expected)) {
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof CommandNode.RetrieveVar cmd)) return false;
+                return expected.matches(cmd.arg());
+            }
+        };
+    }
+
+    static <T> Matcher<CommandNode> isValueCommand(Matcher<T> expected) {
+        return new CustomMatcher<>(format("Value %s",
+                expected)) {
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof CommandNode.Value cmd)) return false;
+                return expected.matches(cmd.value());
+            }
+        };
+    }
+
+    static Matcher<CommandNode> isValueCommand(int expected) {
+        return isValueCommand(equalTo(expected));
+    }
+
+    static Matcher<CommandNode> isValueCommand(Complex expected, float epsilon) {
+        return isValueCommand(complexClose(expected, epsilon));
+    }
+
+    static Matcher<CommandNode> isValueCommand(float re, float im, float epsilon) {
+        return isValueCommand(complexClose(re, im, epsilon));
+    }
+
+    static Matcher<CommandNode> isValueCommand(float re, float epsilon) {
+        return isValueCommand(complexClose(re, epsilon));
+    }
+
+    static Matcher<CommandNode> isValueCommand(String expected) {
+        return isValueCommand(equalTo(expected));
+    }
+
+    static Matcher<CommandNode> isValueCommand(Ket expected, float epsilon) {
+        return isValueCommand(ketCloseTo(expected, epsilon));
+    }
+
     static <T> Matcher<Optional<T>> emptyOptional() {
         return equalTo(Optional.empty());
     }
@@ -265,5 +381,9 @@ public interface Matchers {
                         && value2.matches(t._2);
             }
         };
+    }
+
+    static Matcher<Tuple2<?, ?>> tokenWithRule(String expToken, String expRule) {
+        return tupleOf(hasToString(expToken), hasToString(expRule));
     }
 }

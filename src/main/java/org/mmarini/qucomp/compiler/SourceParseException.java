@@ -28,39 +28,36 @@
 
 package org.mmarini.qucomp.compiler;
 
-import org.mmarini.Tuple2;
-
-import java.io.IOException;
-import java.util.List;
+import static java.util.Objects.requireNonNull;
 
 /**
- * Gets or pops the current token from an implicit source and retrieves the process context
+ * Captures the exception during the parsing
  */
-public interface ParseContext {
-
-    void add(Tuple2<Token, SyntaxRule> tokenWithRule);
-
-    List<CommandNode> popAllReversed();
+public class SourceParseException extends ParseException {
+    private final SourceContext context;
 
     /**
-     * Returns the command in the stack by removing
-     */
-    CommandNode popCommand();
-
-    /**
-     * Pushes the node in the stack
+     * Create the exception
      *
-     * @param node the command node
+     * @param message the message
+     * @param context the context
      */
-    void push(CommandNode node);
+    public SourceParseException(String message, SourceContext context) {
+        super(requireNonNull(message));
+        this.context = (requireNonNull(context));
+    }
 
     /**
-     * Returns the current token
+     * Returns the source context
      */
-    Token currentToken();
+    public SourceContext context() {
+        return context;
+    }
 
     /**
-     * Pops the current token
+     * Returns the source context
      */
-    void popToken() throws IOException;
+    public String getMessage() {
+        return context.reportMessage(super.getMessage());
+    }
 }

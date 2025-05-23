@@ -28,8 +28,12 @@
 
 package org.mmarini.qucomp.compiler;
 
+import org.mmarini.NotImplementedException;
+import org.mmarini.Tuple2;
+
 import java.io.*;
-import java.util.ArrayList;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 
 import static org.mmarini.qucomp.compiler.Syntax.codeUnitExp;
@@ -38,18 +42,37 @@ import static org.mmarini.qucomp.compiler.Syntax.codeUnitExp;
  * Parses different sources
  */
 public interface Compiler {
+
     /**
      * Parses the reader for syntax rules in the process context
      *
      * @param reader the reader
      */
-    static List<Command> compile(BufferedReader reader) throws Throwable {
+    static CommandNode compile(BufferedReader reader) throws Throwable {
         Tokenizer tokenizer = new Tokenizer(reader).open();
-        List<Command> result = new ArrayList<>();
+        Deque<CommandNode> stack = new LinkedList<>();
         ParseContext parseContext = new ParseContext() {
+
             @Override
-            public void add(Command command) {
-                result.add(command);
+            public void add(Tuple2<Token, SyntaxRule> tokenWithRule) {
+                throw new NotImplementedException();
+            }
+
+            @Override
+            public List<CommandNode> popAllReversed() {
+                List<CommandNode> list = stack.stream().toList();
+                stack.clear();
+                return list;
+            }
+
+            @Override
+            public CommandNode popCommand() {
+                return stack.removeLast();
+            }
+
+            @Override
+            public void push(CommandNode node) {
+                stack.offer(node);
             }
 
             @Override
@@ -63,7 +86,7 @@ public interface Compiler {
             }
         };
         codeUnitExp.test(parseContext);
-        return result;
+        return stack.removeLast();
     }
 
     /**
@@ -71,7 +94,7 @@ public interface Compiler {
      *
      * @param reader the reader
      */
-    static List<Command> compile(Reader reader) throws Throwable {
+    static CommandNode compile(Reader reader) throws Throwable {
         return compile(new BufferedReader(reader));
     }
 
@@ -80,7 +103,7 @@ public interface Compiler {
      *
      * @param file the source file
      */
-    static List<Command> compile(File file) throws Throwable {
+    static CommandNode compile(File file) throws Throwable {
         return compile(new FileReader(file));
     }
 
@@ -89,7 +112,8 @@ public interface Compiler {
      *
      * @param text the source text
      */
-    static List<Command> compile(String text) throws Throwable {
+    static CommandNode compile(String text) throws Throwable {
         return compile(new StringReader(text));
     }
+
 }

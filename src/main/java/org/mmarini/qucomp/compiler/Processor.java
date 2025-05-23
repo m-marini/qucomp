@@ -30,6 +30,7 @@ package org.mmarini.qucomp.compiler;
 
 import io.reactivex.rxjava3.functions.BiFunction;
 import io.reactivex.rxjava3.functions.Consumer;
+import org.mmarini.NotImplementedException;
 import org.mmarini.qucomp.apis.Bra;
 import org.mmarini.qucomp.apis.Complex;
 import org.mmarini.qucomp.apis.Ket;
@@ -46,8 +47,22 @@ public class Processor {
     private static final Map<String, BiFunction<Processor, SourceContext, Object>> FUNCTIONS_MAP = Map.of(
             "sqrt", Processor::sqrt
     );
+    final Map<String, Object> variables;
+    final Deque<Object> stack;
+    private final Consumer<Object> consumer;
 
-    private Object add(Command command) throws ParseException {
+    /**
+     * Creates the processor
+     *
+     * @param consumer the expression result consumer
+     */
+    public Processor(Consumer<Object> consumer) {
+        this.consumer = requireNonNull(consumer);
+        this.stack = new LinkedList<>();
+        this.variables = new HashMap<>();
+    }
+
+    private Object add(Command command) throws SourceParseException {
         Object right = stack.removeLast();
         Object left = stack.removeLast();
         return switch (left) {
@@ -59,7 +74,53 @@ public class Processor {
         };
     }
 
-    private void assign(Command command) throws ParseException {
+    private Object add(int left, Object right, Command command) throws SourceParseException {
+        return switch (right) {
+            case Integer value -> left + value;
+            case Complex value -> Complex.create(left).add(value);
+            case Ket value -> throw command.sourceContext().exception("Right operand must not be a ket %s", value);
+            case Bra value -> throw command.sourceContext().exception("Right operand must not be a bra %s", value);
+            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
+        };
+    }
+
+    private Object add(Complex left, Object right, Command command) throws SourceParseException {
+        return switch (right) {
+            case Integer value -> left.add(value);
+            case Complex value -> left.add(value);
+            case Ket value -> throw command.sourceContext().exception("Right operand must not be a ket %s", value);
+            case Bra value -> throw command.sourceContext().exception("Right operand must not be a bra %s", value);
+            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
+        };
+    }
+
+    private Object add(Ket left, Object right, Command command) throws SourceParseException {
+        return switch (right) {
+            case Integer value ->
+                    throw command.sourceContext().exception("Right operand must not be a complex %s", value);
+            case Complex value ->
+                    throw command.sourceContext().exception("Right operand must not be a complex %s", value);
+            case Ket value -> left.extend(value.values().length)
+                    .add(value.extend(left.values().length));
+            case Bra value -> throw command.sourceContext().exception("Right operand must not be a bra %s", value);
+            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
+        };
+    }
+
+    private Object add(Bra left, Object right, Command command) throws SourceParseException {
+        return switch (right) {
+            case Integer value ->
+                    throw command.sourceContext().exception("Right operand must not be a complex %s", value);
+            case Complex value ->
+                    throw command.sourceContext().exception("Right operand must not be a complex %s", value);
+            case Ket value -> throw command.sourceContext().exception("Right operand must not be a ket %s", value);
+            case Bra value -> left.extend(value.values().length)
+                    .add(value.extend(left.values().length));
+            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
+        };
+    }
+
+    private void assign(Command command) throws SourceParseException {
         Object value = stack.removeLast();
         String id = popString(command.sourceContext());
         variables.put(id, value);
@@ -74,7 +135,18 @@ public class Processor {
         return func.apply(this, call.sourceContext());
     }
 
-    private Object cross(Command command) throws ParseException {
+    private Object conj(Command.Conj cmd) throws SourceParseException {
+        Object arg = stack.removeLast();
+        return switch (arg) {
+            case Integer val -> val;
+            case Complex val -> val.conj();
+            case Ket val -> val.conj();
+            case Bra val -> val.conj();
+            case null, default -> throw cmd.sourceContext().exception("Undefined stack object %s", arg);
+        };
+    }
+
+    private Object cross(Command command) throws SourceParseException {
         Object right = stack.removeLast();
         Object left = stack.removeLast();
         return switch (left) {
@@ -88,7 +160,7 @@ public class Processor {
         };
     }
 
-    private Object cross(Ket left, Object right, Command command) throws ParseException {
+    private Object cross(Ket left, Object right, Command command) throws SourceParseException {
         return switch (right) {
             case Integer ignored ->
                     throw command.sourceContext().exception("Right operand must not be an integer %s", right);
@@ -100,7 +172,7 @@ public class Processor {
         };
     }
 
-    private Object cross(Bra left, Object right, Command command) throws ParseException {
+    private Object cross(Bra left, Object right, Command command) throws SourceParseException {
         return switch (right) {
             case Integer ignored ->
                     throw command.sourceContext().exception("Right operand must not be an integer %s", right);
@@ -112,7 +184,7 @@ public class Processor {
         };
     }
 
-    private Object divide(Command command) throws ParseException {
+    private Object divide(Command command) throws SourceParseException {
         Object right = stack.removeLast();
         Object left = stack.removeLast();
         return switch (left) {
@@ -122,6 +194,81 @@ public class Processor {
             case Bra value -> divide(value, right, command);
             default -> throw command.sourceContext().exception("Invalid left operand %s", left);
         };
+    }
+
+    private Object divide(int left, Object right, Command command) throws SourceParseException {
+        return switch (right) {
+            case Integer value -> left % value == 0
+                    ? left / value
+                    : Complex.create(left).div(Complex.create(value));
+            case Complex value -> Complex.create(left).div(value);
+            case Ket value -> {
+                Bra bra = value.conj();
+                yield bra.mul(bra.mul(value).inv().mul(left));
+            }
+            case Bra value -> {
+                Ket ket = value.conj();
+                yield ket.mul(value.mul(ket).inv().mul(left));
+            }
+            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
+        };
+    }
+
+    private Object divide(Complex left, Object right, Command command) throws SourceParseException {
+        return switch (right) {
+            case Integer value -> left.div(Complex.create(value));
+            case Complex value -> left.div(value);
+            case Ket value -> {
+                Bra bra = value.conj();
+                yield bra.mul(bra.mul(value).inv().mul(left));
+            }
+            case Bra value -> {
+                Ket ket = value.conj();
+                yield ket.mul(value.mul(ket).inv().mul(left));
+            }
+            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
+        };
+    }
+
+    private Object divide(Bra left, Object right, Command command) throws SourceParseException {
+        return switch (right) {
+            case Integer value -> left.mul(1f / value);
+            case Complex value -> left.mul(value.inv());
+            case Ket value -> throw command.sourceContext().exception("Right operand must not be a ket %s", value);
+            case Bra value -> {
+                left = left.extend(value.values().length);
+                value = value.extend(left.values().length);
+                Ket ket = value.conj();
+                yield left.mul(ket).mul(value.mul(ket).inv());
+            }
+            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
+        };
+    }
+
+    private Object divide(Ket left, Object right, Command command) throws SourceParseException {
+        return switch (right) {
+            case Integer value -> left.mul(1f / value);
+            case Complex value -> left.mul(value.inv());
+            case Ket value -> {
+                left = left.extend(value.values().length);
+                value = value.extend(left.values().length);
+                Bra bra = value.conj();
+                yield bra.mul(left).mul(bra.mul(value).inv());
+            }
+            case Bra value -> throw command.sourceContext().exception("Right operand must not be a bra %s", value);
+            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Executes the code
+     *
+     * @param code the code
+     */
+    public void executeCode(List<Command> code) throws Throwable {
+        for (Command command : code) {
+            executeCommand(command);
+        }
     }
 
     /**
@@ -152,7 +299,11 @@ public class Processor {
         }
     }
 
-    private Object multiply(Command command) throws ParseException {
+    public void executeCommand(CommandNode code) {
+        throw new NotImplementedException();
+    }
+
+    private Object multiply(Command command) throws SourceParseException {
         Object right = stack.removeLast();
         Object left = stack.removeLast();
         return switch (left) {
@@ -164,7 +315,72 @@ public class Processor {
         };
     }
 
-    private Object retrieveVar(Command command) throws ParseException {
+    private Object multiply(Bra left, Object right, Command command) throws SourceParseException {
+        return switch (right) {
+            case Integer value -> left.mul(value);
+            case Complex value -> left.mul(value);
+            case Ket value -> left.extend(value.values().length)
+                    .mul(value.extend(left.values().length));
+            case Bra value -> throw command.sourceContext().exception("Right operand must not be a bra %s", value);
+            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
+        };
+    }
+
+    private Object multiply(Ket left, Object right, Command command) throws SourceParseException {
+        return switch (right) {
+            case Integer value -> left.mul(value);
+            case Complex value -> left.mul(value);
+            case Ket value -> throw command.sourceContext().exception("Right operand must not be a ket %s", value);
+            case Bra value -> throw command.sourceContext().exception("Right operand must not be a bra %s", value);
+            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
+        };
+    }
+
+    private Object multiply(int left, Object right, Command command) throws SourceParseException {
+        return switch (right) {
+            case Integer value -> left * value;
+            case Complex value -> value.mul(left);
+            case Ket value -> value.mul(left);
+            case Bra value -> value.mul(left);
+            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
+        };
+    }
+
+    private Object multiply(Complex left, Object right, Command command) throws SourceParseException {
+        return switch (right) {
+            case Integer value -> left.mul(value);
+            case Complex value -> value.mul(left);
+            case Ket value -> value.mul(left);
+            case Bra value -> value.mul(left);
+            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
+        };
+    }
+
+    private Object negate(Command.Negate cmd) throws SourceParseException {
+        Object arg = stack.removeLast();
+        return switch (arg) {
+            case Integer val -> -val;
+            case Complex val -> val.neg();
+            case Ket val -> val.neg();
+            case Bra val -> val.neg();
+            case null, default -> throw cmd.sourceContext().exception("Undefined stack object %s", arg);
+        };
+    }
+
+    /**
+     * Returns the string value in the stack
+     *
+     * @param context the report token
+     */
+    private String popString(SourceContext context) throws SourceParseException {
+        Object value = stack.removeLast();
+        if (value instanceof String str) {
+            return str;
+        }
+        throw context.exception("Value %s is not a string", value);
+    }
+
+    private Object retrieveVar(Command command) throws SourceParseException {
         String id = popString(command.sourceContext());
         Object value = variables.get(id);
         if (value == null) {
@@ -173,7 +389,7 @@ public class Processor {
         return value;
     }
 
-    private Object sqrt(SourceContext context) throws ParseException {
+    private Object sqrt(SourceContext context) throws SourceParseException {
         Object value = stack.removeLast();
         return switch (value) {
             case Integer val -> Complex.create((float) Math.sqrt(val));
@@ -196,154 +412,7 @@ public class Processor {
         };
     }
 
-    final Map<String, Object> variables;
-    final Deque<Object> stack;
-    private final Consumer<Object> consumer;
-
-    /**
-     * Creates the processor
-     *
-     * @param consumer the expression result consumer
-     */
-    public Processor(Consumer<Object> consumer) {
-        this.consumer = requireNonNull(consumer);
-        this.stack = new LinkedList<>();
-        this.variables = new HashMap<>();
-    }
-
-    private Object add(int left, Object right, Command command) throws ParseException {
-        return switch (right) {
-            case Integer value -> left + value;
-            case Complex value -> Complex.create(left).add(value);
-            case Ket value -> throw command.sourceContext().exception("Right operand must not be a ket %s", value);
-            case Bra value -> throw command.sourceContext().exception("Right operand must not be a bra %s", value);
-            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
-        };
-    }
-
-    private Object add(Complex left, Object right, Command command) throws ParseException {
-        return switch (right) {
-            case Integer value -> left.add(value);
-            case Complex value -> left.add(value);
-            case Ket value -> throw command.sourceContext().exception("Right operand must not be a ket %s", value);
-            case Bra value -> throw command.sourceContext().exception("Right operand must not be a bra %s", value);
-            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
-        };
-    }
-
-    private Object add(Ket left, Object right, Command command) throws ParseException {
-        return switch (right) {
-            case Integer value ->
-                    throw command.sourceContext().exception("Right operand must not be a complex %s", value);
-            case Complex value ->
-                    throw command.sourceContext().exception("Right operand must not be a complex %s", value);
-            case Ket value -> left.extend(value.values().length)
-                    .add(value.extend(left.values().length));
-            case Bra value -> throw command.sourceContext().exception("Right operand must not be a bra %s", value);
-            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
-        };
-    }
-
-    private Object add(Bra left, Object right, Command command) throws ParseException {
-        return switch (right) {
-            case Integer value ->
-                    throw command.sourceContext().exception("Right operand must not be a complex %s", value);
-            case Complex value ->
-                    throw command.sourceContext().exception("Right operand must not be a complex %s", value);
-            case Ket value -> throw command.sourceContext().exception("Right operand must not be a ket %s", value);
-            case Bra value -> left.extend(value.values().length)
-                    .add(value.extend(left.values().length));
-            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
-        };
-    }
-
-    private Object conj(Command.Conj cmd) throws ParseException {
-        Object arg = stack.removeLast();
-        return switch (arg) {
-            case Integer val -> val;
-            case Complex val -> val.conj();
-            case Ket val -> val.conj();
-            case Bra val -> val.conj();
-            case null, default -> throw cmd.sourceContext().exception("Undefined stack object %s", arg);
-        };
-    }
-
-    private Object divide(int left, Object right, Command command) throws ParseException {
-        return switch (right) {
-            case Integer value -> left % value == 0
-                    ? left / value
-                    : Complex.create(left).div(Complex.create(value));
-            case Complex value -> Complex.create(left).div(value);
-            case Ket value -> {
-                Bra bra = value.conj();
-                yield bra.mul(bra.mul(value).inv().mul(left));
-            }
-            case Bra value -> {
-                Ket ket = value.conj();
-                yield ket.mul(value.mul(ket).inv().mul(left));
-            }
-            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
-        };
-    }
-
-    private Object divide(Complex left, Object right, Command command) throws ParseException {
-        return switch (right) {
-            case Integer value -> left.div(Complex.create(value));
-            case Complex value -> left.div(value);
-            case Ket value -> {
-                Bra bra = value.conj();
-                yield bra.mul(bra.mul(value).inv().mul(left));
-            }
-            case Bra value -> {
-                Ket ket = value.conj();
-                yield ket.mul(value.mul(ket).inv().mul(left));
-            }
-            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
-        };
-    }
-
-    private Object divide(Bra left, Object right, Command command) throws ParseException {
-        return switch (right) {
-            case Integer value -> left.mul(1f / value);
-            case Complex value -> left.mul(value.inv());
-            case Ket value -> throw command.sourceContext().exception("Right operand must not be a ket %s", value);
-            case Bra value -> {
-                left = left.extend(value.values().length);
-                value = value.extend(left.values().length);
-                Ket ket = value.conj();
-                yield left.mul(ket).mul(value.mul(ket).inv());
-            }
-            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
-        };
-    }
-
-    private Object divide(Ket left, Object right, Command command) throws ParseException {
-        return switch (right) {
-            case Integer value -> left.mul(1f / value);
-            case Complex value -> left.mul(value.inv());
-            case Ket value -> {
-                left = left.extend(value.values().length);
-                value = value.extend(left.values().length);
-                Bra bra = value.conj();
-                yield bra.mul(left).mul(bra.mul(value).inv());
-            }
-            case Bra value -> throw command.sourceContext().exception("Right operand must not be a bra %s", value);
-            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Executes the code
-     *
-     * @param code the code
-     */
-    public void executeCode(List<Command> code) throws Throwable {
-        for (Command command : code) {
-            executeCommand(command);
-        }
-    }
-
-    private Object sub(Command command) throws ParseException {
+    private Object sub(Command command) throws SourceParseException {
         Object right = stack.removeLast();
         Object left = stack.removeLast();
         return switch (left) {
@@ -355,72 +424,7 @@ public class Processor {
         };
     }
 
-    private Object multiply(Bra left, Object right, Command command) throws ParseException {
-        return switch (right) {
-            case Integer value -> left.mul(value);
-            case Complex value -> left.mul(value);
-            case Ket value -> left.extend(value.values().length)
-                    .mul(value.extend(left.values().length));
-            case Bra value -> throw command.sourceContext().exception("Right operand must not be a bra %s", value);
-            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
-        };
-    }
-
-    private Object multiply(Ket left, Object right, Command command) throws ParseException {
-        return switch (right) {
-            case Integer value -> left.mul(value);
-            case Complex value -> left.mul(value);
-            case Ket value -> throw command.sourceContext().exception("Right operand must not be a ket %s", value);
-            case Bra value -> throw command.sourceContext().exception("Right operand must not be a bra %s", value);
-            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
-        };
-    }
-
-    private Object multiply(int left, Object right, Command command) throws ParseException {
-        return switch (right) {
-            case Integer value -> left * value;
-            case Complex value -> value.mul(left);
-            case Ket value -> value.mul(left);
-            case Bra value -> value.mul(left);
-            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
-        };
-    }
-
-    private Object multiply(Complex left, Object right, Command command) throws ParseException {
-        return switch (right) {
-            case Integer value -> left.mul(value);
-            case Complex value -> value.mul(left);
-            case Ket value -> value.mul(left);
-            case Bra value -> value.mul(left);
-            default -> throw command.sourceContext().exception("Invalid right operand %s", right);
-        };
-    }
-
-    private Object negate(Command.Negate cmd) throws ParseException {
-        Object arg = stack.removeLast();
-        return switch (arg) {
-            case Integer val -> -val;
-            case Complex val -> val.neg();
-            case Ket val -> val.neg();
-            case Bra val -> val.neg();
-            case null, default -> throw cmd.sourceContext().exception("Undefined stack object %s", arg);
-        };
-    }
-
-    /**
-     * Returns the string value in the stack
-     *
-     * @param context the report token
-     */
-    private String popString(SourceContext context) throws ParseException {
-        Object value = stack.removeLast();
-        if (value instanceof String str) {
-            return str;
-        }
-        throw context.exception("Value %s is not a string", value);
-    }
-
-    private Object sub(Bra left, Object right, Command command) throws ParseException {
+    private Object sub(Bra left, Object right, Command command) throws SourceParseException {
         return switch (right) {
             case Integer value ->
                     throw command.sourceContext().exception("Right operand must not be a complex %s", value);
@@ -433,7 +437,7 @@ public class Processor {
         };
     }
 
-    private Object sub(Complex left, Object right, Command command) throws ParseException {
+    private Object sub(Complex left, Object right, Command command) throws SourceParseException {
         return switch (right) {
             case Integer value -> left.sub(value);
             case Complex value -> left.sub(value);
@@ -443,7 +447,7 @@ public class Processor {
         };
     }
 
-    private Object sub(Ket left, Object right, Command command) throws ParseException {
+    private Object sub(Ket left, Object right, Command command) throws SourceParseException {
         return switch (right) {
             case Integer value ->
                     throw command.sourceContext().exception("Right operand must not be a complex %s", value);
@@ -456,7 +460,7 @@ public class Processor {
         };
     }
 
-    private Object sub(int left, Object right, Command command) throws ParseException {
+    private Object sub(int left, Object right, Command command) throws SourceParseException {
         return switch (right) {
             case Integer value -> left - value;
             case Complex value -> Complex.create(left).sub(value);

@@ -51,7 +51,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.reactivex.rxjava3.schedulers.Schedulers.io;
@@ -219,12 +218,12 @@ public class QuCompGUI {
     private void onRun(ActionEvent actionEvent) {
         try {
             // Compile
-            List<Command> code = Compiler.compile(source());
+            CommandNode code = Compiler.compile(source());
             // Process
             AtomicReference<Object> val = new AtomicReference<>();
-            new Processor(val::set).executeCode(code);
+            new Processor(val::set).executeCommand(code);
             errorPanel.setText(val.toString());
-        } catch (ParseException e) {
+        } catch (SourceParseException e) {
             SourceContext ctx = e.context();
             String[] msg = ctx.fullReportMessage(e.getMessage());
             errorPanel.setText(Arrays.stream(msg)

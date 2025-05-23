@@ -53,7 +53,7 @@ public interface Syntax {
             op(")"),
             op(";"),
             operate("<clear>", (context, token) ->
-                    context.add(new Command.Clear(token.context()))));
+                    context.push(new CommandNode.Clear(token.context()))));
 
     /**
      * <pre>
@@ -63,17 +63,17 @@ public interface Syntax {
     Expression exp1_stateLiteral = options("<state-literal>",
             optOp("+").ifMatch(
                     operate("<plus-state-literal>", (context, token) ->
-                            context.add(new Command.PushKet(token.context(), Ket.plus())))),
+                            context.push(new CommandNode.Value(token.context(), Ket.plus())))),
             optIdentifier("i").ifMatch(
                     operate("<i-state-literal>", (context, token) ->
-                            context.add(new Command.PushKet(token.context(), Ket.i())))),
+                            context.push(new CommandNode.Value(token.context(), Ket.i())))),
             optOp("-").ifMatch(
                     options("<minus-state-exp-literal>",
                             optIdentifier("i").ifMatch(
                                     operate("<minus-i-state-literal>", ((context, token) ->
-                                            context.add(new Command.PushKet(token.context(), Ket.minus_i()))))),
+                                            context.push(new CommandNode.Value(token.context(), Ket.minus_i()))))),
                             operate("<minus-state-literal>", ((context, token) ->
-                                    context.add(new Command.PushKet(token.context(), Ket.minus())))
+                                    context.push(new CommandNode.Value(token.context(), Ket.minus())))
                             ))),
             optStateIntLiteral)
             .require("Missing state literal");
@@ -91,8 +91,10 @@ public interface Syntax {
      * </pre>
      */
     Expression exp2_bra = optOp("<").ifMatch(
-            exp1_stateLiteral.postOp((context, token) ->
-                    context.add(new Command.Conj(token.context()))),
+            exp1_stateLiteral.postOp((context, token) -> {
+                CommandNode cmd = context.popCommand();
+                context.push(new CommandNode.Conj(token.context(), cmd));
+            }),
             op("|"));
 
     /**
@@ -132,7 +134,7 @@ public interface Syntax {
                 case Token.OperatorToken opTok when opTok.token().equals("-") -> {
                     context.popToken();
                     test(context);
-                    context.add(new Command.Negate(opTok.context()));
+                    context.push(new CommandNode.Negate(opTok.context(), context.popCommand()));
                     yield true;
                 }
                 case null, default -> exp4_conj.test(context);
@@ -152,9 +154,11 @@ public interface Syntax {
     Expression exp6_cross = all("cross-exp>",
             exp5_unary,
             optIdentifier("x").ifMatch(
-                    exp5_unary.postOp((context, toket) ->
-                            context.add(new Command.Cross(toket.context()))
-                    )
+                    exp5_unary.postOp((context, toket) -> {
+                        CommandNode right = context.popCommand();
+                        CommandNode left = context.popCommand();
+                        context.push(new CommandNode.Cross(toket.context(), left, right));
+                    })
             ).whileMatch()
     );
     /**
@@ -166,11 +170,17 @@ public interface Syntax {
             exp6_cross,
             options("<prod-tail>",
                     optOp("*").ifMatch(
-                            exp6_cross.postOp((context, token) ->
-                                    context.add(new Command.Multiply(token.context())))),
+                            exp6_cross.postOp((context, token) -> {
+                                CommandNode right = context.popCommand();
+                                CommandNode left = context.popCommand();
+                                context.push(new CommandNode.Mul(token.context(), left, right));
+                            })),
                     optOp("/").ifMatch(
-                            exp6_cross.postOp((context, token) ->
-                                    context.add(new Command.Divide(token.context()))))
+                            exp6_cross.postOp((context, token) -> {
+                                CommandNode right = context.popCommand();
+                                CommandNode left = context.popCommand();
+                                context.push(new CommandNode.Mul(token.context(), left, right));
+                            }))
             ).whileMatch());
     /**
      * <pre>
@@ -181,11 +191,17 @@ public interface Syntax {
             exp7_prod,
             options("<add-tail>",
                     optOp("+").ifMatch(
-                            exp7_prod.postOp((context, token) ->
-                                    context.add(new Command.Add(token.context())))),
+                            exp7_prod.postOp((context, token) -> {
+                                CommandNode right = context.popCommand();
+                                CommandNode left = context.popCommand();
+                                context.push(new CommandNode.Add(token.context(), left, right));
+                            })),
                     optOp("-").ifMatch(
-                            exp7_prod.postOp((context, token) ->
-                                    context.add(new Command.Sub(token.context()))))
+                            exp7_prod.postOp((context, token) -> {
+                                CommandNode right = context.popCommand();
+                                CommandNode left = context.popCommand();
+                                context.push(new CommandNode.Sub(token.context(), left, right));
+                            }))
             ).whileMatch());
 
     /**
@@ -197,8 +213,11 @@ public interface Syntax {
     Expression exp1_sqrt = optIdentifier("sqrt")
             .ifMatch(all("<sqrt>",
                     op("("), exp(), op(")"))
-                    .postOp(((context, token) ->
-                            context.add(new Command.CallFunction(token.context(), "sqrt")))));
+                    .postOp((context, token) -> {
+                        CommandNode arg = context.popCommand();
+                        context.push(new CommandNode.CallFunction(token.context(), arg, "sqrt"));
+                    }));
+
     /**
      * <pre>
      * &lt;func-exp> ::= &lt;opt-sqrt>
@@ -226,7 +245,7 @@ public interface Syntax {
             exp2_bra,
             exp2_func,
             optVarIdentifier.postOp(((context, token) ->
-                    context.add(new Command.RetrieveVar(token.context())))))
+                    context.push(new CommandNode.RetrieveVar(token.context(), context.popCommand())))))
             .require("Missing primary expression");
     /**
      * <pre>
@@ -237,7 +256,7 @@ public interface Syntax {
     Expression exp4_conj = all("<conjExp>",
             exp3_primary,
             optOp("^").ifMatch(operate("<conj>",
-                    (context, token) -> context.add(new Command.Conj(token.context())))
+                    (context, token) -> context.push(new CommandNode.Conj(token.context(), context.popCommand())))
             ).whileMatch());
     /**
      *
@@ -247,8 +266,11 @@ public interface Syntax {
                     .ifMatch(op("="),
                             exp(),
                             op(";")).postOp((context, token) -> {
-                        context.add(new Command.Assign(token.context()));
-                        context.add(new Command.Consume(token.context()));
+                        CommandNode right = context.popCommand();
+                        CommandNode left = context.popCommand();
+                        context.push(new CommandNode.Assign(token.context(),
+                                left,
+                                new CommandNode.Consume(right.context(), right)));
                     }));
 
     /**
@@ -262,6 +284,9 @@ public interface Syntax {
                             exp1_clear,
                             all("<code-exp>", exp(),
                                     op(";").postOp((context, token) ->
-                                            context.add(new Command.Consume(token.context()))))))
-            .whileMatch();
+                                            context.push(new CommandNode.Consume(token.context(), context.popCommand()))))))
+            .whileMatch()
+            .postOp(((context, token) ->
+                    context.push(new CommandNode.CodeUnit(token.context(), context.popAllReversed()))
+            ));
 }

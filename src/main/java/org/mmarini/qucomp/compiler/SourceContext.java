@@ -66,12 +66,12 @@ public record SourceContext(String token, String line, int lineNumber, int posit
      * @param pattern the pattern
      * @param args    the argument
      */
-    public ParseException exception(String pattern, Object... args) {
+    public SourceParseException exception(String pattern, Object... args) {
         String msg = pattern.formatted(args);
         for (String m : fullReportMessage(msg)) {
             logger.atError().log("{}", m);
         }
-        return new ParseException(msg, this);
+        return new SourceParseException(msg, this);
     }
 
     /**

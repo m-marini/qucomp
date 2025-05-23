@@ -28,39 +28,44 @@
 
 package org.mmarini.qucomp.compiler;
 
-import org.mmarini.Tuple2;
-
-import java.io.IOException;
-import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Gets or pops the current token from an implicit source and retrieves the process context
+ * The qu language syntax
  */
-public interface ParseContext {
-
-    void add(Tuple2<Token, SyntaxRule> tokenWithRule);
-
-    List<CommandNode> popAllReversed();
+public class Syntax1 {
+    private static final Logger logger = LoggerFactory.getLogger(Syntax1.class);
+    private static final SyntaxBuilder BUILDER = createSyntax();
 
     /**
-     * Returns the command in the stack by removing
+     * Returns the qu syntax builder
      */
-    CommandNode popCommand();
+    private static SyntaxBuilder createSyntax() {
+        try {
+            SyntaxBuilder builder = new SyntaxBuilder();
+
+            builder.opt("clear-stm", "clear", "(", ")", ";");
+
+            builder.oper("(");
+            builder.oper(")");
+            builder.oper(";");
+
+            builder.id("clear");
+            return builder.build();
+
+        } catch (ParseException ex) {
+            logger.atError().setCause(ex).log("Error building qu syntax");
+            throw new RuntimeException(ex);
+        }
+    }
 
     /**
-     * Pushes the node in the stack
+     * Returns the qu syntax rule
      *
-     * @param node the command node
+     * @param id the rule identifier
      */
-    void push(CommandNode node);
-
-    /**
-     * Returns the current token
-     */
-    Token currentToken();
-
-    /**
-     * Pops the current token
-     */
-    void popToken() throws IOException;
+    static SyntaxRule rule(String id) {
+        return BUILDER.rule(id);
+    }
 }

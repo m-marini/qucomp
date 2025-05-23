@@ -60,7 +60,7 @@ public abstract class TerminalExp extends Expression {
                 int state = integerToken.value();
                 // Decode state
                 int nunBits = numBitsByState(state);
-                context.add(new Command.PushKet(token.context(), Ket.base(state, nunBits)));
+                context.push(new CommandNode.Value(token.context(), Ket.base(state, nunBits)));
                 result = true;
                 logger.atDebug().log("{}", this);
             }
@@ -82,7 +82,7 @@ public abstract class TerminalExp extends Expression {
             boolean result = false;
             if (tok instanceof Token.IdentifierToken && tok.token().equals("i")) {
                 context.popToken();
-                context.add(new Command.PushComplex(tok.context(), Complex.i()));
+                context.push(new CommandNode.Value(tok.context(), Complex.i()));
                 result = true;
                 logger.atDebug().log("{}", this);
             }
@@ -115,7 +115,7 @@ public abstract class TerminalExp extends Expression {
             boolean result = false;
             if (token instanceof Token.RealToken rToken) {
                 context.popToken();
-                context.add(new Command.PushComplex(token.context(), Complex.create(rToken.value())));
+                context.push(new CommandNode.Value(token.context(), Complex.create(rToken.value())));
                 result = true;
                 logger.atDebug().log("{}", this);
             }
@@ -136,7 +136,7 @@ public abstract class TerminalExp extends Expression {
             boolean result = false;
             if (token instanceof Token.IntegerToken iToken) {
                 context.popToken();
-                context.add(new Command.PushInt(token.context(), iToken.value()));
+                context.push(new CommandNode.Value(token.context(), iToken.value()));
                 result = true;
                 logger.atDebug().log("{}", this);
             }
@@ -172,7 +172,7 @@ public abstract class TerminalExp extends Expression {
                     throw token.context().exception("%s is a reserved keyword", token);
                 }
                 context.popToken();
-                context.add(new Command.PushString(token.context(), token.token()));
+                context.push(new CommandNode.Value(token.context(), token.token()));
                 logger.atDebug().log("{}", this);
                 result = true;
             }
