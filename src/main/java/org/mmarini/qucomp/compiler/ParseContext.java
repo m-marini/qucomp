@@ -28,8 +28,6 @@
 
 package org.mmarini.qucomp.compiler;
 
-import org.mmarini.Tuple2;
-
 import java.io.IOException;
 import java.util.List;
 
@@ -38,7 +36,7 @@ import java.util.List;
  */
 public interface ParseContext {
 
-    void add(Tuple2<Token, SyntaxRule> tokenWithRule);
+    void join(Token token, SyntaxRule rule);
 
     List<CommandNode> popAllReversed();
 

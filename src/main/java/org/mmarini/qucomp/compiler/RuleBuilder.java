@@ -2,7 +2,6 @@ package org.mmarini.qucomp.compiler;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -43,9 +42,7 @@ abstract class RuleBuilder {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", this.getClass().getSimpleName() + "<", ">")
-                .add(id)
-                .toString();
+        return id;
     }
 
     /**
@@ -85,9 +82,8 @@ abstract class RuleBuilder {
                     .filter(id -> binder.apply(id) == null)
                     .toList();
             if (!missing.isEmpty()) {
-                throw new ParseException("Missing dependant rules "
-                        + missing.stream()
-                        .collect(Collectors.joining(", ", "<", ">")));
+                throw new ParseException(rule + " missing dependants "
+                        + String.join(", ", missing));
             }
             if (rule instanceof SyntaxRule.NonTerminalRule nonTerm) {
                 // binds dependants

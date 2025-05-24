@@ -29,7 +29,6 @@
 package org.mmarini.qucomp.compiler;
 
 import org.mmarini.MapStream;
-import org.mmarini.Tuple2;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -106,6 +105,58 @@ public class SyntaxBuilder {
 
 
     /**
+     * Returns the int literal builder
+     *
+     * @param ruleId the syntax rule identifier
+     */
+    public RuleBuilder.TerminalRuleBuilder noPop(String ruleId) throws ParseException {
+        return put(new RuleBuilder.TerminalRuleBuilder(ruleId) {
+            @Override
+            public SyntaxRule build() {
+                return new SyntaxRule.AbstractRule(ruleId) {
+                    @Override
+                    public boolean parse(ParseContext context) {
+                        Token token = context.currentToken();
+                        context.join(token, this);
+                        return true;
+                    }
+                };
+            }
+        });
+    }
+
+    public RuleBuilder.NonTerminalRuleBuilder opt(String id, String condition, String... rules) throws ParseException {
+        String[] deps = Stream.concat(
+                Stream.of(condition),
+                Stream.of(rules)
+        ).toArray(String[]::new);
+        return put(new RuleBuilder.NonTerminalRuleBuilder(id, deps) {
+            @Override
+            public SyntaxRule build() {
+                return new SyntaxRule.NonTerminalRule(id) {
+                    @Override
+                    public boolean parse(ParseContext context) throws IOException {
+                        Token ruleToken = context.currentToken();
+                        List<SyntaxRule> rules1 = rules();
+                        if (!rules1.getFirst().parse(context)) {
+                            return false;
+                        }
+                        for (int i = 1; i < rules1.size(); i++) {
+                            Token token = context.currentToken();
+                            SyntaxRule rule = rules1.get(i);
+                            if (!rule.parse(context)) {
+                                throw token.context().exception("Missing %s", rule);
+                            }
+                        }
+                        context.join(ruleToken, this);
+                        return true;
+                    }
+                };
+            }
+        });
+    }
+
+    /**
      * Returns the syntax rule that matches for the given operator
      *
      * @param op the operator
@@ -124,33 +175,6 @@ public class SyntaxBuilder {
         });
     }
 
-    public RuleBuilder.NonTerminalRuleBuilder opt(String id, String condition, String... rules) throws ParseException {
-        String[] deps = Stream.concat(
-                Stream.of(condition),
-                Stream.of(rules)
-        ).toArray(String[]::new);
-        return put(new RuleBuilder.NonTerminalRuleBuilder(id, deps) {
-            @Override
-            public SyntaxRule build() {
-                return new SyntaxRule.NonTerminalRule(id) {
-                    @Override
-                    public boolean parse(ParseContext context) throws IOException {
-                        Token token = context.currentToken();
-                        List<SyntaxRule> rules1 = rules();
-                        if (!rules1.getFirst().parse(context)) {
-                            return false;
-                        }
-                        for (int i = 1; i < rules1.size(); i++) {
-                            rules1.get(i).parse(context);
-                        }
-                        context.add(Tuple2.of(token, this));
-                        return true;
-                    }
-                };
-            }
-        });
-    }
-
     /**
      * Returns the builder of the option rule list
      *
@@ -162,6 +186,17 @@ public class SyntaxBuilder {
             @Override
             public SyntaxRule build() {
                 return new SyntaxRule.NonTerminalRule(id) {
+                    @Override
+                    public boolean parse(ParseContext context) throws IOException {
+                        Token token = context.currentToken();
+                        for (SyntaxRule rule : rules()) {
+                            if (rule.parse(context)) {
+                                context.join(token, this);
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
                 };
             }
         });
@@ -177,10 +212,51 @@ public class SyntaxBuilder {
     private <T extends RuleBuilder> T put(T builder) throws ParseException {
         String id = builder.id();
         if (builders.containsKey(id)) {
-            throw new ParseException(format("Rule <%s> already defined", id));
+            throw new ParseException(format("Rule %s already defined", id));
         }
         builders.put(id, builder);
         return builder;
+    }
+
+    /**
+     * Returns the int literal builder
+     *
+     * @param ruleId the syntax rule identifier
+     */
+    public RuleBuilder.TerminalRuleBuilder realLiteral(String ruleId) throws ParseException {
+        return put(new RuleBuilder.TerminalRuleBuilder(ruleId) {
+            @Override
+            public SyntaxRule build() {
+                return new SyntaxRule.TerminalRule(ruleId) {
+                    @Override
+                    protected boolean match(Token token) {
+                        return token instanceof Token.RealToken;
+                    }
+                };
+            }
+        });
+    }
+
+    public RuleBuilder.NonTerminalRuleBuilder require(String id, String... rules) throws ParseException {
+        return put(new RuleBuilder.NonTerminalRuleBuilder(id, rules) {
+            @Override
+            public SyntaxRule build() {
+                return new SyntaxRule.NonTerminalRule(id) {
+                    @Override
+                    public boolean parse(ParseContext context) throws IOException {
+                        Token ruleToken = context.currentToken();
+                        for (SyntaxRule rule : rules()) {
+                            Token token = context.currentToken();
+                            if (!rule.parse(context)) {
+                                throw token.context().exception("Missing %s", rule);
+                            }
+                        }
+                        context.join(ruleToken, this);
+                        return true;
+                    }
+                };
+            }
+        });
     }
 
     /**

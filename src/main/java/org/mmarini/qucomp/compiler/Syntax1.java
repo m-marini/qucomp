@@ -45,13 +45,63 @@ public class Syntax1 {
         try {
             SyntaxBuilder builder = new SyntaxBuilder();
 
-            builder.opt("clear-stm", "clear", "(", ")", ";");
+            // <clear-stm> ::= "clear" "(" ")" ";" | ""
+            builder.opt("<clear-stm>", "clear", "(", ")", ";");
 
+            builder.require("<exp>", "<primary-exp>");
+
+            /*
+            <exp-primary> := <priority-exp>
+                           | <int-literal>
+                           | <real-literal>
+             */
+            builder.require("<primary-exp>", "<primary-exp-opt>");
+            builder.options("<primary-exp-opt>", "<priority-exp>", "<int-literal>", "<real-literal>");
+
+            /*
+            <priority-exp> ::= "(" <exp> ")" | ""
+             */
+            builder.opt("<priority-exp>", "(", "<exp>", ")");
+
+            builder.require("<state-exp>", "<state-exp-opt>");
+            /*
+            <state-exp-opt> ::= <i-state-literal>
+                            | <plus-state-literal>
+                            | <minus-state-exp>
+                            | <exp>
+             */
+            builder.options("<state-exp-opt>", "<im-state>", "<plus-state>", "<minus-state-exp>", "<exp>");
+            /*
+            <minus-state-exp> ::= "-" <minus-state-exp-opt>
+             */
+            builder.opt("<minus-state-exp>", "-", "<minus-state-exp-opt>");
+            /*
+            <minus-state-exp-opt> ::= "i" <minus-i-state> | <minus-state>
+            */
+            builder.options("<minus-state-exp-opt>", "<minus-im-state>", "<minus-state>");
+
+            builder.noPop("<minus-state>");
+
+            // literals
+            builder.intLiteral("<int-literal>");
+            builder.realLiteral("<real-literal>");
+            builder.opt("<im-unit>", "i");
+            builder.opt("<im-state>", "i");
+            builder.opt("<minus-im-state>", "i");
+            builder.opt("<plus-state>", "+");
+
+
+            // Operators
+            builder.oper("+");
+            builder.oper("-");
             builder.oper("(");
             builder.oper(")");
             builder.oper(";");
 
+            // Reserved keywords
             builder.id("clear");
+            builder.id("i");
+
             return builder.build();
 
         } catch (ParseException ex) {

@@ -28,12 +28,8 @@
 
 package org.mmarini.qucomp.compiler;
 
-import org.mmarini.NotImplementedException;
-import org.mmarini.Tuple2;
-
 import java.io.IOException;
 import java.util.List;
-import java.util.StringJoiner;
 
 import static java.util.Objects.requireNonNull;
 
@@ -50,9 +46,7 @@ public interface SyntaxRule {
      *
      * @param context the parse context
      */
-    default boolean parse(ParseContext context) throws IOException {
-        throw new NotImplementedException();
-    }
+    boolean parse(ParseContext context) throws IOException;
 
     abstract class AbstractRule implements SyntaxRule {
         private final String id;
@@ -68,9 +62,7 @@ public interface SyntaxRule {
 
         @Override
         public String toString() {
-            return new StringJoiner(", ", this.getClass().getSimpleName() + "<", ">")
-                    .add(id)
-                    .toString();
+            return id;
         }
     }
 
@@ -103,7 +95,7 @@ public interface SyntaxRule {
             Token token = context.currentToken();
             if (match(token)) {
                 context.popToken();
-                context.add(Tuple2.of(token, this));
+                context.join(token, this);
                 return true;
             }
             return false;

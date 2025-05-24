@@ -12,7 +12,7 @@ import java.util.stream.IntStream;
 import static java.lang.Math.sqrt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mmarini.Matchers.complexClose;
+import static org.mmarini.qucomp.Matchers.complexClose;
 
 class MatrixTest {
     public static final float EPSILON = 1e-6F;

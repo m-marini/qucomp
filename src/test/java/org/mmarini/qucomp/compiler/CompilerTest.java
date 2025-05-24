@@ -34,7 +34,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mmarini.Matchers.*;
+import static org.mmarini.qucomp.Matchers.*;
 
 public class CompilerTest {
     CommandNode code;

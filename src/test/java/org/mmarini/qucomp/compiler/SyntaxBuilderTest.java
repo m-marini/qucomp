@@ -45,7 +45,7 @@ class SyntaxBuilderTest {
             builder.intLiteral("10");
             builder.options("10", "10");
         });
-        assertEquals("Rule <10> already defined", ex.getMessage());
+        assertEquals("Rule 10 already defined", ex.getMessage());
     }
 
     @Test

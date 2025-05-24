@@ -29,7 +29,6 @@
 package org.mmarini.qucomp.compiler;
 
 import org.mmarini.NotImplementedException;
-import org.mmarini.Tuple2;
 
 import java.io.*;
 import java.util.Deque;
@@ -54,7 +53,7 @@ public interface Compiler {
         ParseContext parseContext = new ParseContext() {
 
             @Override
-            public void add(Tuple2<Token, SyntaxRule> tokenWithRule) {
+            public void join(Token token, SyntaxRule rule) {
                 throw new NotImplementedException();
             }
 
