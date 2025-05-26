@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mmarini.Matchers.complexClose;
+import static org.mmarini.qucomp.Matchers.complexClose;
 
 class QuGateTest {
 

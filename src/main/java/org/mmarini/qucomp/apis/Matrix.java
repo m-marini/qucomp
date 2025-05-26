@@ -424,6 +424,15 @@ public class Matrix {
     }
 
     /**
+     * Returns the scaled matrix
+     *
+     * @param scale the scale
+     */
+    public Matrix mul(Complex scale) {
+        return new Matrix(numRows, numCols, Arrays.stream(cells).map(c -> c.mul(scale)).toArray(Complex[]::new));
+    }
+
+    /**
      * Returns the matrix multiplication (this x other) concurrency algorithm
      *
      * @param other the other matrix
@@ -479,15 +488,6 @@ public class Matrix {
         Complex[] cells = new Complex[n];
         partMul(cells, 0, numRows, other.numCols, this.cells, 0, numCols, other.cells, 0, other.numCols);
         return new Matrix(numRows, other.numCols, cells);
-    }
-
-    /**
-     * Returns the scaled matrix
-     *
-     * @param scale the scale
-     */
-    public Matrix mul(Complex scale) {
-        return new Matrix(numRows, numCols, Arrays.stream(cells).map(c -> c.mul(scale)).toArray(Complex[]::new));
     }
 
     /**

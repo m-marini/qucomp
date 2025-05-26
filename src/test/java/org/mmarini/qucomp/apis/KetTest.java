@@ -41,7 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mmarini.Matchers.complexClose;
+import static org.mmarini.qucomp.Matchers.complexClose;
 
 class KetTest {
 

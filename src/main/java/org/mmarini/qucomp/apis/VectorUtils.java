@@ -30,6 +30,7 @@ package org.mmarini.qucomp.apis;
 
 import java.util.Arrays;
 
+import static java.lang.Math.max;
 import static java.lang.String.format;
 
 /**
@@ -97,6 +98,16 @@ public interface VectorUtils {
         return cells;
     }
 
+    static Complex[] extend(Complex[] values, int size) {
+        if (values.length >= size) {
+            return values;
+        }
+        Complex[] result = new Complex[size];
+        Arrays.fill(result, Complex.zero());
+        System.arraycopy(values, 0, result, 0, values.length);
+        return result;
+    }
+
     /**
      * Returns the scalar product
      *
@@ -138,6 +149,41 @@ public interface VectorUtils {
     }
 
     /**
+     * Returns the negated vector
+     *
+     * @param vector the vector
+     */
+    static Complex[] neg(Complex[] vector) {
+        return Arrays.stream(vector).map(Complex::neg).toArray(Complex[]::new);
+    }
+
+    /**
+     * Returns the number of bits from number of states
+     *
+     * @param numStates number of states
+     */
+    static int numBits(int numStates) {
+        int n = 0;
+        while ((numStates >>= 1) != 0) {
+            n++;
+        }
+        return n;
+    }
+
+    /**
+     * Returns the number of bits from state
+     *
+     * @param state the state
+     */
+    static int numBitsByState(int state) {
+        int n = 0;
+        do {
+            n++;
+        } while ((state >>= 1) != 0);
+        return max(n, 1);
+    }
+
+    /**
      * Partial matrix multiplication
      *
      * @param d       the destination matrix
@@ -176,15 +222,6 @@ public interface VectorUtils {
             ai += aStride;
         }
         return d;
-    }
-
-    /**
-     * Returns the negated vector
-     *
-     * @param vector the vector
-     */
-    static Complex[] neg(Complex[] vector) {
-        return Arrays.stream(vector).map(Complex::neg).toArray(Complex[]::new);
     }
 
     static int qubitValue(int state, int index) {

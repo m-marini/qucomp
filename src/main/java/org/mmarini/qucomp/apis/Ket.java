@@ -28,7 +28,10 @@
 
 package org.mmarini.qucomp.apis;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -36,6 +39,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.sqrt;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static org.mmarini.qucomp.apis.VectorUtils.numBitsByState;
 import static org.mmarini.qucomp.apis.VectorUtils.partMul;
 
 /**
@@ -73,6 +77,16 @@ public record Ket(Complex[] values) {
         return new Ket(IntStream.range(0, n)
                 .mapToObj(i -> value == i ? Complex.one() : Complex.zero())
                 .toArray(Complex[]::new));
+    }
+
+    /**
+     * Returns a ket base for the given value
+     *
+     * @param state the state value
+     */
+    public static Ket base(int state) {
+        int n = numBitsByState(state);
+        return base(state, n);
     }
 
     /**
@@ -243,7 +257,16 @@ public record Ket(Complex[] values) {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Ket ket = (Ket) o;
-        return Objects.deepEquals(values, ket.values);
+        return Arrays.equals(values, ket.values);
+    }
+
+    /**
+     * Return the promoted Ket
+     *
+     * @param size the new ket size
+     */
+    public Ket extend(int size) {
+        return new Ket(VectorUtils.extend(values, size));
     }
 
     @Override
