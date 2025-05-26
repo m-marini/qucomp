@@ -92,7 +92,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.mmarini.qucomp.apps.ComputeGUI</mainClass>
+                            <mainClass>org.mmarini.qucomp.apps.QuCompGUI</mainClass>
                             <addClasspath>true</addClasspath>
                         </manifest>
                     </archive>

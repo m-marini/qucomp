@@ -40,7 +40,7 @@ import static java.lang.Math.sqrt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mmarini.Matchers.complexClose;
+import static org.mmarini.qucomp.Matchers.complexClose;
 
 class BraTest {
 
@@ -122,7 +122,7 @@ class BraTest {
         assertEquals(n, b.values().length);
         for (int i = 0; i < size; i++) {
             assertEquals(i == value
-                            ? Complex.one() : Complex.zero(),
+                            ? Complex.one().conj() : Complex.zero().conj(),
                     b.values()[i]);
         }
     }

@@ -16,7 +16,7 @@
         </encoder>
     </appender>
 
-    <logger name="com.networknt.schema" level="INFO">
+    <logger name="org.mmarini.qucomp.compiler" level="DEBUG">
     </logger>
 
     <root level="INFO">

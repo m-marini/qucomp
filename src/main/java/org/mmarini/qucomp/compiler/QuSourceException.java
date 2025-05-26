@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2022-2023  Marco Marini, marco.marini@mmarini.org
+ * Copyright (c) 2025 Marco Marini, marco.marini@mmarini.org
  *
- * Permission is hereby granted, free of charge, to any person
+ *  Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
  * restriction, including without limitation the rights to use,
@@ -26,33 +26,35 @@
  *
  */
 
-package org.mmarini;
+package org.mmarini.qucomp.compiler;
 
-import org.hamcrest.CustomMatcher;
-import org.hamcrest.Matcher;
-
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.hamcrest.Matchers.equalTo;
 
-public interface Matchers {
+public class QuSourceException extends QuException {
+    private final SourceContext context;
 
-    static <T1, T2> Matcher<Tuple2<? extends T1, ? extends T2>> tupleOf(T1 value1, T2 value2) {
-        return tupleOf(equalTo(value1), equalTo(value2));
+    /**
+     * Create the exception
+     *
+     * @param message the message
+     * @param context the context
+     */
+    public QuSourceException(String message, SourceContext context) {
+        super(requireNonNull(message));
+        this.context = (requireNonNull(context));
     }
 
-    static <T1, T2> Matcher<Tuple2<? extends T1, ? extends T2>> tupleOf(Matcher<? extends T1> value1, Matcher<? extends T2> value2) {
-        requireNonNull(value1);
-        requireNonNull(value2);
-        return new CustomMatcher<>(format("Tuple containing  %s, %s",
-                value1, value2)) {
-            @Override
-            public boolean matches(Object o) {
-                return o instanceof Tuple2 t
-                        && value1.matches(t._1)
-                        && value2.matches(t._2);
-            }
-        };
+    /**
+     * Returns the source context
+     */
+    public SourceContext context() {
+        return context;
     }
 
+    /**
+     * Returns the source context
+     */
+    public String getMessage() {
+        return context.reportMessage(super.getMessage());
+    }
 }
