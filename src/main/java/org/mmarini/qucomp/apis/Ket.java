@@ -260,6 +260,15 @@ public record Ket(Complex[] values) {
         return Arrays.equals(values, ket.values);
     }
 
+    /**
+     * Return the promoted Ket
+     *
+     * @param size the new ket size
+     */
+    public Ket extend(int size) {
+        return new Ket(VectorUtils.extend(values, size));
+    }
+
     @Override
     public int hashCode() {
         return Arrays.hashCode(values);
@@ -333,15 +342,6 @@ public record Ket(Complex[] values) {
     public double[] prob() {
         return Arrays.stream(values).mapToDouble(Complex::moduleSquare)
                 .toArray();
-    }
-
-    /**
-     * Return the promoted Ket
-     *
-     * @param size the new ket size
-     */
-    public Ket extend(int size) {
-        return new Ket(VectorUtils.extend(values, size));
     }
 
     /**

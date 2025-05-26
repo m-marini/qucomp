@@ -88,11 +88,11 @@ class ProcessorTest {
                 Arguments.of("i / |0>;", Bra.zero().mul(Complex.i())),
                 Arguments.of("2 / |0>;", Bra.zero().mul(2)),
 
-                Arguments.of("<0| x <1|;", Ket.base(1,2).conj()),
-                Arguments.of("<1| x <0|;", Ket.base(2,2).conj()),
-                Arguments.of("<0| x <2|;", Ket.base(2,3).conj()),
-                Arguments.of("<2| x <0|;", Ket.base(4,3).conj()),
-                Arguments.of("<2| x <2|;", Ket.base(10,4).conj())
+                Arguments.of("<0| x <1|;", Ket.base(1, 2).conj()),
+                Arguments.of("<1| x <0|;", Ket.base(2, 2).conj()),
+                Arguments.of("<0| x <2|;", Ket.base(2, 3).conj()),
+                Arguments.of("<2| x <0|;", Ket.base(4, 3).conj()),
+                Arguments.of("<2| x <2|;", Ket.base(10, 4).conj())
         );
     }
 
@@ -130,12 +130,14 @@ class ProcessorTest {
 
                 Arguments.of("|0> / 2;", Ket.zero().mul(0.5f)),
                 Arguments.of("|0> / i;", Ket.zero().mul(Complex.i().inv())),
+                Arguments.of("2 / <0|;", Ket.zero().mul(2)),
+                Arguments.of("i / <0|;", Ket.zero().mul(Complex.i())),
 
-                Arguments.of("|0> x |1>;", Ket.base(1,2)),
-                Arguments.of("|1> x |0>;", Ket.base(2,2)),
-                Arguments.of("|0> x |2>;", Ket.base(2,3)),
-                Arguments.of("|2> x |0>;", Ket.base(4,3)),
-                Arguments.of("|2> x |2>;", Ket.base(10,4))
+                Arguments.of("|0> x |1>;", Ket.base(1, 2)),
+                Arguments.of("|1> x |0>;", Ket.base(2, 2)),
+                Arguments.of("|0> x |2>;", Ket.base(2, 3)),
+                Arguments.of("|2> x |0>;", Ket.base(4, 3)),
+                Arguments.of("|2> x |2>;", Ket.base(10, 4))
         );
     }
 

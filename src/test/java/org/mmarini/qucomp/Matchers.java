@@ -41,7 +41,8 @@ import org.mmarini.qucomp.compiler.Token;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.isA;
 
 public interface Matchers {
 
@@ -165,91 +166,49 @@ public interface Matchers {
         };
     }
 
-    static Matcher<CommandNode> isConjCommand(Matcher<CommandNode> arg) {
-        return isUnaryCommand(isA(CommandNode.Conj.class), arg);
+    static Matcher<CommandNode> isAddCommand(Matcher<CommandNode> left, Matcher<CommandNode> right) {
+        return isBinaryCommand(isA(CommandNode.Add.class), left, right);
     }
 
-    static Matcher<CommandNode> isNegateCommmand(Matcher<CommandNode> arg) {
-        return isUnaryCommand(isA(CommandNode.Negate.class), arg);
+    static Matcher<CommandNode> isAssignCommand(String identifier, Matcher<CommandNode> expected) {
+        return isAssignCommand(equalTo(identifier), expected);
     }
 
-    static Matcher<CommandNode> isFunctionCommand(Matcher<String> id, Matcher<CommandNode> arg) {
-        requireNonNull(id);
-        requireNonNull(arg);
-        return new CustomMatcher<>(format("CallFunction %s of %s",
-                id,
-                arg)) {
-
-            @Override
-            public boolean matches(Object o) {
-                if (!(o instanceof CommandNode.CallFunction cmd)) return false;
-                return id.matches(cmd.id())
-                        && arg.matches(cmd.arg());
-            }
-        };
-    }
-
-    static Matcher<CommandNode> isFunctionCommand(String id, Matcher<CommandNode> arg) {
-        return isFunctionCommand(equalTo(id), arg);
-    }
-
-    static Matcher<CommandNode> isIntToKet(Matcher<CommandNode> arg) {
-        return isUnaryCommand(isA(CommandNode.IntToKet.class), arg);
-    }
-
-    static Matcher<CommandNode> isRetrieveVarCommand(Matcher<String> expected) {
+    static Matcher<CommandNode> isAssignCommand(Matcher<String> identifier, Matcher<CommandNode> expected) {
+        requireNonNull(identifier);
         requireNonNull(expected);
-        return new CustomMatcher<>(format("RetrieveVar %s",
-                expected)) {
-
-            @Override
-            public boolean matches(Object o) {
-                if (!(o instanceof CommandNode.RetrieveVar cmd)) return false;
-                return expected.matches(cmd.id());
-            }
-        };
-    }
-
-    static Matcher<CommandNode> isRetrieveVarCommand(String expected) {
-        return isRetrieveVarCommand(equalTo(expected));
-    }
-
-    static Matcher<CommandNode> isUnaryCommand(Matcher<Class<? extends CommandNode>> clazz, Matcher<CommandNode> arg) {
-        requireNonNull(clazz);
-        requireNonNull(arg);
-
-
         return new BaseMatcher<>() {
-
+            @Override
             public void describeMismatch(Object item, Description description) {
-                if (item instanceof CommandNode.UnaryNode value) {
-                    if (!clazz.matches(value)) {
-                        clazz.describeMismatch(value, description);
-                    } else if (!arg.matches(value.arg())) {
-                        arg.describeMismatch(value.arg(), description);
+                if (item instanceof CommandNode.Assign value) {
+                    if (!identifier.matches(value.id())) {
+                        description.appendText("id ");
+                        identifier.describeMismatch(value.id(), description);
+                    }
+                    if (!expected.matches(value.arg())) {
+                        description.appendText("arg ");
+                        expected.describeMismatch(value.arg(), description);
                     }
                 } else {
-                    describeMismatch(item, description);
+                    description.appendValue(item)
+                            .appendText(" is not an assign command");
                 }
             }
 
+            @Override
             public void describeTo(Description description) {
-                description.appendText("is ")
-                        .appendDescriptionOf(clazz)
-                        .appendText(" with arg ")
-                        .appendDescriptionOf(arg);
+                description.appendText("Assign ");
+                identifier.describeTo(description);
+                description.appendText(" = ");
+                expected.describeTo(description);
             }
 
             @Override
             public boolean matches(Object o) {
-                if (!(o instanceof CommandNode.UnaryNode cmd)) return false;
-                return clazz.matches(cmd) && arg.matches(cmd.arg());
+                if (!(o instanceof CommandNode.Assign cmd)) return false;
+                return identifier.matches(cmd.id()) && expected.matches(cmd.arg());
             }
         };
-    }
-
-    static Matcher<CommandNode> isAddCommand(Matcher<CommandNode> left, Matcher<CommandNode> right) {
-        return isBinaryCommand(isA(CommandNode.Add.class), left, right);
     }
 
     static Matcher<CommandNode> isBinaryCommand(Matcher<Class<? extends CommandNode.BinaryNode>> clazz, Matcher<CommandNode> left, Matcher<CommandNode> right) {
@@ -298,6 +257,39 @@ public interface Matchers {
         };
     }
 
+    static Matcher<CommandNode> isCodeUnit(Matcher<Iterable<? extends CommandNode>> commands) {
+        return new BaseMatcher<>() {
+            @Override
+            public void describeMismatch(Object item, Description description) {
+                if (item instanceof CommandNode.CodeUnit value) {
+                    if (!commands.matches(value.commands())) {
+                        description.appendText("commands ");
+                        commands.describeMismatch(value.commands(), description);
+                    }
+                } else {
+                    description.appendValue(item)
+                            .appendText(" is not a code unit command");
+                }
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("CodeUnit with ");
+                commands.describeTo(description);
+            }
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof CommandNode.CodeUnit cmd)) return false;
+                return commands.matches(cmd.commands());
+            }
+        };
+    }
+
+    static Matcher<CommandNode> isConjCommand(Matcher<CommandNode> arg) {
+        return isUnaryCommand(isA(CommandNode.Conj.class), arg);
+    }
+
     static Matcher<CommandNode> isCrossCommand(Matcher<CommandNode> left, Matcher<CommandNode> right) {
         return isBinaryCommand(isA(CommandNode.Cross.class), left, right);
     }
@@ -306,12 +298,91 @@ public interface Matchers {
         return isBinaryCommand(isA(CommandNode.Div.class), left, right);
     }
 
+    static Matcher<CommandNode> isFunctionCommand(Matcher<String> id, Matcher<CommandNode> arg) {
+        requireNonNull(id);
+        requireNonNull(arg);
+        return new CustomMatcher<>(format("CallFunction %s of %s",
+                id,
+                arg)) {
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof CommandNode.CallFunction cmd)) return false;
+                return id.matches(cmd.id())
+                        && arg.matches(cmd.arg());
+            }
+        };
+    }
+
+    static Matcher<CommandNode> isFunctionCommand(String id, Matcher<CommandNode> arg) {
+        return isFunctionCommand(equalTo(id), arg);
+    }
+
+    static Matcher<CommandNode> isIntToKet(Matcher<CommandNode> arg) {
+        return isUnaryCommand(isA(CommandNode.IntToKet.class), arg);
+    }
+
     static Matcher<CommandNode> isMulCommand(Matcher<CommandNode> left, Matcher<CommandNode> right) {
         return isBinaryCommand(isA(CommandNode.Mul.class), left, right);
     }
 
+    static Matcher<CommandNode> isNegateCommmand(Matcher<CommandNode> arg) {
+        return isUnaryCommand(isA(CommandNode.Negate.class), arg);
+    }
+
+    static Matcher<CommandNode> isRetrieveVarCommand(Matcher<String> expected) {
+        requireNonNull(expected);
+        return new CustomMatcher<>(format("RetrieveVar %s",
+                expected)) {
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof CommandNode.RetrieveVar cmd)) return false;
+                return expected.matches(cmd.id());
+            }
+        };
+    }
+
+    static Matcher<CommandNode> isRetrieveVarCommand(String expected) {
+        return isRetrieveVarCommand(equalTo(expected));
+    }
+
     static Matcher<CommandNode> isSubCommand(Matcher<CommandNode> left, Matcher<CommandNode> right) {
         return isBinaryCommand(isA(CommandNode.Sub.class), left, right);
+    }
+
+    static Matcher<CommandNode> isUnaryCommand(Matcher<Class<? extends CommandNode>> clazz, Matcher<CommandNode> arg) {
+        requireNonNull(clazz);
+        requireNonNull(arg);
+
+
+        return new BaseMatcher<>() {
+
+            public void describeMismatch(Object item, Description description) {
+                if (item instanceof CommandNode.UnaryNode value) {
+                    if (!clazz.matches(value)) {
+                        clazz.describeMismatch(value, description);
+                    } else if (!arg.matches(value.arg())) {
+                        arg.describeMismatch(value.arg(), description);
+                    }
+                } else {
+                    describeMismatch(item, description);
+                }
+            }
+
+            public void describeTo(Description description) {
+                description.appendText("is ")
+                        .appendDescriptionOf(clazz)
+                        .appendText(" with arg ")
+                        .appendDescriptionOf(arg);
+            }
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof CommandNode.UnaryNode cmd)) return false;
+                return clazz.matches(cmd) && arg.matches(cmd.arg());
+            }
+        };
     }
 
     static Matcher<CommandNode> isValueCommand(int expected) {
@@ -345,76 +416,6 @@ public interface Matchers {
             public boolean matches(Object o) {
                 if (!(o instanceof CommandNode.Value cmd)) return false;
                 return expected.matches(cmd.value());
-            }
-        };
-    }
-
-    static Matcher<CommandNode> isAssignCommand(String identifier, Matcher<CommandNode> expected) {
-        return isAssignCommand(equalTo(identifier), expected);
-    }
-
-    static Matcher<CommandNode> isAssignCommand(Matcher<String> identifier, Matcher<CommandNode> expected) {
-        requireNonNull(identifier);
-        requireNonNull(expected);
-        return new BaseMatcher<>() {
-            @Override
-            public void describeMismatch(Object item, Description description) {
-                if (item instanceof CommandNode.Assign value) {
-                    if (!identifier.matches(value.id())) {
-                        description.appendText("id ");
-                        identifier.describeMismatch(value.id(), description);
-                    }
-                    if (!expected.matches(value.arg())) {
-                        description.appendText("arg ");
-                        expected.describeMismatch(value.arg(), description);
-                    }
-                } else {
-                    description.appendValue(item)
-                            .appendText(" is not an assign command");
-                }
-            }
-
-            @Override
-            public void describeTo(Description description) {
-                description.appendText("Assign ");
-                identifier.describeTo(description);
-                description.appendText(" = ");
-                expected.describeTo(description);
-            }
-
-            @Override
-            public boolean matches(Object o) {
-                if (!(o instanceof CommandNode.Assign cmd)) return false;
-                return identifier.matches(cmd.id()) && expected.matches(cmd.arg());
-            }
-        };
-    }
-
-    static Matcher<CommandNode> isCodeUnit(Matcher<Iterable<? extends CommandNode>> commands) {
-        return new BaseMatcher<>() {
-            @Override
-            public void describeMismatch(Object item, Description description) {
-                if (item instanceof CommandNode.CodeUnit value) {
-                    if (!commands.matches(value.commands())) {
-                        description.appendText("commands ");
-                        commands.describeMismatch(value.commands(), description);
-                    }
-                } else {
-                    description.appendValue(item)
-                            .appendText(" is not a code unit command");
-                }
-            }
-
-            @Override
-            public void describeTo(Description description) {
-                description.appendText("CodeUnit with ");
-                commands.describeTo(description);
-            }
-
-            @Override
-            public boolean matches(Object o) {
-                if (!(o instanceof CommandNode.CodeUnit cmd)) return false;
-                return commands.matches(cmd.commands());
             }
         };
     }

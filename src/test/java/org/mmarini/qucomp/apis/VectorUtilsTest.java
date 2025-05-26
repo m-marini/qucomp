@@ -52,6 +52,21 @@ class VectorUtilsTest {
         assertThat(v11[3], complexClose(1, EPSILON));
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "0, 0, 0",
+            "0, 1, 1",
+            "0, 2, 0",
+            "0, 3, 1",
+            "1, 0, 0",
+            "1, 1, 0",
+            "1, 2, 1",
+            "1, 3, 1"
+    })
+    void matchesQubit(int index, int state, int expected) {
+        assertEquals(expected, VectorUtils.qubitValue(state, index));
+    }
+
     @Test
     void partMul() {
         // Given
@@ -199,20 +214,5 @@ class VectorUtilsTest {
         assertThat(d[0], complexClose(5, EPSILON));
         assertThat(d[1], complexClose(14, EPSILON));
         assertThat(d[2], complexClose(23, EPSILON));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "0, 0, 0",
-            "0, 1, 1",
-            "0, 2, 0",
-            "0, 3, 1",
-            "1, 0, 0",
-            "1, 1, 0",
-            "1, 2, 1",
-            "1, 3, 1"
-    })
-    void matchesQubit(int index, int state, int expected) {
-        assertEquals(expected, VectorUtils.qubitValue(state, index));
     }
 }

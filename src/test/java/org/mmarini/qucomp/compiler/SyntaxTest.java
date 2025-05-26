@@ -674,15 +674,15 @@ class SyntaxTest {
                         tupleOf(intToken(tokenValue), rule("<int-literal>")),
                         tupleOf(intToken(tokenValue), rule("<primary-exp-opt>")),
                         tupleOf(intToken(tokenValue), rule("<primary-exp>")),
-                tupleOf(intToken(tokenValue), rule("<conj>")),
+                        tupleOf(intToken(tokenValue), rule("<conj>")),
 
-                tupleOf(intToken(tokenValue), rule("<unary-exp>")),
-                tupleOf(intToken(tokenValue), rule("<cross-exp>")),
-                tupleOf(intToken(tokenValue), rule("<multiply-exp>")),
-                tupleOf(intToken(tokenValue), rule("<add-exp>")),
+                        tupleOf(intToken(tokenValue), rule("<unary-exp>")),
+                        tupleOf(intToken(tokenValue), rule("<cross-exp>")),
+                        tupleOf(intToken(tokenValue), rule("<multiply-exp>")),
+                        tupleOf(intToken(tokenValue), rule("<add-exp>")),
 
-                tupleOf(intToken(tokenValue), rule("<exp>")),
-                tupleOf(intToken(tokenValue), rule("<int-state>")),
+                        tupleOf(intToken(tokenValue), rule("<exp>")),
+                        tupleOf(intToken(tokenValue), rule("<int-state>")),
                         tupleOf(intToken(tokenValue), rule("<state-exp-opt>")),
                         tupleOf(intToken(tokenValue), rule("<state-exp>"))
                 )

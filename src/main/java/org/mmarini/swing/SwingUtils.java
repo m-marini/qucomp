@@ -43,6 +43,18 @@ import static java.lang.String.format;
  */
 public interface SwingUtils {
     /**
+     * Center the window on screen
+     *
+     * @param window the window
+     */
+    static void centerOnScreen(Window window) {
+        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+        int x = (screen.width - window.getWidth()) / 2;
+        int y = (screen.height - window.getHeight()) / 2;
+        window.setLocation(x, y);
+    }
+
+    /**
      * Returns the initialized button
      *
      * @param key the message key
@@ -67,15 +79,27 @@ public interface SwingUtils {
     }
 
     /**
-     * Center the window on screen
+     * Returns a checkbox
      *
-     * @param window the window
+     * @param key the key
      */
-    static void centerOnScreen(Window window) {
-        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-        int x = (screen.width - window.getWidth()) / 2;
-        int y = (screen.height - window.getHeight()) / 2;
-        window.setLocation(x, y);
+    static JCheckBox createCheckBox(String key) {
+        JCheckBox button = new JCheckBox(Messages.getString(key + ".name"));
+
+        Messages.getStringOpt(key + ".icon")
+                .flatMap(s -> Optional.ofNullable(SwingUtils.class.getResource(s)))
+                .map(ImageIcon::new)
+                .ifPresent(button::setIcon);
+        Messages.getStringOpt(key + ".mnemonic")
+                .map(s -> s.charAt(0))
+                .ifPresent(button::setMnemonic);
+        Messages.getStringOpt(key + ".tip")
+                .ifPresent(button::setToolTipText);
+        Messages.getStringOpt(key + ".selectedIcon")
+                .flatMap(s -> Optional.ofNullable(SwingUtils.class.getResource(s)))
+                .map(ImageIcon::new)
+                .ifPresent(button::setSelectedIcon);
+        return button;
     }
 
     /**
@@ -198,30 +222,6 @@ public interface SwingUtils {
                 .ifPresentOrElse(button::setIcon,
                         () -> button.setText(Messages.getString(key + ".name")));
 
-        Messages.getStringOpt(key + ".mnemonic")
-                .map(s -> s.charAt(0))
-                .ifPresent(button::setMnemonic);
-        Messages.getStringOpt(key + ".tip")
-                .ifPresent(button::setToolTipText);
-        Messages.getStringOpt(key + ".selectedIcon")
-                .flatMap(s -> Optional.ofNullable(SwingUtils.class.getResource(s)))
-                .map(ImageIcon::new)
-                .ifPresent(button::setSelectedIcon);
-        return button;
-    }
-
-    /**
-     * Returns a checkbox
-     *
-     * @param key the key
-     */
-    static JCheckBox createCheckBox(String key) {
-        JCheckBox button = new JCheckBox(Messages.getString(key + ".name"));
-
-        Messages.getStringOpt(key + ".icon")
-                .flatMap(s -> Optional.ofNullable(SwingUtils.class.getResource(s)))
-                .map(ImageIcon::new)
-                .ifPresent(button::setIcon);
         Messages.getStringOpt(key + ".mnemonic")
                 .map(s -> s.charAt(0))
                 .ifPresent(button::setMnemonic);

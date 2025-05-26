@@ -49,7 +49,7 @@ class TokenizerTest {
 
     public static final String TEXT = """
               ii ( 12)
-            
+                        
               a1 // klsdjalsdjalkjdkal
               b /* kasjdhasjhdaj
                 c kajsdhajdhakjd
