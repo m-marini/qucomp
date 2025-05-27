@@ -34,9 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mmarini.qucomp.apis.Bra;
-import org.mmarini.qucomp.apis.Complex;
-import org.mmarini.qucomp.apis.Ket;
+import org.mmarini.qucomp.apis.*;
 
 import java.util.stream.Stream;
 
@@ -136,6 +134,25 @@ class ProcessorTest {
                 Arguments.of("|0> x |2>;", Ket.base(2, 3)),
                 Arguments.of("|2> x |0>;", Ket.base(4, 3)),
                 Arguments.of("|2> x |2>;", Ket.base(10, 4))
+        );
+    }
+
+    public static Stream<Arguments> argsMatrix() {
+        return Stream.of(
+                Arguments.of("I(0);", Matrix.identity()),
+                Arguments.of("I(1);", Matrix.identity(4)),
+                Arguments.of("H(0);", Matrix.h()),
+                Arguments.of("H(1);", QuGate.h(1).build(2)),
+                Arguments.of("X(0);", Matrix.x()),
+                Arguments.of("X(1);", QuGate.x(1).build(2)),
+                Arguments.of("Y(0);", Matrix.y()),
+                Arguments.of("Y(1);", QuGate.y(1).build(2)),
+                Arguments.of("Z(0);", Matrix.z()),
+                Arguments.of("Z(1);", QuGate.z(1).build(2)),
+                Arguments.of("S(0);", Matrix.s()),
+                Arguments.of("S(1);", QuGate.s(1).build(2)),
+                Arguments.of("T(0);", Matrix.t()),
+                Arguments.of("T(1);", QuGate.t(1).build(2))
         );
     }
 
@@ -287,6 +304,34 @@ class ProcessorTest {
             "<0| x 1;, Unexpected right argument integer (1) token(\"x\")",
             "<0| x i;, Unexpected right argument complex (i) token(\"x\")",
             "<0| x |0>;, Unexpected right argument ket ((1.0) |0>) token(\"x\")",
+
+            "I(i);, Argument should be an integer: actual (i) token(\"I\")",
+            "I(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"I\")",
+            "I(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"I\")",
+
+            "H(i);, Argument should be an integer: actual (i) token(\"H\")",
+            "H(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"H\")",
+            "H(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"H\")",
+
+            "X(i);, Argument should be an integer: actual (i) token(\"X\")",
+            "X(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"X\")",
+            "X(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"X\")",
+
+            "Y(i);, Argument should be an integer: actual (i) token(\"Y\")",
+            "Y(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"Y\")",
+            "Y(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"Y\")",
+
+            "Z(i);, Argument should be an integer: actual (i) token(\"Z\")",
+            "Z(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"Z\")",
+            "Z(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"Z\")",
+
+            "S(i);, Argument should be an integer: actual (i) token(\"S\")",
+            "S(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"S\")",
+            "S(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"S\")",
+
+            "T(i);, Argument should be an integer: actual (i) token(\"T\")",
+            "T(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"T\")",
+            "T(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"T\")",
     })
     void testError(String text, String msg) {
         QuException ex = assertThrows(QuException.class, () -> execute(text));
@@ -325,6 +370,14 @@ class ProcessorTest {
     void testKet(String text, Ket exp) {
         Object[] result = assertDoesNotThrow(() -> execute(text));
         assertThat((Ket) result[0], ketCloseTo(exp, EPSILON));
+        assertThat(processor.variables(), anEmptyMap());
+    }
+
+    @ParameterizedTest
+    @MethodSource("argsMatrix")
+    void testMatrix(String text, Matrix exp) {
+        Object[] result = assertDoesNotThrow(() -> execute(text));
+        assertThat((Matrix) result[0], matrixCloseTo(exp, EPSILON));
         assertThat(processor.variables(), anEmptyMap());
     }
 

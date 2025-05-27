@@ -29,9 +29,7 @@
 package org.mmarini.qucomp.compiler;
 
 import org.mmarini.Function2Throws;
-import org.mmarini.qucomp.apis.Bra;
-import org.mmarini.qucomp.apis.Complex;
-import org.mmarini.qucomp.apis.Ket;
+import org.mmarini.qucomp.apis.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -50,9 +48,15 @@ public class Processor implements ExecutionContext {
      * The implemented function definitions
      */
     public static final Map<String, FunctionDef> FUNCTION_BY_ID = Stream.of(
-            new FunctionDef("sqrt", 1, Processor::sqrt)).collect(Collectors.toMap(
-            FunctionDef::id, f -> f
-    ));
+            new FunctionDef("sqrt", 1, Processor::sqrt),
+            new FunctionDef("I", 1, Processor::identityGate),
+            new FunctionDef("H", 1, Processor::h),
+            new FunctionDef("X", 1, Processor::x),
+            new FunctionDef("Y", 1, Processor::y),
+            new FunctionDef("Z", 1, Processor::z),
+            new FunctionDef("S", 1, Processor::s),
+            new FunctionDef("T", 1, Processor::t)
+    ).collect(Collectors.toMap(FunctionDef::id, f -> f));
 
     /**
      * Return the sum of the two operands
@@ -68,6 +72,104 @@ public class Processor implements ExecutionContext {
             case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
             case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
             default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Returns the matrix of H gate for the given qu-bit
+     *
+     * @param context the source context
+     * @param objects the argument
+     */
+    private static Object h(SourceContext context, Object[] objects) throws QuExecException {
+        Object arg = objects[0];
+        return switch (arg) {
+            case Integer n -> QuGate.h(n).build(n + 1);
+            default -> throw context.execException("Argument should be an integer: actual (%s)", arg.toString());
+        };
+    }
+
+    /**
+     * Returns the matrix of identity gate for the given qu-bit
+     *
+     * @param context the source context
+     * @param objects the argument
+     */
+    private static Object identityGate(SourceContext context, Object[] objects) throws QuExecException {
+        Object arg = objects[0];
+        return switch (arg) {
+            case Integer n -> Matrix.identity(1 << (n + 1));
+            default -> throw context.execException("Argument should be an integer: actual (%s)", arg.toString());
+        };
+    }
+
+    /**
+     * Returns the matrix of S gate for the given qu-bit
+     *
+     * @param context the source context
+     * @param objects the argument
+     */
+    private static Object s(SourceContext context, Object[] objects) throws QuExecException {
+        Object arg = objects[0];
+        return switch (arg) {
+            case Integer n -> QuGate.s(n).build(n + 1);
+            default -> throw context.execException("Argument should be an integer: actual (%s)", arg.toString());
+        };
+    }
+
+    /**
+     * Returns the matrix of T gate for the given qu-bit
+     *
+     * @param context the source context
+     * @param objects the argument
+     */
+    private static Object t(SourceContext context, Object[] objects) throws QuExecException {
+        Object arg = objects[0];
+        return switch (arg) {
+            case Integer n -> QuGate.t(n).build(n + 1);
+            default -> throw context.execException("Argument should be an integer: actual (%s)", arg.toString());
+        };
+    }
+
+    /**
+     * Returns the matrix of X gate for the given qu-bit
+     *
+     * @param context the source context
+     * @param objects the argument
+     */
+    private static Object x(SourceContext context, Object[] objects) throws QuExecException {
+        Object arg = objects[0];
+        return switch (arg) {
+            case Integer n -> QuGate.x(n).build(n + 1);
+            default -> throw context.execException("Argument should be an integer: actual (%s)", arg.toString());
+        };
+    }
+
+    /**
+     * Returns the matrix of Y gate for the given qu-bit
+     *
+     * @param context the source context
+     * @param objects the argument
+     */
+    private static Object y(SourceContext context, Object[] objects) throws QuExecException {
+        Object arg = objects[0];
+        return switch (arg) {
+            case Integer n -> QuGate.y(n).build(n + 1);
+            default -> throw context.execException("Argument should be an integer: actual (%s)", arg.toString());
+        };
+    }
+
+    /**
+     * Returns the matrix of Z gate for the given qu-bit
+     *
+     * @param context the source context
+     * @param objects the argument
+     */
+    private static Object z(SourceContext context, Object[] objects) throws QuExecException {
+        Object arg = objects[0];
+        return switch (arg) {
+            case Integer n -> QuGate.z(n).build(n + 1);
+            default -> throw context.execException("Argument should be an integer: actual (%s)", arg.toString());
         };
     }
 

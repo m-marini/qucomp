@@ -468,7 +468,7 @@ class CompilerTest {
         assertThat(stack, hasSize(1));
         CommandNode command = stack.getLast();
         assertThat(command, isCodeUnit(contains(
-                isNegateCommmand(
+                isNegateCommand(
                         isValueCommand(1)
                 )
         )));

@@ -268,6 +268,15 @@ public class Matrix {
     }
 
     /**
+     * Returns the X operator (Not)
+     *
+     * @param index the i-th qu-bit
+     */
+    public static Matrix x(int index) {
+        return index > 0 ? identity(1 << index).cross(X) : X;
+    }
+
+    /**
      * Returns the Y operator
      */
     public static Matrix y() {

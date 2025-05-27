@@ -48,7 +48,7 @@ public class Syntax {
             "pi", // imaginary unit
             "x", // cross operator
             // Gates
-            "I", "X", "Y", "Z", "H", "S", "T", "SWAP", "CNOT", "CCNOT",
+            "SWAP", "CNOT", "CCNOT",
             // Functions
             "exp",
             "pow",
