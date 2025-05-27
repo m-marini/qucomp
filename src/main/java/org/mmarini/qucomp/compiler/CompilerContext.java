@@ -28,12 +28,21 @@
 
 package org.mmarini.qucomp.compiler;
 
-import java.util.List;
-
+/**
+ * Stores and retrieves CommandNode during the compilation process
+ */
 public interface CompilerContext {
+    /**
+     * Returns and remove the last command from the context
+     *
+     * @param <T> the type of command
+     */
     <T extends CommandNode> T pop();
 
-    List<CommandNode> popAll();
-
+    /**
+     * Pushes a CommandNode in the context
+     *
+     * @param value the command node to push
+     */
     void push(CommandNode value);
 }

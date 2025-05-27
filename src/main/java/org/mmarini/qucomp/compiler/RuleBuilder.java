@@ -87,7 +87,7 @@ abstract class RuleBuilder {
             if (rule instanceof SyntaxRule.NonTerminalRule nonTerm) {
                 // binds dependants
                 List<SyntaxRule> deps = Arrays.stream(depends).map(binder).toList();
-                nonTerm.setRules(deps);
+                nonTerm.rules(deps);
             } else {
                 throw new QuException(rule + " is not a non terminal rule");
             }

@@ -76,7 +76,7 @@ public class Tokenizer {
         char ch = currentChar();
 
         String chStr = switch (ch) {
-            case 0 -> "<EOF>";
+            case 0 -> "";
             case '\n' -> "\\n";
             case '\r' -> "\\r";
             case '\t' -> "\\t";
@@ -255,7 +255,7 @@ public class Tokenizer {
             currentToken = null;
             while (currentToken == null) {
                 if (eof()) {
-                    currentToken = new Token.EOFToken(createTokenContext("<EOF>"));
+                    currentToken = new Token.EOFToken(createTokenContext(""));
                     break;
                 }
                 tokenLineNumber = lineNumber;

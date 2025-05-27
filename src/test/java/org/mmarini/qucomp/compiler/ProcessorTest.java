@@ -38,8 +38,6 @@ import org.mmarini.qucomp.apis.Bra;
 import org.mmarini.qucomp.apis.Complex;
 import org.mmarini.qucomp.apis.Ket;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -141,7 +139,6 @@ class ProcessorTest {
         );
     }
 
-    List<Object> results;
     private Processor processor;
     private Compiler compiler;
     private SyntaxRule syntax;
@@ -152,17 +149,12 @@ class ProcessorTest {
             syntax.parse(compiler.createParseContext(tokenizer));
             return compiler.pop();
         });
-        return (T) processor.evaluate(code);
-    }
-
-    <T> T result(int i) {
-        return (T) results.get(i);
+        return (T) code.evaluate(processor);
     }
 
     @BeforeEach
     void setUp() {
-        this.results = new ArrayList<>();
-        this.processor = new Processor(value -> results.add(value));
+        this.processor = new Processor();
         assertDoesNotThrow(() -> {
             this.compiler = Compiler.create();
             this.syntax = Syntax.rule("<code-unit>");
@@ -171,29 +163,25 @@ class ProcessorTest {
 
     @Test
     void testAssign() {
-        int result = assertDoesNotThrow(() -> execute("let a = 1;"));
-        assertThat(result, equalTo(1));
-        assertThat(results, contains(isA(Integer.class)));
-        assertEquals(1, (int) result(0));
+        Object[] result = assertDoesNotThrow(() -> execute("let a = 1;"));
+        assertThat(result[0], equalTo(1));
         assertThat(processor.variables(), hasEntry(equalTo("a"), equalTo(1)));
     }
 
     @ParameterizedTest
     @MethodSource("argsBra")
     void testBra(String text, Bra exp) {
-        Bra result = assertDoesNotThrow(() -> execute(text));
+        Object[] results = assertDoesNotThrow(() -> execute(text));
+        Bra result = (Bra) results[0];
         assertThat(result, braCloseTo(exp, EPSILON));
-        assertThat(results, contains(isA(Bra.class)));
-        assertThat(result(0), braCloseTo(exp, EPSILON));
         assertThat(processor.variables(), anEmptyMap());
     }
 
     @Test
     void testClear() {
         processor.variables().put("a", 1);
-        Object result = assertDoesNotThrow(() -> execute("clear();"));
-        assertNull(result);
-        assertThat(results, empty());
+        Object[] results = assertDoesNotThrow(() -> execute("clear();"));
+        assertNull(results[0]);
         assertThat(processor.variables(), anEmptyMap());
     }
 
@@ -249,59 +237,56 @@ class ProcessorTest {
     })
     void testComplex(String text, float re, float im) {
         Complex expected = new Complex(re, im);
-        Complex result = assertDoesNotThrow(() -> execute(text));
-        assertThat(result, complexClose(expected, EPSILON));
-        assertThat(results, contains(isA(Complex.class)));
-        assertThat(results, contains(isA(Complex.class)));
-        assertThat(result(0), complexClose(expected, EPSILON));
+        Object[] result = assertDoesNotThrow(() -> execute(text));
+        assertThat((Complex) result[0], complexClose(expected, EPSILON));
         assertThat(processor.variables(), anEmptyMap());
     }
 
     @ParameterizedTest
     @CsvSource({
-            "|1.>; , Expected integer value: (1.0) (1.)",
-            "a; , Undefined variable a (a)",
-            "sqrt(|0>);,Unexpected argument ket ((1.0) |0>) (sqrt)",
-            "sqrt(<0|);,Unexpected argument bra ((1.0) <0|) (sqrt)",
+            "|1.>; , Expected integer value: (1.0) token(\"1.\")",
+            "a; , Undefined variable a token(\"a\")",
+            "sqrt(|0>);,Unexpected argument ket ((1.0) |0>) token(\"sqrt\")",
+            "sqrt(<0|);,Unexpected argument bra ((1.0) <0|) token(\"sqrt\")",
 
-            "|0> * |0>;,Unexpected right argument ket ((1.0) |0>) (*)",
-            "|0> * <0|;,Unexpected right argument bra ((1.0) <0|) (*)",
-            "<0| * <0|;,Unexpected right argument bra ((1.0) <0|) (*)",
+            "|0> * |0>;,Unexpected right argument ket ((1.0) |0>) token(\"*\")",
+            "|0> * <0|;,Unexpected right argument bra ((1.0) <0|) token(\"*\")",
+            "<0| * <0|;,Unexpected right argument bra ((1.0) <0|) token(\"*\")",
 
-            "1 + <0|;,Unexpected right argument bra ((1.0) <0|) (+)",
-            "i + <0|;,Unexpected right argument bra ((1.0) <0|) (+)",
-            "|0> + <0|;,Unexpected right argument bra ((1.0) <0|) (+)",
-            "1 + |0>;,Unexpected right argument ket ((1.0) |0>) (+)",
-            "i + |0>;,Unexpected right argument ket ((1.0) |0>) (+)",
-            "<0| + |0>;,Unexpected right argument ket ((1.0) |0>) (+)",
-            "|0> + 1;,Unexpected right argument integer (1) (+)",
-            "|0> + i;,Unexpected right argument complex (i) (+)",
-            "<0| + 1;,Unexpected right argument integer (1) (+)",
-            "<0| + i;,Unexpected right argument complex (i) (+)",
+            "1 + <0|;,Unexpected right argument bra ((1.0) <0|) token(\"+\")",
+            "i + <0|;,Unexpected right argument bra ((1.0) <0|) token(\"+\")",
+            "|0> + <0|;,Unexpected right argument bra ((1.0) <0|) token(\"+\")",
+            "1 + |0>;,Unexpected right argument ket ((1.0) |0>) token(\"+\")",
+            "i + |0>;,Unexpected right argument ket ((1.0) |0>) token(\"+\")",
+            "<0| + |0>;,Unexpected right argument ket ((1.0) |0>) token(\"+\")",
+            "|0> + 1;,Unexpected right argument integer (1) token(\"+\")",
+            "|0> + i;,Unexpected right argument complex (i) token(\"+\")",
+            "<0| + 1;,Unexpected right argument integer (1) token(\"+\")",
+            "<0| + i;,Unexpected right argument complex (i) token(\"+\")",
 
-            "1 - <0|;,Unexpected right argument bra ((1.0) <0|) (-)",
-            "i - <0|;,Unexpected right argument bra ((1.0) <0|) (-)",
-            "|0> - <0|;,Unexpected right argument bra ((1.0) <0|) (-)",
-            "1 - |0>;,Unexpected right argument ket ((1.0) |0>) (-)",
-            "i - |0>;,Unexpected right argument ket ((1.0) |0>) (-)",
-            "<0| - |0>;,Unexpected right argument ket ((1.0) |0>) (-)",
-            "|0> - 1;,Unexpected right argument int (1) (-)",
-            "|0> - i;,Unexpected right argument complex (i) (-)",
-            "<0| - 1;,Unexpected right argument int (1) (-)",
-            "<0| - i;,Unexpected right argument complex (i) (-)",
+            "1 - <0|;,Unexpected right argument bra ((1.0) <0|) token(\"-\")",
+            "i - <0|;,Unexpected right argument bra ((1.0) <0|) token(\"-\")",
+            "|0> - <0|;,Unexpected right argument bra ((1.0) <0|) token(\"-\")",
+            "1 - |0>;,Unexpected right argument ket ((1.0) |0>) token(\"-\")",
+            "i - |0>;,Unexpected right argument ket ((1.0) |0>) token(\"-\")",
+            "<0| - |0>;,Unexpected right argument ket ((1.0) |0>) token(\"-\")",
+            "|0> - 1;,Unexpected right argument int (1) token(\"-\")",
+            "|0> - i;,Unexpected right argument complex (i) token(\"-\")",
+            "<0| - 1;,Unexpected right argument int (1) token(\"-\")",
+            "<0| - i;,Unexpected right argument complex (i) token(\"-\")",
 
-            "<0| / |0>;,Unexpected right argument ket ((1.0) |0>) (/)",
-            "|0> / |0>;,Unexpected right argument ket ((1.0) |0>) (/)",
-            "|0> / <0|;,Unexpected right argument bra ((1.0) <0|) (/)",
+            "<0| / |0>;,Unexpected right argument ket ((1.0) |0>) token(\"/\")",
+            "|0> / |0>;,Unexpected right argument ket ((1.0) |0>) token(\"/\")",
+            "|0> / <0|;,Unexpected right argument bra ((1.0) <0|) token(\"/\")",
 
-            "1 x 1;, Unexpected left argument integer (1) (x)",
-            "i x 1;, Unexpected left argument complex (i) (x)",
-            "|0> x 1;, Unexpected right argument integer (1) (x)",
-            "|0> x i;, Unexpected right argument complex (i) (x)",
-            "|0> x <0|;, Unexpected right argument bra ((1.0) <0|) (x)",
-            "<0| x 1;, Unexpected right argument integer (1) (x)",
-            "<0| x i;, Unexpected right argument complex (i) (x)",
-            "<0| x |0>;, Unexpected right argument ket ((1.0) |0>) (x)",
+            "1 x 1;, Unexpected left argument integer (1) token(\"x\")",
+            "i x 1;, Unexpected left argument complex (i) token(\"x\")",
+            "|0> x 1;, Unexpected right argument integer (1) token(\"x\")",
+            "|0> x i;, Unexpected right argument complex (i) token(\"x\")",
+            "|0> x <0|;, Unexpected right argument bra ((1.0) <0|) token(\"x\")",
+            "<0| x 1;, Unexpected right argument integer (1) token(\"x\")",
+            "<0| x i;, Unexpected right argument complex (i) token(\"x\")",
+            "<0| x |0>;, Unexpected right argument ket ((1.0) |0>) token(\"x\")",
     })
     void testError(String text, String msg) {
         QuException ex = assertThrows(QuException.class, () -> execute(text));
@@ -330,32 +315,24 @@ class ProcessorTest {
             "90 / 3;, 30"
     })
     void testInt(String text, int expected) {
-        Object result = assertDoesNotThrow(() -> execute(text));
-        assertEquals(expected, result);
-        assertThat(results, contains(equalTo(expected)));
+        Object[] result = assertDoesNotThrow(() -> execute(text));
+        assertEquals(expected, result[0]);
         assertThat(processor.variables(), anEmptyMap());
     }
 
     @ParameterizedTest
     @MethodSource("argsKet")
     void testKet(String text, Ket exp) {
-        Ket result = assertDoesNotThrow(() -> execute(text));
-        assertThat(result, ketCloseTo(exp, EPSILON));
-        assertThat(results, contains(isA(Ket.class)));
-        assertThat(result(0), ketCloseTo(exp, EPSILON));
+        Object[] result = assertDoesNotThrow(() -> execute(text));
+        assertThat((Ket) result[0], ketCloseTo(exp, EPSILON));
         assertThat(processor.variables(), anEmptyMap());
     }
 
     @Test
     void testVar() {
-        int result = assertDoesNotThrow(() -> execute("let a = 1; -a;"));
-        assertThat(result, equalTo(-1));
-        assertThat(results, contains(
-                isA(Integer.class),
-                isA(Integer.class)
-        ));
-        assertEquals(1, (int) result(0));
-        assertEquals(-1, (int) result(1));
+        Object[] result = assertDoesNotThrow(() -> execute("let a = 1; -a;"));
+        assertThat(result[0], equalTo(1));
+        assertThat(result[1], equalTo(-1));
         assertThat(processor.variables(), hasEntry(equalTo("a"), equalTo(1)));
     }
 }

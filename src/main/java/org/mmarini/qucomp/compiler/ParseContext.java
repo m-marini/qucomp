@@ -40,6 +40,12 @@ public interface ParseContext {
      */
     Token currentToken();
 
+    /**
+     * Notify the join of token with rule
+     *
+     * @param token the token
+     * @param rule  the rule
+     */
     void join(Token token, SyntaxRule rule) throws QuParseException;
 
     /**

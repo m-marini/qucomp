@@ -261,7 +261,7 @@ public interface Matchers {
         return new BaseMatcher<>() {
             @Override
             public void describeMismatch(Object item, Description description) {
-                if (item instanceof CommandNode.CodeUnit value) {
+                if (item instanceof CommandNode.CommandList value) {
                     if (!commands.matches(value.commands())) {
                         description.appendText("commands ");
                         commands.describeMismatch(value.commands(), description);
@@ -280,7 +280,7 @@ public interface Matchers {
 
             @Override
             public boolean matches(Object o) {
-                if (!(o instanceof CommandNode.CodeUnit cmd)) return false;
+                if (!(o instanceof CommandNode.CommandList cmd)) return false;
                 return commands.matches(cmd.commands());
             }
         };

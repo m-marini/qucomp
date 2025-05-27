@@ -2,17 +2,17 @@
 # Qu Syntax
 
 ```
-<code-unit> ::= <statement-List>
-<statement-list> ::= <code-unit-opt> <statement-list>
-<code-unit-opt> ::= <not-end> | <clear-stm> | <assign-stm> | <exp-stm> | ""
+<code-unit> ::= <code-unit-head> <statement-list> <EOF>
+<statement-list> ::= <stm> <statement-list>
+<stm> ::=  <stm-opt> ";" | ""
+<stm-opt> ::= <clear-stm> | <assign-stm> | <exp-opt> | ""
+<code-unit-head> ::= ""
 
-<clear-stm> ::= "clear" "(" ")" ";" | ""
+<clear-stm> ::= "clear" "(" ")" | ""
+<assign-stm> ::= "let" <assign-var-identifier> "=" <exp> | ""
 
-<assign-stm> ::= "let" <assign-var-identifier> "=" <exp> ";" | ""
-
-<exp-stm> ::= <exp> ";" | ""
-
-<exp> ::= <add-exp>
+<exp> ::= <exp-opt>
+<exp-opt> ::= <add-exp>
 
 <add-exp> ::= <multiply-exp> <add-tail>
 <add-tail> ::= <add-tail-opt> <add-tail>
@@ -35,20 +35,21 @@
 <negate-exp> :.= "-" <unary-exp> | ""
 
 <conj> ::= <primary-exp> <conj-tail>
-<conj-tail> ::= "^" <conj-tail> | ""   
+<conj-tail> ::= "^" <conj-tail> | ""
 
-<primary-exp> ::= <primary-exp-opt>!
+<conj> :: <primary-exp> <conj-tail>
+<conj-tail> ::= "^" <conj-tail> || ""    
 
-<primary-exp-opt> ::= <priority-exp>
-                    | <int-literal>
-                    | <real-literal>
-                    | <bra>
-                    | <ket>
-                    | <im-unit>
-                    | "pi"
-                    | "e"
-                    | <function>
-                    | <var-identifier>
+<primary-exp> ::= <priority-exp>
+                | <int-literal>
+                | <real-literal>
+                | <bra>
+                | <ket>
+                | <im-unit>
+                | "pi"
+                | "e"
+                | <function>
+                | <var-identifier>
 
 <priority-exp> :== "(" <exp> ")" | ""
 
@@ -58,10 +59,16 @@
 
 <im-unit> ::= "i" | ""
 
-<function> ::= <function-id> <args-exp>
-<args-exp> ::= "(" <exp> ")"
+<function> ::= <function-id> <args-exp> | ""
+<args-exp> ::= "(" <arg-list> ")"
+<arg-list> ::= <arg-list-opt> | <empty-arg>
+<arg-list-opt> ::= <arg0> <arg-list-tail> | ""    
+<arg-list-tail> ::=  <arg-tail> <arg-list-tail> | ""
+<arg-tail> ::= "," <exp>
+<arg0> ::= <exp-opt>    
+<empty-arg> ::= ""
 
-<state-exp> ::= <state-exp-opt>'
+<state-exp> ::= <state-exp-opt>!
 <state-exp-opt> ::= <im-state> | <plus-state> | <minus-state-exp> | <int-state>
 <im-state> ::= "i" | ""
 <plus-state> ::= "+" | ""
@@ -69,7 +76,7 @@
 <minus-state-exp-opt> ::=  "-" <minus-im-state> | <minus-state>
 <minus-im-state> ::=  "i" | ""
 <minus-state> ::= ""
-<int-state> ::= <exp> 
+<int-state> ::= <exp>
 
 <function-id> ::= in(FUNCTION_KEYWORDS>
 <var-identifier> ::= not-in(KEWORDS)
@@ -88,3 +95,5 @@ STATEMENT_KEYWORDS = ("clear", "let");
 
 KEYWORDS = FUNCTION_KEWORDS + RESERVED_KEYWORDS + STATEMENT_KEYWORDS
 ```
+
+the suffix `!` indicate a mandatory expression.

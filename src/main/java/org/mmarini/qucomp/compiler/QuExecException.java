@@ -29,7 +29,7 @@
 package org.mmarini.qucomp.compiler;
 
 /**
- * Captures the exception during the parsing
+ * Captures the exception during the execution of qu commands
  */
 public class QuExecException extends QuSourceException {
     /**

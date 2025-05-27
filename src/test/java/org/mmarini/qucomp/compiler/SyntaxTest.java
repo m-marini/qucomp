@@ -32,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mmarini.Tuple2;
 
 import java.io.IOException;
@@ -39,8 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.isA;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mmarini.Matchers.tupleOf;
 import static org.mmarini.qucomp.Matchers.*;
@@ -86,25 +86,23 @@ class SyntaxTest {
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(rules, contains(
                 tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")),
                 tupleOf(intToken(1), rule("<primary-exp>")),
                 tupleOf(intToken(1), rule("<conj>")), // 4
                 tupleOf(intToken(1), rule("<unary-exp>")),
+
                 tupleOf(intToken(1), rule("<cross-exp>")),
                 tupleOf(intToken(1), rule("<multiply-exp>")),
                 tupleOf(opToken("-"), rule("-")), // 8
                 tupleOf(intToken(2), rule("<int-literal>")),
 
-                tupleOf(intToken(2), rule("<primary-exp-opt>")),
                 tupleOf(intToken(2), rule("<primary-exp>")),
                 tupleOf(intToken(2), rule("<conj>")),
                 tupleOf(intToken(2), rule("<unary-exp>")),
                 tupleOf(intToken(2), rule("<cross-exp>")),
-                tupleOf(intToken(2), rule("<multiply-exp>")), // 16
 
+                tupleOf(intToken(2), rule("<multiply-exp>")), // 16
                 tupleOf(opToken("-"), rule("<minus-tail>")),
                 tupleOf(opToken("-"), rule("<add-tail-opt>")),
-
                 tupleOf(intToken(1), rule("<add-exp>"))
         ));
     }
@@ -116,25 +114,23 @@ class SyntaxTest {
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(rules, contains(
                 tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")),
                 tupleOf(intToken(1), rule("<primary-exp>")),
                 tupleOf(intToken(1), rule("<conj>")), // 4
                 tupleOf(intToken(1), rule("<unary-exp>")),
+
                 tupleOf(intToken(1), rule("<cross-exp>")),
                 tupleOf(intToken(1), rule("<multiply-exp>")),
                 tupleOf(opToken("+"), rule("+")), // 8
                 tupleOf(intToken(2), rule("<int-literal>")),
 
-                tupleOf(intToken(2), rule("<primary-exp-opt>")),
                 tupleOf(intToken(2), rule("<primary-exp>")),
                 tupleOf(intToken(2), rule("<conj>")),
                 tupleOf(intToken(2), rule("<unary-exp>")),
                 tupleOf(intToken(2), rule("<cross-exp>")),
-                tupleOf(intToken(2), rule("<multiply-exp>")), // 16
 
+                tupleOf(intToken(2), rule("<multiply-exp>")), // 16
                 tupleOf(opToken("+"), rule("<plus-tail>")),
                 tupleOf(opToken("+"), rule("<add-tail-opt>")),
-
                 tupleOf(intToken(1), rule("<add-exp>"))
         ));
     }
@@ -146,35 +142,32 @@ class SyntaxTest {
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(rules, contains(
                 tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")),
                 tupleOf(intToken(1), rule("<primary-exp>")),
                 tupleOf(intToken(1), rule("<conj>")), // 4
                 tupleOf(intToken(1), rule("<unary-exp>")),
+
                 tupleOf(intToken(1), rule("<cross-exp>")),
                 tupleOf(intToken(1), rule("<multiply-exp>")),
-
                 tupleOf(opToken("+"), rule("+")), // 8
                 tupleOf(intToken(2), rule("<int-literal>")),
-                tupleOf(intToken(2), rule("<primary-exp-opt>")),
+
                 tupleOf(intToken(2), rule("<primary-exp>")),
                 tupleOf(intToken(2), rule("<conj>")), // 12
                 tupleOf(intToken(2), rule("<unary-exp>")),
                 tupleOf(intToken(2), rule("<cross-exp>")),
-                tupleOf(intToken(2), rule("<multiply-exp>")),
 
+                tupleOf(intToken(2), rule("<multiply-exp>")),
                 tupleOf(opToken("+"), rule("<plus-tail>")), //16
                 tupleOf(opToken("+"), rule("<add-tail-opt>")),
-
                 tupleOf(opToken("-"), rule("-")),
 
                 tupleOf(intToken(3), rule("<int-literal>")),
-                tupleOf(intToken(3), rule("<primary-exp-opt>")), // 20
                 tupleOf(intToken(3), rule("<primary-exp>")),
                 tupleOf(intToken(3), rule("<conj>")),
                 tupleOf(intToken(3), rule("<unary-exp>")),
+
                 tupleOf(intToken(3), rule("<cross-exp>")), // 24
                 tupleOf(intToken(3), rule("<multiply-exp>")),
-
                 tupleOf(opToken("-"), rule("<minus-tail>")),
                 tupleOf(opToken("-"), rule("<add-tail-opt>")),
 
@@ -184,7 +177,7 @@ class SyntaxTest {
 
     @Test
     void testAssign() {
-        boolean result = assertDoesNotThrow(() -> parse("let a = 1;", "<assign-stm>"));
+        boolean result = assertDoesNotThrow(() -> parse("let a = 1", "<assign-stm>"));
         assertTrue(result);
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(rules, contains(
@@ -192,25 +185,26 @@ class SyntaxTest {
                 tupleOf(idToken("a"), rule("<assign-var-identifier>")),
                 tupleOf(opToken("="), rule("=")),
                 tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")), // 4
+
                 tupleOf(intToken(1), rule("<primary-exp>")),
                 tupleOf(intToken(1), rule("<conj>")),
                 tupleOf(intToken(1), rule("<unary-exp>")),
-                tupleOf(intToken(1), rule("<cross-exp>")), // 8
+                tupleOf(intToken(1), rule("<cross-exp>")),
+
                 tupleOf(intToken(1), rule("<multiply-exp>")),
                 tupleOf(intToken(1), rule("<add-exp>")),
+                tupleOf(intToken(1), rule("<exp-opt>")),
                 tupleOf(intToken(1), rule("<exp>")),
-                tupleOf(opToken(";"), rule(";")), // 12
+
                 tupleOf(idToken("let"), rule("<assign-stm>"))
         ));
     }
 
     @ParameterizedTest
     @CsvSource({
-            "let ,Missing <assign-var-identifier> (<EOF>)",
-            "let a ,Missing = (<EOF>)",
-            "let a = ,Missing <primary-exp-opt> (<EOF>)",
-            "let a = 1,Missing ; (<EOF>)",
+            "let ,Missing <assign-var-identifier> token(\"\")",
+            "let a ,Missing = token(\"\")",
+            "let a = ,Missing <exp-opt> token(\"\")",
     })
     void testAssignError(String text, String expMsg) {
         QuParseException ex = assertThrows(QuParseException.class, () ->
@@ -236,9 +230,9 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "<$|,Missing <primary-exp-opt> ($)",
-            "<,Missing <primary-exp-opt> (<EOF>)",
-            "<0,Missing | (<EOF>)",
+            "<$|,Missing <exp-opt> token(\"$\")",
+            "<,Missing <exp-opt> token(\"\")",
+            "<0,Missing | token(\"\")",
     })
     void testBraError(String text, String expMsg) {
         QuException ex = assertThrows(QuException.class, () ->
@@ -248,23 +242,21 @@ class SyntaxTest {
 
     @Test
     void testClear() {
-        boolean result = assertDoesNotThrow(() -> parse("clear();", "<clear-stm>"));
+        boolean result = assertDoesNotThrow(() -> parse("clear()", "<clear-stm>"));
         assertTrue(result);
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(rules, contains(
                 tupleOf(idToken("clear"), rule("clear")),
                 tupleOf(opToken("("), rule("(")),
                 tupleOf(opToken(")"), rule(")")),
-                tupleOf(opToken(";"), rule(";")),
                 tupleOf(idToken("clear"), rule("<clear-stm>"))
         ));
     }
 
     @ParameterizedTest
     @CsvSource({
-            "clear,Missing ( (<EOF>)",
-            "clear (,Missing ) (<EOF>)",
-            "clear (),Missing ; (<EOF>)",
+            "clear,Missing ( token(\"\")",
+            "clear (,Missing ) token(\"\")",
     })
     void testClearError(String text, String expMsg) {
         QuParseException ex = assertThrows(QuParseException.class, () ->
@@ -278,21 +270,25 @@ class SyntaxTest {
         assertTrue(result);
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(rules, contains(
+                tupleOf(idToken("clear"), rule("<code-unit-head>")),
                 tupleOf(idToken("clear"), rule("clear")),
                 tupleOf(opToken("("), rule("(")),
                 tupleOf(opToken(")"), rule(")")),
-                tupleOf(opToken(";"), rule(";")),
 
                 tupleOf(idToken("clear"), rule("<clear-stm>")),
-                tupleOf(idToken("clear"), rule("<code-unit-opt>")),
-                tupleOf(idToken("clear"), rule("clear")),
+                tupleOf(idToken("clear"), rule("<stm-opt>")),
+                tupleOf(opToken(";"), rule(";")),
+                tupleOf(idToken("clear"), rule("<stm>")),
 
+                tupleOf(idToken("clear"), rule("clear")),
                 tupleOf(opToken("("), rule("(")),
                 tupleOf(opToken(")"), rule(")")),
-                tupleOf(opToken(";"), rule(";")),
                 tupleOf(idToken("clear"), rule("<clear-stm>")),
 
-                tupleOf(idToken("clear"), rule("<code-unit-opt>")),
+                tupleOf(idToken("clear"), rule("<stm-opt>")),
+                tupleOf(opToken(";"), rule(";")),
+                tupleOf(idToken("clear"), rule("<stm>")),
+                tupleOf(isA(Token.EOFToken.class), rule("<eof>")),
                 tupleOf(idToken("clear"), rule("<code-unit>"))
         ));
     }
@@ -303,10 +299,10 @@ class SyntaxTest {
         assertTrue(result);
         assertThat(rules, contains(
                 tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")),
                 tupleOf(intToken(1), rule("<primary-exp>")),
                 tupleOf(opToken("^"), rule("^")),
                 tupleOf(opToken("^"), rule("^")),
+
                 tupleOf(intToken(1), rule("<conj>"))
         ));
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
@@ -319,30 +315,25 @@ class SyntaxTest {
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(rules, contains(
                 tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")),
                 tupleOf(intToken(1), rule("<primary-exp>")),
                 tupleOf(intToken(1), rule("<conj>")),
                 tupleOf(intToken(1), rule("<unary-exp>")), // 4
 
                 tupleOf(idToken("x"), rule("x")),
-
                 tupleOf(intToken(2), rule("<int-literal>")),
-                tupleOf(intToken(2), rule("<primary-exp-opt>")), // 8
                 tupleOf(intToken(2), rule("<primary-exp>")),
                 tupleOf(intToken(2), rule("<conj>")),
+
                 tupleOf(intToken(2), rule("<unary-exp>")),
-
                 tupleOf(idToken("x"), rule("<cross-tail-opt>")),
-
                 tupleOf(idToken("x"), rule("x")),
-
                 tupleOf(intToken(3), rule("<int-literal>")), // 16
-                tupleOf(intToken(3), rule("<primary-exp-opt>")),
+
                 tupleOf(intToken(3), rule("<primary-exp>")),
                 tupleOf(intToken(3), rule("<conj>")),
                 tupleOf(intToken(3), rule("<unary-exp>")), // 20
-
                 tupleOf(idToken("x"), rule("<cross-tail-opt>")),
+
                 tupleOf(intToken(1), rule("<cross-exp>"))
         ));
     }
@@ -354,45 +345,56 @@ class SyntaxTest {
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(rules, contains(
                 tupleOf(idToken("e"), rule("e")),
-                tupleOf(idToken("e"), rule("<primary-exp-opt>")),
                 tupleOf(idToken("e"), rule("<primary-exp>"))
         ));
     }
 
-    @Test
-    void testExpStm() {
-        boolean result = assertDoesNotThrow(() -> parse("1;", "<exp-stm>"));
-        assertTrue(result);
-        assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
-        assertThat(rules, contains(
-                tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")),
-                tupleOf(intToken(1), rule("<primary-exp>")),
-                tupleOf(intToken(1), rule("<conj>")),
-
-                tupleOf(intToken(1), rule("<unary-exp>")),
-                tupleOf(intToken(1), rule("<cross-exp>")),
-                tupleOf(intToken(1), rule("<multiply-exp>")),
-                tupleOf(intToken(1), rule("<add-exp>")),
-
-                tupleOf(intToken(1), rule("<exp>")),
-                tupleOf(opToken(";"), rule(";")),
-                tupleOf(intToken(1), rule("<exp-stm>"))
-        ));
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "<primary-exp>",
+            "<conj>",
+            "<unary-exp>",
+            "<cross-exp>",
+            "<multiply-exp>",
+            "<add-exp>",
+            "<exp-opt>",
+    })
+    void testEmptyExp(String rule) {
+        boolean result = assertDoesNotThrow(() -> parse("  ;", rule));
+        assertFalse(result);
+        assertThat(parseContext.currentToken(), opToken(";"));
+        assertThat(rules, empty());
     }
 
     @ParameterizedTest
     @CsvSource({
-            "1,Missing ; (<EOF>)",
+            "1,Missing ; token(\"\")",
     })
     void testExpStmError(String text, String expMsg) {
         QuParseException ex = assertThrows(QuParseException.class, () ->
-                parse(text, "<exp-stm>"));
+                parse(text, "<stm>"));
         assertEquals(expMsg, ex.getMessage());
     }
 
     @Test
-    void testFunction() {
+    void testFunction0() {
+        boolean result = assertDoesNotThrow(() -> parse("sqrt()", "<function>"));
+        assertTrue(result);
+        assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
+        assertThat(rules, contains(
+                tupleOf(idToken("sqrt"), rule("<function-id>")),
+                tupleOf(opToken("("), rule("(")),
+                tupleOf(opToken(")"), rule("<empty-arg>")),
+                tupleOf(opToken(")"), rule("<arg-list>")),
+
+                tupleOf(opToken(")"), rule(")")),
+                tupleOf(opToken("("), rule("<args-exp>")),
+                tupleOf(idToken("sqrt"), rule("<function>"))
+        ));
+    }
+
+    @Test
+    void testFunction1() {
         boolean result = assertDoesNotThrow(() -> parse("sqrt(1)", "<function>"));
         assertTrue(result);
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
@@ -400,17 +402,61 @@ class SyntaxTest {
                 tupleOf(idToken("sqrt"), rule("<function-id>")),
                 tupleOf(opToken("("), rule("(")),
                 tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")),
-                tupleOf(intToken(1), rule("<primary-exp>")),// 4
+                tupleOf(intToken(1), rule("<primary-exp>")),
+
                 tupleOf(intToken(1), rule("<conj>")),
                 tupleOf(intToken(1), rule("<unary-exp>")),
-
-                tupleOf(intToken(1), rule("<cross-exp>")), // 8
-
+                tupleOf(intToken(1), rule("<cross-exp>")),
                 tupleOf(intToken(1), rule("<multiply-exp>")),
-                tupleOf(intToken(1), rule("<add-exp>")),
 
-                tupleOf(intToken(1), rule("<exp>")),  // 12
+                tupleOf(intToken(1), rule("<add-exp>")),
+                tupleOf(intToken(1), rule("<exp-opt>")),
+                tupleOf(intToken(1), rule("<arg>")),
+                tupleOf(intToken(1), rule("<arg-list-opt>")),
+                tupleOf(intToken(1), rule("<arg-list>")),
+                tupleOf(opToken(")"), rule(")")),
+
+                tupleOf(opToken("("), rule("<args-exp>")),
+                tupleOf(idToken("sqrt"), rule("<function>"))
+        ));
+    }
+
+    @Test
+    void testFunction2() {
+        boolean result = assertDoesNotThrow(() -> parse("sqrt(1, 2)", "<function>"));
+        assertTrue(result);
+        assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
+        assertThat(rules, contains(
+                tupleOf(idToken("sqrt"), rule("<function-id>")),
+                tupleOf(opToken("("), rule("(")),
+                tupleOf(intToken(1), rule("<int-literal>")),
+                tupleOf(intToken(1), rule("<primary-exp>")),
+
+                tupleOf(intToken(1), rule("<conj>")),
+                tupleOf(intToken(1), rule("<unary-exp>")),
+                tupleOf(intToken(1), rule("<cross-exp>")),
+                tupleOf(intToken(1), rule("<multiply-exp>")),
+
+                tupleOf(intToken(1), rule("<add-exp>")),
+                tupleOf(intToken(1), rule("<exp-opt>")),
+                tupleOf(intToken(1), rule("<arg>")),
+                tupleOf(opToken(","), rule(",")),
+
+                tupleOf(intToken(2), rule("<int-literal>")),
+                tupleOf(intToken(2), rule("<primary-exp>")),
+                tupleOf(intToken(2), rule("<conj>")),
+                tupleOf(intToken(2), rule("<unary-exp>")),
+
+                tupleOf(intToken(2), rule("<cross-exp>")),
+                tupleOf(intToken(2), rule("<multiply-exp>")),
+                tupleOf(intToken(2), rule("<add-exp>")),
+                tupleOf(intToken(2), rule("<exp-opt>")),
+
+                tupleOf(intToken(2), rule("<exp>")),
+                tupleOf(opToken(","), rule("<arg-tail>")),
+                tupleOf(intToken(1), rule("<arg-list-opt>")),
+                tupleOf(intToken(1), rule("<arg-list>")),
+
                 tupleOf(opToken(")"), rule(")")),
                 tupleOf(opToken("("), rule("<args-exp>")),
                 tupleOf(idToken("sqrt"), rule("<function>"))
@@ -419,9 +465,10 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "sqrt,Missing ( (<EOF>)",
-            "sqrt( ,Missing <primary-exp-opt> (<EOF>)",
-            "sqrt(1,Missing ) (<EOF>)",
+            "sqrt,Missing ( token(\"\")",
+            "sqrt( ,Missing ) token(\"\")",
+            "sqrt(1,Missing ) token(\"\")",
+            "'sqrt(1,' ,Missing <exp-opt> token(\"\")",
     })
     void testFunctionError(String text, String expMsg) {
         QuParseException ex = assertThrows(QuParseException.class, () ->
@@ -467,9 +514,9 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "|/>,Missing <primary-exp-opt> (/)",
-            "|,Missing <primary-exp-opt> (<EOF>)",
-            "|0,Missing > (<EOF>)",
+            "|/>,Missing <exp-opt> token(\"/\")",
+            "|,Missing <exp-opt> token(\"\")",
+            "|0,Missing > token(\"\")",
     })
     void testKetError(String text, String expMsg) {
         QuException ex = assertThrows(QuException.class, () ->
@@ -484,24 +531,21 @@ class SyntaxTest {
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(rules, contains(
                 tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")),
                 tupleOf(intToken(1), rule("<primary-exp>")),
                 tupleOf(intToken(1), rule("<conj>")),
                 tupleOf(intToken(1), rule("<unary-exp>")), // 4
+
                 tupleOf(intToken(1), rule("<cross-exp>")),
-
                 tupleOf(opToken("/"), rule("/")),
-
                 tupleOf(intToken(2), rule("<int-literal>")),
-                tupleOf(intToken(2), rule("<primary-exp-opt>")), // 8
                 tupleOf(intToken(2), rule("<primary-exp>")),
+
                 tupleOf(intToken(2), rule("<conj>")),
                 tupleOf(intToken(2), rule("<unary-exp>")),
                 tupleOf(intToken(2), rule("<cross-exp>")), // 12
-
                 tupleOf(opToken("/"), rule("<divide-tail>")),
-                tupleOf(opToken("/"), rule("<mul-tail-opt>")),
 
+                tupleOf(opToken("/"), rule("<mul-tail-opt>")),
                 tupleOf(intToken(1), rule("<multiply-exp>"))
         ));
     }
@@ -513,24 +557,21 @@ class SyntaxTest {
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(rules, contains(
                 tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")),
                 tupleOf(intToken(1), rule("<primary-exp>")),
                 tupleOf(intToken(1), rule("<conj>")),
                 tupleOf(intToken(1), rule("<unary-exp>")), // 4
+
                 tupleOf(intToken(1), rule("<cross-exp>")),
-
                 tupleOf(opToken("*"), rule("*")),
-
                 tupleOf(intToken(2), rule("<int-literal>")),
-                tupleOf(intToken(2), rule("<primary-exp-opt>")), // 8
                 tupleOf(intToken(2), rule("<primary-exp>")),
+
                 tupleOf(intToken(2), rule("<conj>")),
                 tupleOf(intToken(2), rule("<unary-exp>")),
                 tupleOf(intToken(2), rule("<cross-exp>")), // 12
-
                 tupleOf(opToken("*"), rule("<multiply-tail>")),
-                tupleOf(opToken("*"), rule("<mul-tail-opt>")),
 
+                tupleOf(opToken("*"), rule("<mul-tail-opt>")),
                 tupleOf(intToken(1), rule("<multiply-exp>"))
         ));
     }
@@ -542,34 +583,30 @@ class SyntaxTest {
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(rules, contains(
                 tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")),
                 tupleOf(intToken(1), rule("<primary-exp>")),
                 tupleOf(intToken(1), rule("<conj>")),
                 tupleOf(intToken(1), rule("<unary-exp>")), // 4
+
                 tupleOf(intToken(1), rule("<cross-exp>")),
-
                 tupleOf(opToken("*"), rule("*")),
-
                 tupleOf(intToken(2), rule("<int-literal>")),
-                tupleOf(intToken(2), rule("<primary-exp-opt>")), // 8
                 tupleOf(intToken(2), rule("<primary-exp>")),
+
                 tupleOf(intToken(2), rule("<conj>")),
                 tupleOf(intToken(2), rule("<unary-exp>")),
                 tupleOf(intToken(2), rule("<cross-exp>")), // 12
-
                 tupleOf(opToken("*"), rule("<multiply-tail>")),
+
                 tupleOf(opToken("*"), rule("<mul-tail-opt>")),
-
                 tupleOf(opToken("/"), rule("/")),
-
                 tupleOf(intToken(3), rule("<int-literal>")), // 16
-                tupleOf(intToken(3), rule("<primary-exp-opt>")),
                 tupleOf(intToken(3), rule("<primary-exp>")),
+
                 tupleOf(intToken(3), rule("<conj>")),
                 tupleOf(intToken(3), rule("<unary-exp>")), // 20
                 tupleOf(intToken(3), rule("<cross-exp>")),
-
                 tupleOf(opToken("/"), rule("<divide-tail>")),
+
                 tupleOf(opToken("/"), rule("<mul-tail-opt>")),
                 tupleOf(intToken(1), rule("<multiply-exp>"))
         ));
@@ -582,15 +619,14 @@ class SyntaxTest {
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(rules, contains(
                 tupleOf(idToken("pi"), rule("pi")),
-                tupleOf(idToken("pi"), rule("<primary-exp-opt>")),
                 tupleOf(idToken("pi"), rule("<primary-exp>"))
         ));
     }
 
     @ParameterizedTest
     @CsvSource({
-            "(,Missing <primary-exp-opt> (<EOF>)",
-            "(1,Missing ) (<EOF>)",
+            "(,Missing <exp-opt> token(\"\")",
+            "(1,Missing ) token(\"\")",
     })
     void testPrimaryExpError(String text, String expMsg) {
         QuParseException ex = assertThrows(QuParseException.class, () ->
@@ -606,18 +642,15 @@ class SyntaxTest {
         assertThat(rules, contains(
                 tupleOf(opToken("("), rule("(")),
                 tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")),
                 tupleOf(intToken(1), rule("<primary-exp>")),
-
                 tupleOf(intToken(1), rule("<conj>")),
 
                 tupleOf(intToken(1), rule("<unary-exp>")),
-
                 tupleOf(intToken(1), rule("<cross-exp>")),
-
                 tupleOf(intToken(1), rule("<multiply-exp>")),
                 tupleOf(intToken(1), rule("<add-exp>")), // 8
 
+                tupleOf(intToken(1), rule("<exp-opt>")),
                 tupleOf(intToken(1), rule("<exp>")),
                 tupleOf(opToken(")"), rule(")")),
                 tupleOf(opToken("("), rule("<priority-exp>"))
@@ -626,8 +659,8 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "(,Missing <primary-exp-opt> (<EOF>)",
-            "(1,Missing ) (<EOF>)",
+            "(,Missing <exp-opt> token(\"\")",
+            "(1,Missing ) token(\"\")",
     })
     void testPriorityExpError(String text, String expMsg) {
         QuParseException ex = assertThrows(QuParseException.class, () ->
@@ -672,17 +705,16 @@ class SyntaxTest {
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(rules, contains(
                         tupleOf(intToken(tokenValue), rule("<int-literal>")),
-                        tupleOf(intToken(tokenValue), rule("<primary-exp-opt>")),
                         tupleOf(intToken(tokenValue), rule("<primary-exp>")),
                         tupleOf(intToken(tokenValue), rule("<conj>")),
-
                         tupleOf(intToken(tokenValue), rule("<unary-exp>")),
-                        tupleOf(intToken(tokenValue), rule("<cross-exp>")),
+
+                tupleOf(intToken(tokenValue), rule("<cross-exp>")),
                         tupleOf(intToken(tokenValue), rule("<multiply-exp>")),
                         tupleOf(intToken(tokenValue), rule("<add-exp>")),
+                        tupleOf(intToken(tokenValue), rule("<exp-opt>")),
 
-                        tupleOf(intToken(tokenValue), rule("<exp>")),
-                        tupleOf(intToken(tokenValue), rule("<int-state>")),
+                tupleOf(intToken(tokenValue), rule("<int-state>")),
                         tupleOf(intToken(tokenValue), rule("<state-exp-opt>")),
                         tupleOf(intToken(tokenValue), rule("<state-exp>"))
                 )
@@ -738,8 +770,8 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            ">,Missing <primary-exp-opt> (>)",
-            "'',Missing <primary-exp-opt> (<EOF>)",
+            ">,Missing <exp-opt> token(\">\")",
+            "'',Missing <exp-opt> token(\"\")",
     })
     void testStateLiteralError(String text, String expMsg) {
         QuException ex = assertThrows(QuException.class, () ->
@@ -756,12 +788,13 @@ class SyntaxTest {
                 tupleOf(opToken("-"), rule("-")),
                 tupleOf(opToken("-"), rule("-")),
                 tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")),
                 tupleOf(intToken(1), rule("<primary-exp>")), // 4
+
                 tupleOf(intToken(1), rule("<conj>")),
                 tupleOf(intToken(1), rule("<unary-exp>")),
                 tupleOf(opToken("-"), rule("<negate-exp>")), // 8
                 tupleOf(opToken("-"), rule("<unary-exp>")),
+
                 tupleOf(opToken("-"), rule("<negate-exp>")),
                 tupleOf(opToken("-"), rule("<unary-exp>"))
         ));
@@ -776,12 +809,13 @@ class SyntaxTest {
                 tupleOf(opToken("+"), rule("+")),
                 tupleOf(opToken("+"), rule("+")),
                 tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")),
                 tupleOf(intToken(1), rule("<primary-exp>")), // 4
+
                 tupleOf(intToken(1), rule("<conj>")),
                 tupleOf(intToken(1), rule("<unary-exp>")),
                 tupleOf(opToken("+"), rule("<plus-exp>")), // 8
                 tupleOf(opToken("+"), rule("<unary-exp>")),
+
                 tupleOf(opToken("+"), rule("<plus-exp>")),
                 tupleOf(opToken("+"), rule("<unary-exp>"))
         ));
@@ -804,21 +838,17 @@ class SyntaxTest {
         assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
         assertThat(rules, contains(
                 tupleOf(intToken(1), rule("<int-literal>")),
-                tupleOf(intToken(1), rule("<primary-exp-opt>")),
                 tupleOf(intToken(1), rule("<primary-exp>")),
                 tupleOf(intToken(1), rule("<conj>")),
                 tupleOf(intToken(1), rule("<unary-exp>")), // 4
 
                 tupleOf(idToken("x"), rule("x")),
-
                 tupleOf(intToken(2), rule("<int-literal>")),
-                tupleOf(intToken(2), rule("<primary-exp-opt>")),
                 tupleOf(intToken(2), rule("<primary-exp>")), // 8
                 tupleOf(intToken(2), rule("<conj>")),
+
                 tupleOf(intToken(2), rule("<unary-exp>")),
-
                 tupleOf(idToken("x"), rule("<cross-tail-opt>")),
-
                 tupleOf(intToken(1), rule("<cross-exp>"))
         ));
     }

@@ -63,8 +63,8 @@ class TokenizerTest {
 
     public static Stream<Arguments> testErrorData() {
         return Stream.of(
-                Arguments.arguments("1234.0e", "Missing exponent (\\n)"),
-                Arguments.arguments("1234.0ea", "Missing exponent (a)")
+                Arguments.arguments("1234.0e", "Missing exponent token(\"\\n\")"),
+                Arguments.arguments("1234.0ea", "Missing exponent token(\"a\")")
         );
     }
 
