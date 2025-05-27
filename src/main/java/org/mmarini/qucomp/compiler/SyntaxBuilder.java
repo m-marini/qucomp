@@ -42,7 +42,30 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * The syntax rule builder decouples the definition of syntax rules from the building
- * allowing recursive rule references
+ * allowing recursive rule references.
+ * <p>
+ * The terminal rule composers are:
+ *
+ * <pre>
+ * empty()                = &lt;empty> ::= ""
+ * id(id)                 = &lt;id> ::= id
+ * idIn(id1, ..., idn)    = &lt;any-id-in>
+ * idNotIn(id1, ..., idn) = &lt;any-id-not-in>
+ * intLiteral()           = &lt;any-int-literal>
+ * intLiteral()           = &lt;any-int-literal>
+ * notEnd()               = &lt;!EOF>
+ * oper(char)             = &lt;oper> ::= char
+ * realLiteral()          = &lt;any-real-literal>
+ * </pre>
+ * <p>
+ * The non-terminal rule composers are:
+ *
+ * <pre>
+ * opt(cond, exp1, ..., expn) = &lt;opt> ::= &lt;cond> &lt;exp1> ... &lt;expn> | ""
+ * options(exp1, ..., expn)   = &lt;opt> ::= &lt;exp1> |  ... | &lt;expn> | ""
+ * repeat(exp)                = &lt;repeat> := &lt;exp> &lt;repeat> | ""
+ * require(exp1, ..., expn)   = &lt;require> := &lt;exp1> ... &lt;expn>
+ * </pre>
  */
 public class SyntaxBuilder {
     private final Map<String, RuleBuilder> builders;
@@ -67,6 +90,27 @@ public class SyntaxBuilder {
     }
 
     /**
+     * Returns the int literal builder
+     *
+     * @param ruleId the syntax rule identifier
+     */
+    public void empty(String ruleId) throws QuException {
+        put(new RuleBuilder.TerminalRuleBuilder(ruleId) {
+            @Override
+            public SyntaxRule build() {
+                return new SyntaxRule.AbstractRule(ruleId) {
+                    @Override
+                    public boolean parse(ParseContext context) throws QuParseException {
+                        Token token = context.currentToken();
+                        context.join(token, this);
+                        return true;
+                    }
+                };
+            }
+        });
+    }
+
+    /**
      * Returns the syntax rule that matches for the given identifier
      *
      * @param id the identifier
@@ -86,9 +130,15 @@ public class SyntaxBuilder {
         });
     }
 
-    public RuleBuilder.TerminalRuleBuilder idIn(String id, Set<String> idSet) throws QuException {
+    /**
+     * Returns the syntax rule that matches for the given identifiers
+     *
+     * @param id    the rule identifier
+     * @param idSet the set of identifier
+     */
+    public void idIn(String id, Set<String> idSet) throws QuException {
         requireNonNull(idSet);
-        return put(new RuleBuilder.TerminalRuleBuilder(id) {
+        put(new RuleBuilder.TerminalRuleBuilder(id) {
             @Override
             public SyntaxRule build() {
                 return new SyntaxRule.TerminalRule(id) {
@@ -101,9 +151,15 @@ public class SyntaxBuilder {
         });
     }
 
-    public RuleBuilder.TerminalRuleBuilder idNotIn(String id, Set<String> idSet) throws QuException {
+    /**
+     * Returns the syntax rule that matches for any identifiers not in the given identifier set
+     *
+     * @param id    the rule identifier
+     * @param idSet the set of identifier
+     */
+    public void idNotIn(String id, Set<String> idSet) throws QuException {
         requireNonNull(idSet);
-        return put(new RuleBuilder.TerminalRuleBuilder(id) {
+        put(new RuleBuilder.TerminalRuleBuilder(id) {
             @Override
             public SyntaxRule build() {
                 return new SyntaxRule.TerminalRule(id) {
@@ -121,8 +177,8 @@ public class SyntaxBuilder {
      *
      * @param ruleId the syntax rule identifier
      */
-    public RuleBuilder.TerminalRuleBuilder intLiteral(String ruleId) throws QuException {
-        return put(new RuleBuilder.TerminalRuleBuilder(ruleId) {
+    public void intLiteral(String ruleId) throws QuException {
+        put(new RuleBuilder.TerminalRuleBuilder(ruleId) {
             @Override
             public SyntaxRule build() {
                 return new SyntaxRule.TerminalRule(ruleId) {
@@ -136,27 +192,11 @@ public class SyntaxBuilder {
     }
 
     /**
-     * Returns the int literal builder
+     * Returns the builder of the rule that matches EOF
      *
-     * @param ruleId the syntax rule identifier
+     * @param id the rule identifier
      */
-    public RuleBuilder.TerminalRuleBuilder noPop(String ruleId) throws QuException {
-        return put(new RuleBuilder.TerminalRuleBuilder(ruleId) {
-            @Override
-            public SyntaxRule build() {
-                return new SyntaxRule.AbstractRule(ruleId) {
-                    @Override
-                    public boolean parse(ParseContext context) throws QuParseException {
-                        Token token = context.currentToken();
-                        context.join(token, this);
-                        return true;
-                    }
-                };
-            }
-        });
-    }
-
-    public RuleBuilder.TerminalRuleBuilder notEnd(String id) throws QuException {
+    public RuleBuilder.TerminalRuleBuilder end(String id) throws QuException {
         return put(new RuleBuilder.TerminalRuleBuilder(id) {
             @Override
             public SyntaxRule build() {
@@ -164,7 +204,26 @@ public class SyntaxBuilder {
 
                     @Override
                     public boolean parse(ParseContext context) {
-                        return !(context.currentToken() instanceof Token.EOFToken);
+                        return context.currentToken() instanceof Token.EOFToken;
+                    }
+                };
+            }
+        });
+    }
+
+    /**
+     * Returns the builder of the rule that matches EOF
+     *
+     * @param id the rule identifier
+     */
+    public RuleBuilder.NonTerminalRuleBuilder not(String id, String exp) throws QuException {
+        return put(new RuleBuilder.NonTerminalRuleBuilder(id, exp) {
+            @Override
+            public SyntaxRule build() {
+                return new SyntaxRule.NonTerminalRule(id) {
+                    @Override
+                    public boolean parse(ParseContext context) throws IOException {
+                        return !rules().getFirst().parse(context);
                     }
                 };
             }
@@ -176,8 +235,8 @@ public class SyntaxBuilder {
      *
      * @param op the operator
      */
-    public RuleBuilder.TerminalRuleBuilder oper(String op) throws QuException {
-        return put(new RuleBuilder.TerminalRuleBuilder(op) {
+    public void oper(String op) throws QuException {
+        put(new RuleBuilder.TerminalRuleBuilder(op) {
             @Override
             public SyntaxRule build() {
                 return new SyntaxRule.TerminalRule(op) {
@@ -190,12 +249,19 @@ public class SyntaxBuilder {
         });
     }
 
-    public RuleBuilder.NonTerminalRuleBuilder opt(String id, String condition, String... rules) throws QuException {
+    /**
+     * Returns the builder of the rule that matches all the listed rule if the condition matches
+     *
+     * @param id        the rule identifier
+     * @param condition the condition rule
+     * @param rules     the list of consequent mandatory rules
+     */
+    public void opt(String id, String condition, String... rules) throws QuException {
         String[] deps = Stream.concat(
                 Stream.of(condition),
                 Stream.of(rules)
         ).toArray(String[]::new);
-        return put(new RuleBuilder.NonTerminalRuleBuilder(id, deps) {
+        put(new RuleBuilder.NonTerminalRuleBuilder(id, deps) {
             @Override
             public SyntaxRule build() {
                 return new SyntaxRule.NonTerminalRule(id) {
@@ -227,8 +293,8 @@ public class SyntaxBuilder {
      * @param id      the identifier
      * @param depends the dependant rules
      */
-    public RuleBuilder.NonTerminalRuleBuilder options(String id, String... depends) throws QuException {
-        return put(new RuleBuilder.NonTerminalRuleBuilder(id, depends) {
+    public void options(String id, String... depends) throws QuException {
+        put(new RuleBuilder.NonTerminalRuleBuilder(id, depends) {
             @Override
             public SyntaxRule build() {
                 return new SyntaxRule.NonTerminalRule(id) {
@@ -269,8 +335,8 @@ public class SyntaxBuilder {
      *
      * @param ruleId the syntax rule identifier
      */
-    public RuleBuilder.TerminalRuleBuilder realLiteral(String ruleId) throws QuException {
-        return put(new RuleBuilder.TerminalRuleBuilder(ruleId) {
+    public void realLiteral(String ruleId) throws QuException {
+        put(new RuleBuilder.TerminalRuleBuilder(ruleId) {
             @Override
             public SyntaxRule build() {
                 return new SyntaxRule.TerminalRule(ruleId) {
@@ -283,8 +349,14 @@ public class SyntaxBuilder {
         });
     }
 
-    public RuleBuilder.NonTerminalRuleBuilder repeat(String id, String condition) throws QuException {
-        return put(new RuleBuilder.NonTerminalRuleBuilder(id, condition) {
+    /**
+     * Returns the builder of the rule that repeats the condition while it matches
+     *
+     * @param id        the rule identifier
+     * @param condition the condition rule
+     */
+    public void repeat(String id, String condition) throws QuException {
+        put(new RuleBuilder.NonTerminalRuleBuilder(id, condition) {
             @Override
             public SyntaxRule build() {
                 return new SyntaxRule.NonTerminalRule(id) {
@@ -301,8 +373,14 @@ public class SyntaxBuilder {
         });
     }
 
-    public RuleBuilder.NonTerminalRuleBuilder require(String id, String... rules) throws QuException {
-        return put(new RuleBuilder.NonTerminalRuleBuilder(id, rules) {
+    /**
+     * Returns the builder of the rule that applies mandatory the list of rule
+     *
+     * @param id    the rule identifier
+     * @param rules the mandatory rule list
+     */
+    public void require(String id, String... rules) throws QuException {
+        put(new RuleBuilder.NonTerminalRuleBuilder(id, rules) {
             @Override
             public SyntaxRule build() {
                 return new SyntaxRule.NonTerminalRule(id) {

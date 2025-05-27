@@ -31,21 +31,16 @@ package org.mmarini.qucomp.compiler;
 import java.io.IOException;
 
 /**
- * Captures the exception during the parsing
+ * Root class of exceptions related to qu language
  */
 public class QuException extends IOException {
-    public QuException() {
-    }
 
+    /**
+     * Creates the qu exception
+     *
+     * @param message the message error
+     */
     public QuException(String message) {
         super(message);
-    }
-
-    public QuException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public QuException(Throwable cause) {
-        super(cause);
     }
 }

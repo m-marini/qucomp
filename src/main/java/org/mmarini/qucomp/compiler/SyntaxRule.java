@@ -48,9 +48,17 @@ public interface SyntaxRule {
      */
     boolean parse(ParseContext context) throws IOException;
 
+    /**
+     * IMplements the id property
+     */
     abstract class AbstractRule implements SyntaxRule {
         private final String id;
 
+        /**
+         * Creates the abtract rule
+         *
+         * @param id the rule identifier
+         */
         protected AbstractRule(String id) {
             this.id = requireNonNull(id);
         }
@@ -66,28 +74,52 @@ public interface SyntaxRule {
         }
     }
 
+    /**
+     * Implements the rule list property
+     */
     abstract class NonTerminalRule extends AbstractRule {
         private List<SyntaxRule> rules;
 
+        /**
+         * Creates the abstract rule
+         *
+         * @param id the rule identifier
+         */
         protected NonTerminalRule(String id) {
             super(id);
         }
 
+        /**
+         * Returns the list of rules
+         */
         public List<SyntaxRule> rules() {
             return rules;
         }
 
-        public NonTerminalRule setRules(List<SyntaxRule> rules) {
+        /**
+         * Sets the list of rules
+         *
+         * @param rules the list of rules
+         */
+        public NonTerminalRule rules(List<SyntaxRule> rules) {
             this.rules = rules;
             return this;
         }
     }
 
+    /**
+     * Implements the rule that discards the token if match the token condition
+     */
     abstract class TerminalRule extends AbstractRule {
         protected TerminalRule(String id) {
             super(id);
         }
 
+        /**
+         * Returns true if the token match the rule definition
+         *
+         * @param token the token
+         */
         protected abstract boolean match(Token token);
 
         @Override

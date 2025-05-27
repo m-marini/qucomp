@@ -37,12 +37,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mmarini.qucomp.apis.Complex;
 import org.mmarini.qucomp.apis.Ket;
 
+import java.io.IOException;
 import java.util.Deque;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mmarini.qucomp.Matchers.*;
 
 class CompilerTest {
@@ -73,10 +74,14 @@ class CompilerTest {
     private Tokenizer tokenizer;
 
     private void create(String text) {
+        assertDoesNotThrow(() -> create1(text));
+    }
+
+    private void create1(String text) throws IOException {
         assertDoesNotThrow(() -> {
             this.tokenizer = Tokenizer.create(text).open();
-            rule.parse(compiler.createParseContext(tokenizer));
         });
+        rule.parse(compiler.createParseContext(tokenizer));
     }
 
     @BeforeEach
@@ -477,8 +482,20 @@ class CompilerTest {
         CommandNode command = stack.getLast();
         assertThat(command, isCodeUnit(contains(
                 isFunctionCommand("sqrt",
-                        isValueCommand(1))
-        )));
+                        isCodeUnit(contains(
+                                isValueCommand(1))
+                        )))));
+    }
+
+
+    @ParameterizedTest
+    @CsvSource({
+            "sqrt(), sqrt requires 1 arguments: actual 0 token(\"sqrt\")",
+            "'sqrt(1,2,3);', sqrt requires 1 arguments: actual 3 token(\"sqrt\")",
+    })
+    void testSqrtError(String text, String msg) {
+        QuParseException ex = assertThrows(QuParseException.class, () -> create1(text));
+        assertEquals(msg, ex.getMessage());
     }
 
     @Test

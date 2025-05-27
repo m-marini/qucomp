@@ -39,6 +39,9 @@ import java.util.stream.Stream;
  * The qu language syntax
  */
 public class Syntax {
+    /**
+     * Reserved keywords
+     */
     public static final Set<String> RESERVED_KEYWORDS = Set.of(
             "i", // imaginary unit
             "e", // imaginary unit
@@ -60,12 +63,12 @@ public class Syntax {
             "cosh",
             "tanh"
     );
+    /**
+     * Statements keywords
+     */
     public static final Set<String> STATEMENTS_KEYWORDS = Set.of(
             "let",
             "clear"
-    );
-    public static final Set<String> FUNCTION_KEYWORDS = Set.of(
-            "sqrt"
     );
     private static final Logger logger = LoggerFactory.getLogger(Syntax.class);
 
@@ -76,76 +79,63 @@ public class Syntax {
         logger.atDebug().log("Creating syntax ...");
         SyntaxBuilder builder = new SyntaxBuilder();
 
-        builder.require("<code-unit>", "<statement-list>");
-        builder.repeat("<statement-list>", "<code-unit-opt>");
-        builder.options("<code-unit-opt>", "<clear-stm>", "<assign-stm>", "<exp-opt>");
-        builder.opt("<exp-opt>", "<not-end>", "<exp-stm>");
+        builder.require("<code-unit>", "<code-unit-head>", "<statement-list>", "<eof>");
+        builder.repeat("<statement-list>", "<stm>");
+        builder.opt("<stm>", "<stm-opt>", ";");
+        builder.options("<stm-opt>", "<clear-stm>", "<assign-stm>", "<exp-opt>");
+        builder.require("<eof>", "<end>");
+        builder.end("<end>");
+        builder.empty("<code-unit-head>");
 
-        // <clear-stm> ::= "clear" "(" ")" ";" | ""
-        builder.opt("<clear-stm>", "clear", "(", ")", ";");
+        builder.opt("<clear-stm>", "clear", "(", ")");
+        builder.opt("<assign-stm>", "let", "<assign-var-identifier>", "=", "<exp>");
 
-        // <assign-stm> ::= "let" <var-identifier> "=" <exp> ";" | ""
-        builder.opt("<assign-stm>", "let", "<assign-var-identifier>", "=", "<exp>", ";");
+        // <exp-opt> ::= <conj>
+        builder.require("<exp>", "<exp-opt>");
+        builder.opt("<exp-opt>", "<add-exp>");
 
-        // <assign-stm> ::= "let" <var-identifier> "=" <exp> ";" | ""
-        builder.opt("<exp-stm>", "<exp>", ";");
-
-        // <exp> ::= <conj>
-        builder.require("<exp>", "<add-exp>");
-
-        // <add-exp> ::= <add-exp> <add-tail>
-        builder.require("<add-exp>", "<multiply-exp>", "<add-tail>");
+        // <add-exp> ::= <multiply-exp> <add-tail>
         // <add-tail> ::= <add-tail-opt> <add-tail>
+        // <add-tail-opt> ::= <plus-tail> | <minus-tail>
+        // <plus-tail> ::= "+" <multiply-exp> | ""
+        // <minus-tail> ::= "-" <multiply-exp> | ""
+        builder.opt("<add-exp>", "<multiply-exp>", "<add-tail>");
         builder.repeat("<add-tail>", "<add-tail-opt>");
-        // <add-tail-opt> ::= <plus-tail-> | <minus-tail> |""
         builder.options("<add-tail-opt>", "<plus-tail>", "<minus-tail>");
-        // <plus-tail-> ::= "+" <multiply-exp> |""
         builder.opt("<plus-tail>", "+", "<multiply-exp>");
-        // <minus-tail-> ::= "-" <multiply-exp> |""
         builder.opt("<minus-tail>", "-", "<multiply-exp>");
 
-        builder.require("<multiply-exp>", "<cross-exp>", "<mul-tail>");
+        // <multiply-exp> ::= <cross-exp> <mul-tail>
         // <mul-tail> ::= <mul-tail-opt> <mul-tail>
+        // <mul-tail-opt> ::= <multiply-tail> | <divide-tail>
+        // <multiply-tail> ::= "*" <cross-exp> | ""
+        // <divide-tail> ::= "/" <cross-exp> | ""
+        builder.opt("<multiply-exp>", "<cross-exp>", "<mul-tail>");
         builder.repeat("<mul-tail>", "<mul-tail-opt>");
-        // <mul-tail-opt> ::= <multiply-tail-> | <divide-tail> |""
         builder.options("<mul-tail-opt>", "<multiply-tail>", "<divide-tail>");
-        // <multiply-tail-> ::= "*" <cross-exp> |""
         builder.opt("<multiply-tail>", "*", "<cross-exp>");
-        // <divide-tail-> ::= "-" <cross-exp> |""
         builder.opt("<divide-tail>", "/", "<cross-exp>");
 
-        builder.require("<cross-exp>", "<unary-exp>", "<cross-tail>");
-        // <mul-tail> ::= <mul-tail-opt> <mul-tail>
+        // <cross-exp> ::= <unary-exp> <cross-tail>
+        // <cross-tail> ::= <cross-tail-opt> <cross-tail>
+        // <cross-tail-opt> ::= "x" <unary-exp> | ""
+        builder.opt("<cross-exp>", "<unary-exp>", "<cross-tail>");
         builder.repeat("<cross-tail>", "<cross-tail-opt>");
-        // <mul-tail-opt> ::= <multiply-tail-> | <divide-tail> |""
         builder.opt("<cross-tail-opt>", "x", "<unary-exp>");
 
-        // <conj> ::= <plus-exp>" | "negate-exp" | "<primary-exp>"
+        // <unary-exp> ::= <plus-exp> | <negate-exp> | <conj>
+        // <plus-exp> ::= "+" <unary-exp> | ""
+        // <negate-exp> :.= "-" <unary-exp> | ""
         builder.options("<unary-exp>", "<plus-exp>", "<negate-exp>", "<conj>");
-        // <plus-exp> := "+" <conj> | ""
         builder.opt("<plus-exp>", "+", "<unary-exp>");
-        // <negate-exp> := "-" | "<conj>" | ""
         builder.opt("<negate-exp>", "-", "<unary-exp>");
 
-        // <conj> ::= "<primary-exp>"
-        builder.require("<conj>", "<primary-exp>", "<conj-tail>");
-        // <conj-tail> ::= "^" <conj-tail> | ""
+        // <conj> :: <primary-exp> <conj-tail>
+        // <conj-tail> ::= "^" <conj-tail> || ""
+        builder.opt("<conj>", "<primary-exp>", "<conj-tail>");
         builder.repeat("<conj-tail>", "^");
 
-        /*
-            <primary-exp> := <priority-exp>
-                           | <bra>
-                           | <ket>
-                           | <im-unit>
-                           | "pi"
-                           | "e"
-                           | <function>
-                           | <var-identifier>
-                           | <int-literal>
-                           | <real-literal>
-        */
-        builder.require("<primary-exp>", "<primary-exp-opt>");
-        builder.options("<primary-exp-opt>",
+        builder.options("<primary-exp>",
                 "<priority-exp>",
                 "<bra>",
                 "<ket>",
@@ -157,7 +147,7 @@ public class Syntax {
                 "<int-literal>",
                 "<real-literal>");
 
-        // <priority-exp> ::= "(" <exp> ")" | ""
+        // <priority-exp> ::= "(" <exp-opt> ")" | ""
         builder.opt("<priority-exp>", "(", "<exp>", ")");
 
         // <bra> ::= "|" <state-exp> ">" | ""
@@ -167,13 +157,19 @@ public class Syntax {
         builder.opt("<ket>", "|", "<state-exp>", ">");
 
         builder.opt("<function>", "<function-id>", "<args-exp>");
-        builder.require("<args-exp>", "(", "<exp>", ")");
+        builder.require("<args-exp>", "(", "<arg-list>", ")");
+        builder.options("<arg-list>", "<arg-list-opt>", "<empty-arg>");
+        builder.opt("<arg-list-opt>", "<arg>", "<arg-list-tail>");
+        builder.repeat("<arg-list-tail>", "<arg-tail>");
+        builder.opt("<arg-tail>", ",", "<exp>");
+        builder.empty("<empty-arg>");
+        builder.opt("<arg>", "<exp-opt>");
 
             /*
             <state-exp> ::= <i-state-literal>
                           | <plus-state-literal>
                           | <minus-state-exp>
-                          | <exp>
+                          | <exp-opt>
              */
         builder.require("<state-exp>", "<state-exp-opt>");
         builder.options("<state-exp-opt>", "<im-state>", "<plus-state>", "<minus-state-exp>", "<int-state>");
@@ -181,8 +177,8 @@ public class Syntax {
         // <minus-state-exp-opt> ::= "i" <minus-i-state> | <minus-state>
         builder.opt("<minus-state-exp>", "-", "<minus-state-exp-opt>");
         builder.options("<minus-state-exp-opt>", "<minus-im-state>", "<minus-state>");
-        builder.noPop("<minus-state>");
-        builder.require("<int-state>", "<exp>");
+        builder.empty("<minus-state>");
+        builder.require("<int-state>", "<exp-opt>");
 
         // literals
         builder.intLiteral("<int-literal>");
@@ -191,10 +187,9 @@ public class Syntax {
         builder.opt("<im-state>", "i");
         builder.opt("<minus-im-state>", "i");
         builder.opt("<plus-state>", "+");
-        builder.idIn("<function-id>", FUNCTION_KEYWORDS);
+        builder.idIn("<function-id>", Processor.FUNCTION_BY_ID.keySet());
         builder.idNotIn("<var-identifier>", keywords());
         builder.idNotIn("<assign-var-identifier>", keywords());
-        builder.notEnd("<not-end>");
 
         // Operators
         builder.oper("+");
@@ -209,6 +204,7 @@ public class Syntax {
         builder.oper("/");
         builder.oper("=");
         builder.oper(";");
+        builder.oper(",");
 
         // Reserved keywords
         builder.id("clear");
@@ -224,7 +220,7 @@ public class Syntax {
 
     public static Set<String> keywords() {
         return Stream.concat(
-                        FUNCTION_KEYWORDS.stream(),
+                        Processor.FUNCTION_BY_ID.keySet().stream(),
                         Stream.concat(
                                 STATEMENTS_KEYWORDS.stream(),
                                 RESERVED_KEYWORDS.stream()))

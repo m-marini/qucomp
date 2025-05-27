@@ -124,8 +124,7 @@ public class QuCompGUI {
         this.errorPanel = new JTextArea();
         this.syntax = Syntax.rule("<code-unit>");
         this.compiler = Compiler.create();
-        this.processor = new Processor(obj -> {
-        });
+        this.processor = new Processor();
 
         createContent();
         createFlow();
@@ -228,10 +227,12 @@ public class QuCompGUI {
 
     private void onRun(ActionEvent actionEvent) {
         try {
-            // Compile
-            Object value = processor.evaluate(compile(source()));
-            // Process
-            errorPanel.setText(value.toString());
+            // Compile and execute
+            Object[] values = (Object[]) compile(source()).evaluate(processor);
+            Object value = values[values.length - 1];
+            if (value != null) {
+                errorPanel.setText(value.toString());
+            }
         } catch (QuSourceException e) {
             SourceContext ctx = e.context();
             String[] msg = ctx.fullReportMessage(e.getMessage());

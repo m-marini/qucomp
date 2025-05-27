@@ -39,7 +39,6 @@ import java.util.*;
  * Generates the tree code from parser matching rules
  */
 public class Compiler implements CompilerContext {
-
     /**
      * Returns the code generator for the qu syntax parser
      */
@@ -72,9 +71,12 @@ public class Compiler implements CompilerContext {
                     CommandNode.Value id = context.pop();
                     context.push(CommandNode.assign(token, id.value().toString(), value));
                 })
-                .add("<code-unit>", (context, token) -> {
-                    List<CommandNode> values = context.popAll();
-                    context.push(CommandNode.codeUnit(token, values));
+                .add("<code-unit-head>", (context, token) ->
+                        context.push(CommandNode.commandList(token)))
+                .add("<stm>", (context, token) -> {
+                    CommandNode stm = context.pop();
+                    CommandNode.CommandList code = context.pop();
+                    context.push(code.add(stm));
                 })
                 .add("<minus-tail>", (context, token) -> {
                     CommandNode right = context.pop();
@@ -119,9 +121,30 @@ public class Compiler implements CompilerContext {
                         context.push(CommandNode.value(token, Complex.create((float) Math.PI))))
                 .add("e", (context, token) ->
                         context.push(CommandNode.value(token, Complex.create((float) Math.E))))
-                .add("<function>", (context, token) -> {
+                .add("<function-id>", (context, token) ->
+                        context.push(CommandNode.commandList(token)))
+                .add("<arg>", (context, token) -> {
                     CommandNode arg = context.pop();
-                    context.push(CommandNode.function(token, arg));
+                    CommandNode.CommandList cmd = context.pop();
+                    context.push(cmd.add(arg));
+                })
+                .add("<arg-tail>", (context, token) -> {
+                    CommandNode arg = context.pop();
+                    CommandNode.CommandList cmd = context.pop();
+                    cmd.commands().add(arg);
+                    context.push(cmd);
+                })
+                .add("<function>", (context, token) -> {
+                    CommandNode.CommandList args = context.pop();
+                    String id = token.token();
+                    int required = Optional.ofNullable(Processor.FUNCTION_BY_ID.get(id))
+                            .map(Processor.FunctionDef::numArgs)
+                            .orElse(0);
+                    int actual = args.commands().size();
+                    if (actual != required) {
+                        throw token.context().parseException("%s requires %d arguments: actual %d", id, required, actual);
+                    }
+                    context.push(CommandNode.function(token, token.token(), args));
                 })
                 .add("<var-identifier>", (context, token) ->
                         context.push(CommandNode.retrieveVar(token)));
@@ -154,7 +177,7 @@ public class Compiler implements CompilerContext {
     }
 
     /**
-     * Returns the parse context for the give tokenizer
+     * Returns the parse context for the give tokeniser
      *
      * @param tokenizer the tokenizer
      */
@@ -178,22 +201,15 @@ public class Compiler implements CompilerContext {
     }
 
     @Override
-    public CommandNode pop() {
-        return stack.removeLast();
-    }
-
-    @Override
-    public List<CommandNode> popAll() {
-        List<CommandNode> list = stack.stream().toList();
-        stack.clear();
-        return list;
+    public <T extends CommandNode> T pop() {
+        return (T) stack.removeLast();
     }
 
     /**
      * Applies the associated operator if exits
      *
      * @param token the token
-     * @param rule  the rule identifer
+     * @param rule  the rule identifier
      */
     public void process(Token token, String rule) throws QuParseException {
         Consumer2Throws<CompilerContext, Token, QuParseException> operator = operators.get(rule);
