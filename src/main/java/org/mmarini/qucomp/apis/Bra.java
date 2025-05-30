@@ -230,6 +230,13 @@ public record Bra(Complex[] values) {
     }
 
     /**
+     * Returns the number of states
+     */
+    public int numStates() {
+        return values.length;
+    }
+
+    /**
      * Returns the ket subtracted by other (this - other)
      *
      * @param other the other ket

@@ -38,15 +38,72 @@ import java.util.stream.Stream;
 
 import static java.lang.Math.sqrt;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.closeTo;
-import static org.hamcrest.Matchers.matchesPattern;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mmarini.qucomp.Matchers.complexClose;
+import static org.mmarini.qucomp.Matchers.ketCloseTo;
 
 class KetTest {
 
     public static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
     public static final float EPSILON = 1e-6F;
+
+    public static Stream<Arguments> argTestMulMatrix() {
+        Matrix m22 = Matrix.create(2, 2,
+                0, 1,
+                1, 0);
+        Matrix m24 = Matrix.create(2, 4,
+                1, 0, 1, 0,
+                0, 1, 0, 1
+        );
+        Matrix m44 = Matrix.create(4, 4,
+                0, 1, 0, 0,
+                1, 0, 0, 0,
+                0, 0, 0, 1,
+                0, 0, 1, 0);
+        return Stream.of(
+                Arguments.of(m22, Ket.zero(), Ket.one()),
+                Arguments.of(m22, Ket.one(), Ket.zero()),
+
+                Arguments.of(m44, Ket.zero(), Ket.create(0, 1, 0, 0)),
+                Arguments.of(m44, Ket.one(), Ket.create(1, 0, 0, 0)),
+                Arguments.of(m44, Ket.base(2), Ket.create(0, 0, 0, 1)),
+                Arguments.of(m44, Ket.base(3), Ket.create(0, 0, 1, 0)),
+                Arguments.of(m44, Ket.base(2), Ket.create(0, 0, 0, 1)),
+
+                Arguments.of(m24, Ket.zero(), Ket.zero()),
+                Arguments.of(m24, Ket.one(), Ket.one()),
+                Arguments.of(m24, Ket.base(2), Ket.zero()),
+                Arguments.of(m24, Ket.base(3), Ket.one())
+        );
+    }
+
+    public static Stream<Arguments> argTestMulMatrixError() {
+        Matrix m22 = Matrix.create(2, 2,
+                0, 1,
+                1, 0);
+        return Stream.of(
+                Arguments.of(m22, Ket.base(2), "Expected matrix with at least 4 columns (2)")
+        );
+    }
+
+    public static Stream<Arguments> argsTestAdd() {
+        return Stream.of(
+                Arguments.of(Ket.zero(), Ket.zero(), Ket.create(2, 0)),
+                Arguments.of(Ket.zero(), Ket.base(2), Ket.create(1, 0, 1, 0)),
+                Arguments.of(Ket.base(2), Ket.zero(), Ket.create(1, 0, 1, 0)),
+                Arguments.of(Ket.base(2), Ket.base(3), Ket.create(0, 0, 1, 1))
+        );
+    }
+
+    public static Stream<Arguments> argsTestSub() {
+        return Stream.of(
+                Arguments.of(Ket.zero(), Ket.zero(), Ket.create(0, 0)),
+                Arguments.of(Ket.zero(), Ket.base(2), Ket.create(1, 0, -1, 0)),
+                Arguments.of(Ket.base(2), Ket.zero(), Ket.create(-1, 0, 1, 0)),
+                Arguments.of(Ket.base(2), Ket.base(3), Ket.create(0, 0, 1, -1))
+        );
+    }
 
     public static Stream<Arguments> fromText1bitDataSet() {
         return Stream.of(
@@ -66,15 +123,6 @@ class KetTest {
                 Arguments.arguments("|1>|0>", Ket.base(2, 2)),
                 Arguments.arguments("|1>|1>", Ket.base(3, 2))
         );
-    }
-
-    @Test
-    void add() {
-        Ket ket0 = Ket.ZERO;
-        Ket ket1 = Ket.ONE;
-        Ket add = ket0.add(ket1);
-        assertThat(add.at(0), complexClose(1, EPSILON));
-        assertThat(add.at(1), complexClose(1, EPSILON));
     }
 
     @ParameterizedTest
@@ -244,16 +292,6 @@ class KetTest {
     }
 
     @Test
-    void mul() {
-        Ket ket0 = new Ket(new Complex[]{Complex.one(), Complex.one()});
-        Ket ket = ket0.mul(3);
-        assertArrayEquals(new Complex[]{
-                        Complex.create(3),
-                        Complex.create(3)},
-                ket.values());
-    }
-
-    @Test
     void neg() {
         Ket ket0 = Ket.ZERO;
         Ket add = ket0.neg();
@@ -313,19 +351,15 @@ class KetTest {
         assertThat(ket1.at(3), complexClose((float) sqrt(7) / 4, EPSILON));
     }
 
-    @Test
-    void sub() {
-        Ket ket0 = Ket.ZERO;
-        Ket ket1 = Ket.ONE;
-        Ket add = ket0.sub(ket1);
-        assertArrayEquals(new Complex[]{
-                        Complex.ONE,
-                        Complex.create(-1)},
-                add.values());
+    @ParameterizedTest
+    @MethodSource("argsTestAdd")
+    void testAdd(Ket left, Ket right, Ket exp) {
+        Ket result = left.add(right);
+        assertThat(result, ketCloseTo(exp, EPSILON));
     }
 
     @Test
-    void testMul() {
+    void testMulComplex() {
         Ket ket0 = new Ket(new Complex[]{Complex.one(), Complex.one()});
         Ket ket = ket0.mul(Complex.i());
         assertArrayEquals(new Complex[]{
@@ -334,20 +368,35 @@ class KetTest {
                 ket.values());
     }
 
+    @ParameterizedTest
+    @MethodSource("argTestMulMatrix")
+    void testMulMatrix(Matrix left, Ket right, Ket exp) {
+        Ket ket = right.mul(left);
+        assertThat(ket, ketCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("argTestMulMatrixError")
+    void testMulMatrixError(Matrix left, Ket right, String exp) {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> right.mul(left));
+        assertThat(ex.getMessage(), equalTo(exp));
+    }
+
     @Test
-    void testMul1() {
-        // Given
-        Matrix x = Matrix.create(2, 2,
-                0, 1,
-                1, 0);
-        // When
-        Ket notZero = Ket.zero().mul(x);
-        Ket notOne = Ket.one().mul(x);
-        // Then
-        assertThat(notZero.values()[0], complexClose(0, EPSILON));
-        assertThat(notZero.values()[1], complexClose(1, EPSILON));
-        assertThat(notOne.values()[0], complexClose(1, EPSILON));
-        assertThat(notOne.values()[1], complexClose(0, EPSILON));
+    void testMulReal() {
+        Ket ket0 = new Ket(new Complex[]{Complex.one(), Complex.one()});
+        Ket ket = ket0.mul(3);
+        assertArrayEquals(new Complex[]{
+                        Complex.create(3),
+                        Complex.create(3)},
+                ket.values());
+    }
+
+    @ParameterizedTest
+    @MethodSource("argsTestSub")
+    void testSub(Ket left, Ket right, Ket exp) {
+        Ket result = left.sub(right);
+        assertThat(result, ketCloseTo(exp, EPSILON));
     }
 
     @Test

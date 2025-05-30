@@ -49,22 +49,41 @@ public interface Matchers {
 
     static Matcher<Bra> braCloseTo(Bra expected, float epsilon) {
         requireNonNull(expected);
-        return new CustomMatcher<>(format("Bra close to %s within +- %f",
-                expected,
-                epsilon)) {
+        return new BaseMatcher<>() {
+
             @Override
             public void describeMismatch(Object item, Description description) {
                 if (item instanceof Bra bra) {
                     description.appendText("bra ")
-                            .appendValue(bra.toString())
-                            .appendText(" differs from ")
-                            .appendValue(expected.toString())
-                            .appendText(" (more then ")
-                            .appendValue(epsilon)
-                            .appendText(")");
+                            .appendValue(bra);
+                    if (bra.numStates() != expected.numStates()) {
+                        description.appendText(" has number of states ")
+                                .appendValue(bra.numStates())
+                                .appendText(" different from expected ")
+                                .appendValue(expected.numStates());
+                    } else {
+                        int i = 0;
+                        while (i < bra.numStates() && bra.at(i).isClose(expected.at(i), epsilon)) {
+                            i++;
+                        }
+                        description.appendText(" value at [" + i + "] ")
+                                .appendValue(bra.at(i))
+                                .appendText(" differs from ")
+                                .appendValue(expected.at(i))
+                                .appendText(" more then ")
+                                .appendValue(epsilon);
+                    }
                 } else {
                     super.describeMismatch(item, description);
                 }
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("Bra close to ")
+                        .appendValue(expected)
+                        .appendText(" within +- ")
+                        .appendValue(epsilon);
             }
 
             @Override
@@ -423,28 +442,47 @@ public interface Matchers {
 
     static Matcher<Ket> ketCloseTo(Ket expected, float epsilon) {
         requireNonNull(expected);
-        return new CustomMatcher<>(format("Ket close to %s within +- %f",
-                expected,
-                epsilon)) {
+        return new BaseMatcher<>() {
+
             @Override
             public void describeMismatch(Object item, Description description) {
                 if (item instanceof Ket ket) {
                     description.appendText("ket ")
-                            .appendValue(ket.toString())
-                            .appendText(" differs from ")
-                            .appendValue(expected.toString())
-                            .appendText(" (more then ")
-                            .appendValue(epsilon)
-                            .appendText(")");
+                            .appendValue(ket);
+                    if (ket.numStates() != expected.numStates()) {
+                        description.appendText(" has number of states ")
+                                .appendValue(ket.numStates())
+                                .appendText(" different from expected ")
+                                .appendValue(expected.numStates());
+                    } else {
+                        int i = 0;
+                        while (i < ket.numStates() && ket.at(i).isClose(expected.at(i), epsilon)) {
+                            i++;
+                        }
+                        description.appendText(" value at [" + i + "] ")
+                                .appendValue(ket.at(i))
+                                .appendText(" differs from ")
+                                .appendValue(expected.at(i))
+                                .appendText(" more then ")
+                                .appendValue(epsilon);
+                    }
                 } else {
                     super.describeMismatch(item, description);
                 }
             }
 
             @Override
+            public void describeTo(Description description) {
+                description.appendText("Ket close to ")
+                        .appendValue(expected)
+                        .appendText(" within +- ")
+                        .appendValue(epsilon);
+            }
+
+            @Override
             public boolean matches(Object o) {
-                if (!(o instanceof Ket value)) return false;
-                Complex[] v1 = value.values();
+                if (!(o instanceof Ket ket)) return false;
+                Complex[] v1 = ket.values();
                 Complex[] v2 = expected.values();
                 if (v1.length != v2.length) return false;
                 for (int i = 0; i < v1.length; i++) {

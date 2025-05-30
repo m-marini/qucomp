@@ -73,6 +73,7 @@ public record Ket(Complex[] values) {
      * @param size  the number of qubit
      */
     public static Ket base(int value, int size) {
+        // TODO remove after the auto extend
         int n = 1 << size;
         return new Ket(IntStream.range(0, n)
                 .mapToObj(i -> value == i ? Complex.one() : Complex.zero())
@@ -85,8 +86,10 @@ public record Ket(Complex[] values) {
      * @param state the state value
      */
     public static Ket base(int state) {
-        int n = numBitsByState(state);
-        return base(state, n);
+        int n = 1 << numBitsByState(state);
+        return new Ket(IntStream.range(0, n)
+                .mapToObj(i -> state == i ? Complex.one() : Complex.zero())
+                .toArray(Complex[]::new));
     }
 
     /**
@@ -201,10 +204,13 @@ public record Ket(Complex[] values) {
     /**
      * Returns the ket added to other (this + other)
      *
-     * @param other the other ket
+     * @param right the other ket
      */
-    public Ket add(Ket other) {
-        return new Ket(VectorUtils.add(values, other.values));
+    public Ket add(Ket right) {
+        Ket left = this;
+        int n = max(left.numStates(), right.numStates());
+        return new Ket(VectorUtils.add(
+                left.extend(n).values, right.extend(n).values));
     }
 
     /***
@@ -219,6 +225,7 @@ public record Ket(Complex[] values) {
      * Returns the probabilities per bit
      */
     public double[] bitProbs() {
+        // TODO use a matrix operator
         int n = numBits();
         double[] stateProbs = prob();
         double[] result = new double[n];
@@ -263,10 +270,10 @@ public record Ket(Complex[] values) {
     /**
      * Return the promoted Ket
      *
-     * @param size the new ket size
+     * @param numStates the new ket size
      */
-    public Ket extend(int size) {
-        return new Ket(VectorUtils.extend(values, size));
+    public Ket extend(int numStates) {
+        return new Ket(VectorUtils.extend(values, numStates));
     }
 
     @Override
@@ -287,15 +294,15 @@ public record Ket(Complex[] values) {
      * @param matrix the matrix operator
      */
     public Ket mul(Matrix matrix) {
-        int n = values.length;
-        if (matrix.numCols() != n) {
-            throw new IllegalArgumentException(format("Matrix operator must have shape ? x %d (%dx%d)",
-                    n,
-                    matrix.numRows(), matrix.numCols()));
+        int numCols = matrix.numCols();
+        int numStates = numStates();
+        if (numStates > numCols) {
+            throw new IllegalArgumentException("Expected matrix with at least " + numStates + " columns (" + numCols + ")");
         }
-        int m = matrix.numRows();
-        Complex[] cells = new Complex[m];
-        partMul(cells, 0, matrix.numRows(), 1, matrix.cells(), 0, matrix.numCols(), this.values, 0, 1);
+        Ket left = this.extend(numCols);
+        int numRows = matrix.numRows();
+        Complex[] cells = new Complex[numRows];
+        partMul(cells, 0, numRows, 1, matrix.cells(), 0, numCols, left.values, 0, 1);
         return create(cells);
     }
 
@@ -328,12 +335,24 @@ public record Ket(Complex[] values) {
      * Returns the number of bits
      */
     public int numBits() {
+        return VectorUtils.numBits(values.length);
+        /*
+        TODO remove when migration has completed
         int numStates = values.length;
         int numBits = 0;
         for (int i = numStates; i > 0; i >>= 1) {
             numBits++;
         }
         return max(numBits - 1, 0);
+
+         */
+    }
+
+    /**
+     * Returns the number of states
+     */
+    public int numStates() {
+        return values.length;
     }
 
     /**
@@ -352,6 +371,7 @@ public record Ket(Complex[] values) {
      * @param states the matching states
      */
     public Ket[] split(int... states) {
+        // TODO use a matrix operator
         Set<Integer> stateSet = Arrays.stream(states).boxed().collect(Collectors.toSet());
         Complex[] match = new Complex[values.length];
         Complex[] notMatch = new Complex[values.length];
@@ -368,12 +388,15 @@ public record Ket(Complex[] values) {
     }
 
     /**
-     * Returns the ket subtracted by other (this - other)
+     * Returns the ket subtracted by right (this - right)
      *
-     * @param other the other ket
+     * @param right the right ket
      */
-    public Ket sub(Ket other) {
-        return new Ket(VectorUtils.sub(values, other.values));
+    public Ket sub(Ket right) {
+        Ket left = this;
+        int n = max(left.numStates(), right.numStates());
+        return new Ket(VectorUtils.sub(
+                left.extend(n).values, right.extend(n).values));
     }
 
     @Override

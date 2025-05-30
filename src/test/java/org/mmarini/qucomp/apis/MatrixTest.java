@@ -20,7 +20,7 @@ class MatrixTest {
     private static final Logger logger = LoggerFactory.getLogger(MatrixTest.class);
 
     @Test
-    void add() {
+    void testAdd() {
         Matrix a = Matrix.create(2, 3, IntStream.range(0, 6)
                 .mapToObj(Complex::create)
                 .toArray(Complex[]::new));
