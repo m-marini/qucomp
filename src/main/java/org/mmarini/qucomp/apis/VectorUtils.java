@@ -98,6 +98,12 @@ public interface VectorUtils {
         return cells;
     }
 
+    /**
+     * Returns the extended list of state
+     *
+     * @param values the values
+     * @param size   the new state size
+     */
     static Complex[] extend(Complex[] values, int size) {
         if (values.length >= size) {
             return values;
@@ -210,7 +216,9 @@ public interface VectorUtils {
                 int aik = ai;
                 int bkj = bj;
                 for (int k = 0; k < aStride; k++) {
-                    cell = cell.add(a[aik].mul(b[bkj]));
+                    Complex vik = a[aik];
+                    Complex vkj = b[bkj];
+                    cell = cell.add(vik.mul(vkj));
                     aik++;
                     bkj += bStride;
                 }

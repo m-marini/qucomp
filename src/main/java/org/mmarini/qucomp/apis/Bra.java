@@ -30,7 +30,6 @@ package org.mmarini.qucomp.apis;
 
 import java.util.Arrays;
 
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.mmarini.qucomp.apis.VectorUtils.partMul;
 
@@ -47,13 +46,12 @@ public record Bra(Complex[] values) {
     public static final Bra MINUS_I = Ket.minus_i().conj();
 
     /**
-     * Returns a ket base for the given value and size
+     * Returns a base base for the given value
      *
-     * @param value the value
-     * @param size  the number of qubit
+     * @param state the state value
      */
-    public static Bra base(int value, int size) {
-        return Ket.base(value, size).conj();
+    public static Bra base(int state) {
+        return Ket.base(state).conj();
     }
 
     /**
@@ -134,7 +132,16 @@ public record Bra(Complex[] values) {
      * @param other the other ket
      */
     public Bra add(Bra other) {
-        return new Bra(VectorUtils.add(values, other.values));
+        int n = numStates();
+        int m = other.numStates();
+        Bra left = this;
+        if (n > m) {
+            other = other.extend(n);
+        }
+        if (m > n) {
+            left = left.extend(m);
+        }
+        return new Bra(VectorUtils.add(left.values, other.values));
     }
 
     /***
@@ -168,8 +175,13 @@ public record Bra(Complex[] values) {
         return Arrays.equals(values, bra.values);
     }
 
-    public Bra extend(int size) {
-        return new Bra(VectorUtils.extend(values, size));
+    /**
+     * Extends the bra to number of states
+     *
+     * @param numStates the number of states
+     */
+    public Bra extend(int numStates) {
+        return new Bra(VectorUtils.extend(values, numStates));
     }
 
     @Override
@@ -178,29 +190,20 @@ public record Bra(Complex[] values) {
     }
 
     /**
-     * Returns the scalar product
-     *
-     * @param ket the ket
-     */
-    public Complex mul(Ket ket) {
-        return VectorUtils.mulScalar(values, ket.values());
-    }
-
-    /**
      * Returns the transformed ket
      *
      * @param matrix the matrix operator
      */
     public Bra mul(Matrix matrix) {
-        int n = values.length;
-        if (matrix.numRows() != n) {
-            throw new IllegalArgumentException(format("Matrix operator must have shape ? x %d (%d x %d)",
-                    n,
-                    matrix.numRows(), matrix.numCols()));
+        int n = matrix.numRows();
+        int n1 = numStates();
+        if (n < n1) {
+            throw new IllegalArgumentException("Expected matrix with " + n1 + " or more number of columns (" + n + ")");
         }
+        Bra left = this.extend(n);
         int m = matrix.numCols();
         Complex[] cells = new Complex[m];
-        partMul(cells, 0, 1, matrix.numCols(), this.values, 0, values.length, matrix.cells(), 0, matrix.numCols());
+        partMul(cells, 0, 1, m, left.values, 0, left.numStates(), matrix.cells(), 0, m);
         return create(cells);
     }
 
@@ -223,10 +226,35 @@ public record Bra(Complex[] values) {
     }
 
     /**
+     * Returns the scalar product
+     *
+     * @param ket the ket
+     */
+    public Complex mul(Ket ket) {
+        int n = numStates();
+        int m = ket.numStates();
+        Bra left = this;
+        if (n > m) {
+            ket = ket.extend(n);
+        }
+        if (m > n) {
+            left = left.extend(m);
+        }
+        return VectorUtils.mulScalar(left.values, ket.values());
+    }
+
+    /**
      * Returns the negated ket
      */
     public Bra neg() {
         return new Bra(VectorUtils.neg(values));
+    }
+
+    /**
+     * Returns the num states of Bra
+     */
+    public int numStates() {
+        return values.length;
     }
 
     /**
@@ -235,7 +263,16 @@ public record Bra(Complex[] values) {
      * @param other the other ket
      */
     public Bra sub(Bra other) {
-        return new Bra(VectorUtils.sub(values, other.values));
+        int n = numStates();
+        int m = other.numStates();
+        Bra left = this;
+        if (n > m) {
+            other = other.extend(n);
+        }
+        if (m > n) {
+            left = left.extend(m);
+        }
+        return new Bra(VectorUtils.sub(left.values, other.values));
     }
 
     @Override

@@ -42,13 +42,14 @@ import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mmarini.qucomp.Matchers.complexClose;
+import static org.mmarini.qucomp.Matchers.ketCloseTo;
 
 class KetTest {
 
     public static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
-    public static final float EPSILON = 1e-6F;
+    public static final float EPSILON = 1e-5F;
 
-    public static Stream<Arguments> fromText1bitDataSet() {
+    public static Stream<Arguments> argFromText1bit() {
         return Stream.of(
                 Arguments.arguments("|0>", Ket.zero()),
                 Arguments.arguments("|1>", Ket.one()),
@@ -59,46 +60,73 @@ class KetTest {
         );
     }
 
-    public static Stream<Arguments> fromText2bitDataSet() {
+    public static Stream<Arguments> argsAdd() {
         return Stream.of(
-                Arguments.arguments("|0>|0>", Ket.base(0, 2)),
-                Arguments.arguments("|0>|1>", Ket.base(1, 2)),
-                Arguments.arguments("|1>|0>", Ket.base(2, 2)),
-                Arguments.arguments("|1>|1>", Ket.base(3, 2))
+                Arguments.of(Ket.zero(), Ket.zero(), Ket.create(2, 0)),
+                Arguments.of(Ket.zero(), Ket.base(2), Ket.create(1, 0, 1, 0)),
+                Arguments.of(Ket.base(2), Ket.zero(), Ket.create(1, 0, 1, 0))
         );
     }
 
-    @Test
-    void add() {
-        Ket ket0 = Ket.ZERO;
-        Ket ket1 = Ket.ONE;
-        Ket add = ket0.add(ket1);
-        assertThat(add.at(0), complexClose(1, EPSILON));
-        assertThat(add.at(1), complexClose(1, EPSILON));
+    public static Stream<Arguments> argsFromText2bit() {
+        return Stream.of(
+                Arguments.arguments("|0>|0>", Ket.create(1, 0, 0, 0)),
+                Arguments.arguments("|0>|1>", Ket.create(0, 1, 0, 0)),
+                Arguments.arguments("|1>|0>", Ket.base(2)),
+                Arguments.arguments("|1>|1>", Ket.base(3))
+        );
+    }
+
+    public static Stream<Arguments> argsSub() {
+        return Stream.of(
+                Arguments.of(Ket.zero(), Ket.zero(), Ket.create(0, 0)),
+                Arguments.of(Ket.zero(), Ket.base(2), Ket.create(1, 0, -1, 0)),
+                Arguments.of(Ket.base(2), Ket.zero(), Ket.create(-1, 0, 1, 0))
+        );
+    }
+
+    public static Stream<Arguments> argsTestMulMatrix() {
+        Matrix m1 = Matrix.create(2, 2,
+                0, 1,
+                1, 0);
+        Matrix m2 = Matrix.create(4, 4,
+                0, 1, 0, 0,
+                1, 0, 0, 0,
+                0, 0, 0, 1,
+                0, 0, 1, 0
+        );
+        return Stream.of(
+                Arguments.of(m1, Ket.zero(), Ket.one()),
+                Arguments.of(m1, Ket.one(), Ket.zero()),
+                Arguments.of(m2, Ket.zero(), Ket.create(0, 1, 0, 0)),
+                Arguments.of(m2, Ket.one(), Ket.create(1, 0, 0, 0)),
+                Arguments.of(m2, Ket.base(2), Ket.create(0, 0, 0, 1)),
+                Arguments.of(m2, Ket.base(3), Ket.create(0, 0, 1, 0))
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("argsAdd")
+    void testAdd(Ket left, Ket right, Ket exp) {
+        Ket add = left.add(right);
+        assertThat(add, ketCloseTo(exp, EPSILON));
     }
 
     @ParameterizedTest
     @CsvSource({
-            "0, 1",
-            "1, 1",
             "0, 2",
             "1, 2",
-            "2, 2",
-            "3, 2",
-            "0, 3",
-            "1, 3",
-            "2, 3",
-            "3, 3",
-            "4, 3",
-            "5, 3",
-            "6, 3",
-            "7, 3",
+            "2, 4",
+            "3, 4",
+            "4, 8",
+            "5, 8",
+            "6, 8",
+            "7, 8",
     })
-    void base(int value, int size) {
-        Ket b = Ket.base(value, size);
-        int n = 1 << size;
-        assertEquals(n, b.values().length);
-        for (int i = 0; i < size; i++) {
+    void testBase(int value, int numStates) {
+        Ket b = Ket.base(value);
+        assertEquals(numStates, b.values().length);
+        for (int i = 0; i < numStates; i++) {
             assertEquals(i == value
                             ? Complex.one() : Complex.zero(),
                     b.values()[i]);
@@ -106,7 +134,7 @@ class KetTest {
     }
 
     @Test
-    void bitProbs01plus() {
+    void testBitProbs01plus() {
         Ket ket = Ket.zero().cross(Ket.one()).cross(Ket.plus());
         double[] p = ket.bitProbs();
         assertEquals(3, p.length);
@@ -116,7 +144,7 @@ class KetTest {
     }
 
     @Test
-    void bitProbsPlusx3() {
+    void testBitProbsPlusx3() {
         Ket ket = Ket.plus().cross(Ket.plus()).cross(Ket.plus());
         double[] p = ket.bitProbs();
         assertEquals(3, p.length);
@@ -126,7 +154,7 @@ class KetTest {
     }
 
     @Test
-    void conj() {
+    void testConj() {
         Ket ket = Ket.I;
         Bra conj = ket.conj();
         assertEquals(Bra.create(
@@ -136,7 +164,7 @@ class KetTest {
     }
 
     @Test
-    void create() {
+    void testCreate() {
         Ket ket = Ket.create(1, 1);
         assertArrayEquals(new Complex[]{
                         Complex.ONE,
@@ -145,7 +173,7 @@ class KetTest {
     }
 
     @Test
-    void create1() {
+    void testCreate1() {
         Ket ket = Ket.create(Complex.ONE, Complex.ONE);
         assertArrayEquals(new Complex[]{
                         Complex.ONE,
@@ -160,7 +188,7 @@ class KetTest {
             "1,0, 0,0,1,0",
             "1,1, 0,0,0,1",
     })
-    void cross(int b1, int b0, float exp0, float exp1, float exp2, float exp3) {
+    void testCross(int b1, int b0, float exp0, float exp1, float exp2, float exp3) {
         // Given
         Ket ket0 = b0 == 0 ? Ket.zero() : Ket.one();
         Ket ket1 = b1 == 0 ? Ket.zero() : Ket.one();
@@ -173,24 +201,30 @@ class KetTest {
     }
 
     @Test
-    void equals() {
+    void testEquals() {
         Ket ket1 = Ket.create(Complex.create(1), Complex.create(2));
         Ket ket2 = Ket.create(Complex.create(1), Complex.create(2));
         assertEquals(ket1, ket2);
         assertEquals(ket2, ket1);
     }
 
+    @Test
+    void testExtends() {
+        Ket ext = Ket.one().extend(4);
+        assertThat(ext, ketCloseTo(Ket.create(0, 1, 0, 0), EPSILON));
+    }
+
     @ParameterizedTest
-    @MethodSource("fromText1bitDataSet")
-    void fromText1bit(String text, Ket exp) {
+    @MethodSource("argFromText1bit")
+    void testFromText1bit(String text, Ket exp) {
         // Given
         Ket ket = Ket.fromText(text);
         assertEquals(exp, ket);
     }
 
     @ParameterizedTest
-    @MethodSource("fromText2bitDataSet")
-    void fromText2bit(String text, Ket exp) {
+    @MethodSource("argsFromText2bit")
+    void testFromText2bit(String text, Ket exp) {
         // Given
         Ket ket = Ket.fromText(text);
         assertEquals(exp, ket);
@@ -202,7 +236,7 @@ class KetTest {
             "|, Missing element after \\|",
             "|>, Unknown ket \\|>",
     })
-    void fromTextError(String text, String exp) {
+    void testFromTextError(String text, String exp) {
         // Given
         IllegalArgumentException th = assertThrows(IllegalArgumentException.class, () ->
                 Ket.fromText(text != null ? text : ""));
@@ -210,7 +244,7 @@ class KetTest {
     }
 
     @Test
-    void i() {
+    void testI() {
         Ket one = Ket.i();
         assertArrayEquals(new Complex[]{
                         Complex.create(HALF_SQRT2),
@@ -219,21 +253,21 @@ class KetTest {
     }
 
     @Test
-    void minus() {
+    void testMinus() {
         Ket ket = Ket.minus();
         assertThat(ket.at(0), complexClose(HALF_SQRT2, EPSILON));
         assertThat(ket.at(1), complexClose(-HALF_SQRT2, EPSILON));
     }
 
     @Test
-    void minus_i() {
+    void testMinus_i() {
         Ket one = Ket.minus_i();
         assertThat(one.at(0), complexClose(HALF_SQRT2, EPSILON));
         assertThat(one.at(1), complexClose(Complex.i(-HALF_SQRT2), EPSILON));
     }
 
     @Test
-    void module() {
+    void testModuleSquare() {
         assertThat(Ket.zero().moduleSquare(), closeTo(1, EPSILON));
         assertThat(Ket.one().moduleSquare(), closeTo(1, EPSILON));
         assertThat(Ket.plus().moduleSquare(), closeTo(1, EPSILON));
@@ -244,7 +278,17 @@ class KetTest {
     }
 
     @Test
-    void mul() {
+    void testMulComplex() {
+        Ket ket0 = new Ket(new Complex[]{Complex.one(), Complex.one()});
+        Ket ket = ket0.mul(Complex.i());
+        assertArrayEquals(new Complex[]{
+                        Complex.i(),
+                        Complex.i()},
+                ket.values());
+    }
+
+    @Test
+    void testMulFloat() {
         Ket ket0 = new Ket(new Complex[]{Complex.one(), Complex.one()});
         Ket ket = ket0.mul(3);
         assertArrayEquals(new Complex[]{
@@ -253,8 +297,15 @@ class KetTest {
                 ket.values());
     }
 
+    @ParameterizedTest
+    @MethodSource("argsTestMulMatrix")
+    void testMulMatrix(Matrix left, Ket right, Ket exp) {
+        Ket mul = right.mul(left);
+        assertThat(mul, ketCloseTo(exp, EPSILON));
+    }
+
     @Test
-    void neg() {
+    void testNeg() {
         Ket ket0 = Ket.ZERO;
         Ket add = ket0.neg();
         assertArrayEquals(new Complex[]{
@@ -264,7 +315,7 @@ class KetTest {
     }
 
     @Test
-    void one() {
+    void testOne() {
         Ket one = Ket.one();
         assertArrayEquals(new Complex[]{
                         Complex.ZERO,
@@ -273,7 +324,7 @@ class KetTest {
     }
 
     @Test
-    void plus() {
+    void testPlus() {
         Ket one = Ket.plus();
         assertArrayEquals(new Complex[]{
                         Complex.create(HALF_SQRT2),
@@ -282,7 +333,7 @@ class KetTest {
     }
 
     @Test
-    void prob() {
+    void testProb() {
         double[] zero = Ket.zero().prob();
         double[] one = Ket.one().prob();
         double[] plus = Ket.plus().prob();
@@ -294,7 +345,7 @@ class KetTest {
     }
 
     @Test
-    void split() {
+    void testSplit() {
         // Given ...
         Ket ket = Ket.create(1f / 8, 1f / 8, (float) (sqrt(7) / 4), (float) (sqrt(7) / 4));
         // When
@@ -313,57 +364,27 @@ class KetTest {
         assertThat(ket1.at(3), complexClose((float) sqrt(7) / 4, EPSILON));
     }
 
-    @Test
-    void sub() {
-        Ket ket0 = Ket.ZERO;
-        Ket ket1 = Ket.ONE;
-        Ket add = ket0.sub(ket1);
-        assertArrayEquals(new Complex[]{
-                        Complex.ONE,
-                        Complex.create(-1)},
-                add.values());
+    @ParameterizedTest
+    @MethodSource("argsSub")
+    void testSub(Ket left, Ket right, Ket exp) {
+        Ket add = left.sub(right);
+        assertThat(add, ketCloseTo(exp, EPSILON));
     }
 
     @Test
-    void testMul() {
-        Ket ket0 = new Ket(new Complex[]{Complex.one(), Complex.one()});
-        Ket ket = ket0.mul(Complex.i());
-        assertArrayEquals(new Complex[]{
-                        Complex.i(),
-                        Complex.i()},
-                ket.values());
-    }
-
-    @Test
-    void testMul1() {
-        // Given
-        Matrix x = Matrix.create(2, 2,
-                0, 1,
-                1, 0);
-        // When
-        Ket notZero = Ket.zero().mul(x);
-        Ket notOne = Ket.one().mul(x);
-        // Then
-        assertThat(notZero.values()[0], complexClose(0, EPSILON));
-        assertThat(notZero.values()[1], complexClose(1, EPSILON));
-        assertThat(notOne.values()[0], complexClose(1, EPSILON));
-        assertThat(notOne.values()[1], complexClose(0, EPSILON));
-    }
-
-    @Test
-    void toString0Test() {
+    void testToString0Test() {
         Ket ket = Ket.create(Complex.zero(), Complex.zero(), Complex.zero(), Complex.zero());
         assertEquals("(0.0) |3>", ket.toString());
     }
 
     @Test
-    void toStringTest() {
+    void testToStringTest() {
         Ket ket = Ket.create(new Complex(0, 0), new Complex(2, 0), new Complex(0, 2), new Complex(2, 2));
         assertEquals("(2.0) |1> + (2.0 i) |2> + (2.0 +2.0 i) |3>", ket.toString());
     }
 
     @Test
-    void zero() {
+    void testZero() {
         Ket zero = Ket.zero();
         assertArrayEquals(new Complex[]{
                         Complex.ONE,

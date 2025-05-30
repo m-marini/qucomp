@@ -2,25 +2,49 @@ package org.mmarini.qucomp.apis;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static java.lang.Math.sqrt;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mmarini.qucomp.Matchers.complexClose;
+import static org.mmarini.qucomp.Matchers.ketCloseTo;
 
 class MatrixTest {
     public static final float EPSILON = 1e-6F;
     public static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
     private static final Logger logger = LoggerFactory.getLogger(MatrixTest.class);
 
+    public static Stream<Arguments> argsTestH1() {
+        return Stream.of(
+                Arguments.of(Ket.base(0).extend(4), Ket.plus().cross(Ket.zero())),
+                Arguments.of(Ket.base(1).extend(4), Ket.plus().cross(Ket.one())),
+                Arguments.of(Ket.base(2), Ket.minus().cross(Ket.zero())),
+                Arguments.of(Ket.base(3), Ket.minus().cross(Ket.one()))
+        );
+    }
+
+    public static Stream<Arguments> argsTestX1() {
+        return Stream.of(
+                Arguments.of(Ket.base(0).extend(4), Ket.base(2)),
+                Arguments.of(Ket.base(1).extend(4), Ket.base(3)),
+                Arguments.of(Ket.base(2), Ket.zero().cross(Ket.zero().extend(4))),
+                Arguments.of(Ket.base(3), Ket.zero().cross(Ket.one().extend(4)))
+        );
+    }
+
     @Test
-    void add() {
+    void testAdd() {
         Matrix a = Matrix.create(2, 3, IntStream.range(0, 6)
                 .mapToObj(Complex::create)
                 .toArray(Complex[]::new));
@@ -35,7 +59,7 @@ class MatrixTest {
     }
 
     @Test
-    void at() {
+    void testAt() {
         Matrix m = Matrix.create(2, 2,
                 Complex.zero(), Complex.one(),
                 Complex.create(2), Complex.create(3));
@@ -57,11 +81,11 @@ class MatrixTest {
             "6, 0,0,0,0,0,0,0,1",
             "7, 0,0,0,0,0,0,1,0"
     })
-    void ccnot(int in, float exp0, float exp1, float exp2, float exp3, float exp4, float exp5, float exp6, float exp7) {
+    void testCcnot(int in, float exp0, float exp1, float exp2, float exp3, float exp4, float exp5, float exp6, float exp7) {
         // Given
         Matrix ccnot = Matrix.ccnot();
         // When
-        Ket result = Ket.base(in, 3).mul(ccnot);
+        Ket result = Ket.base(in).mul(ccnot);
         // Then
         assertThat(result.values()[0], complexClose(exp0, EPSILON));
         assertThat(result.values()[1], complexClose(exp1, EPSILON));
@@ -80,11 +104,11 @@ class MatrixTest {
             "2, 0,0,0,1",
             "3, 0,0,1,0"
     })
-    void cnot(int in, float exp0, float exp1, float exp2, float exp3) {
+    void testCnot(int in, float exp0, float exp1, float exp2, float exp3) {
         // Given
         Matrix cnotOp = Matrix.cnot();
         // When
-        Ket cnot = Ket.base(in, 2).mul(cnotOp);
+        Ket cnot = Ket.base(in).mul(cnotOp);
         // Then
         assertThat(cnot.values()[0], complexClose(exp0, EPSILON));
         assertThat(cnot.values()[1], complexClose(exp1, EPSILON));
@@ -93,7 +117,7 @@ class MatrixTest {
     }
 
     @Test
-    void conj() {
+    void testConj() {
         Matrix m = Matrix.create(2, 2,
                 IntStream.range(0, 4).mapToObj(Complex::i).toArray(Complex[]::new));
         Matrix c = m.conj();
@@ -104,7 +128,7 @@ class MatrixTest {
     }
 
     @Test
-    void createComplex() {
+    void testCreateComplex() {
         Matrix m = Matrix.create(2, 2,
                 Complex.one(), Complex.zero(),
                 Complex.zero(), Complex.one());
@@ -113,7 +137,7 @@ class MatrixTest {
     }
 
     @Test
-    void createReal() {
+    void testCreateReal() {
         Matrix m = Matrix.create(2, 2,
                 1, 0,
                 0, 1);
@@ -134,12 +158,12 @@ class MatrixTest {
             "6, 6",
             "7, 7",
     })
-    void cross1(int s, int exp) {
+    void testCross1(int s, int exp) {
         Matrix m0 = Matrix.swap();
         Matrix m1 = Matrix.identity();
         Matrix m = m0.cross(m1);
-        Ket ket0 = Ket.base(s, 3);
-        Ket expKet = Ket.base(exp, 3);
+        Ket ket0 = Ket.base(s).extend(8);
+        Ket expKet = Ket.base(exp).extend(8);
 
         Ket ket1 = ket0.mul(m);
 
@@ -166,12 +190,12 @@ class MatrixTest {
             "6, 5",
             "7, 7",
     })
-    void cross2(int s, int exp) {
+    void testCross2(int s, int exp) {
         Matrix m0 = Matrix.identity();
         Matrix m1 = Matrix.swap();
         Matrix m = m0.cross(m1);
-        Ket ket0 = Ket.base(s, 3);
-        Ket expKet = Ket.base(exp, 3);
+        Ket ket0 = Ket.base(s).extend(8);
+        Ket expKet = Ket.base(exp).extend(8);
 
         Ket ket1 = ket0.mul(m);
 
@@ -186,7 +210,7 @@ class MatrixTest {
     }
 
     @Test
-    void h() {
+    void testH() {
         Matrix h = Matrix.h();
 
         assertThat(h.at(0, 0), complexClose(HALF_SQRT2, EPSILON));
@@ -195,8 +219,40 @@ class MatrixTest {
         assertThat(h.at(1, 1), complexClose(-HALF_SQRT2, EPSILON));
     }
 
+    @ParameterizedTest
+    @MethodSource("argsTestH1")
+    void testH1(Ket in, Ket exp) {
+        Matrix h = Matrix.h(1);
+        Ket out = in.mul(h);
+        assertThat(out, ketCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("argsTestX1")
+    void testX1(Ket in, Ket exp) {
+        Matrix h = Matrix.x(1);
+        Ket out = in.mul(h);
+        assertThat(out, ketCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 2})
+    void testIGate(int bit) {
+        Matrix m = Matrix.iGate(bit);
+        int exp = 2 << bit;
+        assertThat(m.numCols(), equalTo(exp));
+        assertThat(m.numRows(), equalTo(exp));
+        for (int i = 0; i < exp; i++) {
+            for (int j = 0; j < exp; j++) {
+                assertEquals(i == j ? Complex.one() : Complex.zero(),
+                        m.at(i, j),
+                        "matrix at " + i + ", " + j);
+            }
+        }
+    }
+
     @Test
-    void identity() {
+    void testIdentity() {
         Matrix m = Matrix.identity(3);
         assertTrue(m.hasShape(3, 3));
         assertThat(m.at(0, 0), complexClose(1, EPSILON));
@@ -211,7 +267,7 @@ class MatrixTest {
     }
 
     @Test
-    void index() {
+    void testIndex() {
         Matrix m = Matrix.create(2, 2,
                 Complex.one(), Complex.zero(),
                 Complex.zero(), Complex.one());
@@ -222,7 +278,7 @@ class MatrixTest {
     }
 
     @Test
-    void indexStream() {
+    void testIndexStream() {
         List<int[]> indices = Matrix.indexStream(2, 3).toList();
         assertEquals(6, indices.size());
         assertArrayEquals(new int[]{0, 0}, indices.get(0));
@@ -234,7 +290,7 @@ class MatrixTest {
     }
 
     @Test
-    void mul() {
+    void testMul() {
         Matrix m0 = Matrix.identity(3);
         Matrix m1 = m0.mul(Complex.i(2));
 
@@ -247,250 +303,6 @@ class MatrixTest {
         assertThat(m1.at(2, 0), complexClose(0, EPSILON));
         assertThat(m1.at(2, 1), complexClose(0, EPSILON));
         assertThat(m1.at(2, 2), complexClose(Complex.i(2), EPSILON));
-    }
-
-    @Test
-    void neg() {
-        Matrix m0 = Matrix.identity(3);
-        Matrix m1 = m0.neg();
-        assertTrue(m1.hasShape(3, 3));
-        assertThat(m1.at(0, 0), complexClose(-1, EPSILON));
-        assertThat(m1.at(0, 1), complexClose(0, EPSILON));
-        assertThat(m1.at(0, 2), complexClose(0, EPSILON));
-        assertThat(m1.at(1, 0), complexClose(0, EPSILON));
-        assertThat(m1.at(1, 1), complexClose(-1, EPSILON));
-        assertThat(m1.at(1, 2), complexClose(0, EPSILON));
-        assertThat(m1.at(2, 0), complexClose(0, EPSILON));
-        assertThat(m1.at(2, 1), complexClose(0, EPSILON));
-        assertThat(m1.at(2, 2), complexClose(-1, EPSILON));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            // p=(0 1 2 3)
-            // ia=(0 1 2 3) => ib=(0 1 2 3)
-            // a=(1 0 0 0) => b=(1 0 0 0) 0->0
-            // a=(0 1 0 0) => b=(0 1 0 0) 1->1
-            // a=(0 0 1 0) => b=(0 0 1 0) 2->2
-            // a=(0 0 0 1) => b=(0 0 0 1) 3->3
-            "0,1,2,3, 0,0",
-            "0,1,2,3, 1,1",
-            "0,1,2,3, 2,2",
-            "0,1,2,3, 3,3",
-
-            // p=(0 2 1 3)
-            // ia=(0 2 1 3) => ib=(0 1 2 3)
-            // a=(1 0 0 0) => b=(1 0 0 0) b[p[0]]=b[0]=1
-            // a=(0 1 0 0) => b=(0 0 1 0) b[p[1]]=b[2]=1
-            // a=(0 0 1 0) => b=(0 1 0 0) b[p[2]]=b[1]=1
-            // a=(0 0 0 1) => b=(0 0 0 1) b[p[3]]=b[3]=1
-            "0,2,1,3, 0,0",
-            "0,2,1,3, 1,2",
-            "0,2,1,3, 2,1",
-            "0,2,1,3, 3,3",
-
-            // p=(1 2 3 0)
-            // ia=(1 2 3 0) => ib=(0 1 2 3)
-            // a=(1 0 0 0) => b=(0 1 0 0) b[p[0]]=b[1]=1
-            // a=(0 1 0 0) => b=(0 0 1 0) b[p[1]]=b[2]=1
-            // a=(0 0 1 0) => b=(0 0 0 1) b[p[2]]=b[3]=1
-            // a=(0 0 0 1) => b=(1 0 0 0) b[p[3]]=b[0]=1
-            "1,2,3,0, 0,1",
-            "1,2,3,0, 1,2",
-            "1,2,3,0, 2,3",
-            "1,2,3,0, 3,0",
-    })
-    void permute2(int s0, int s1, int s2, int s3, int v0, int exp0) {
-        // Given
-        Matrix m = Matrix.permute(s0, s1, s2, s3);
-        Ket ket = Ket.base(v0, 2);
-        Ket exp = Ket.base(exp0, 2);
-        // When
-        Ket res = ket.mul(m);
-        // Then
-
-        assertThat(m.at(s0, 0), complexClose(1, EPSILON));
-        assertThat(m.at(s1, 1), complexClose(1, EPSILON));
-        assertThat(m.at(s2, 2), complexClose(1, EPSILON));
-        assertThat(m.at(s3, 3), complexClose(1, EPSILON));
-
-        assertThat(res.at(0), complexClose(exp.at(0), EPSILON));
-        assertThat(res.at(1), complexClose(exp.at(1), EPSILON));
-        assertThat(res.at(2), complexClose(exp.at(2), EPSILON));
-        assertThat(res.at(3), complexClose(exp.at(3), EPSILON));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "0,1,2,3,4,5,6,7, 0,0",
-            "0,1,2,3,4,5,6,7, 1,1",
-            "0,1,2,3,4,5,6,7, 2,2",
-            "0,1,2,3,4,5,6,7, 3,3",
-            "0,1,2,3,4,5,6,7, 4,4",
-            "0,1,2,3,4,5,6,7, 5,5",
-            "0,1,2,3,4,5,6,7, 6,6",
-            "0,1,2,3,4,5,6,7, 7,7",
-
-            "0,2,1,3,4,6,5,7, 0,0",
-            "0,2,1,3,4,6,5,7, 1,2",
-            "0,2,1,3,4,6,5,7, 2,1",
-            "0,2,1,3,4,6,5,7, 3,3",
-            "0,2,1,3,4,6,5,7, 4,4",
-            "0,2,1,3,4,6,5,7, 5,6",
-            "0,2,1,3,4,6,5,7, 6,5",
-            "0,2,1,3,4,6,5,7, 7,7",
-    })
-    void permute3(int s0, int s1, int s2, int s3, int s4, int s5, int s6, int s7, int v0, int exp0) {
-        // Given
-        Matrix m = Matrix.permute(s0, s1, s2, s3, s4, s5, s6, s7);
-        Ket ket = Ket.base(v0, 3);
-        Ket exp = Ket.base(exp0, 3);
-        // When
-        Ket res = ket.mul(m);
-        assertThat(res.at(0), complexClose(exp.at(0), EPSILON));
-        assertThat(res.at(1), complexClose(exp.at(1), EPSILON));
-        assertThat(res.at(2), complexClose(exp.at(2), EPSILON));
-        assertThat(res.at(3), complexClose(exp.at(3), EPSILON));
-    }
-
-    @Test
-    void permutei() {
-        Matrix m = Matrix.permute(0, 1, 2, 3); //Identity
-        assertTrue(m.hasShape(4, 4));
-        assertThat(m.at(0, 0), complexClose(1, EPSILON));
-        assertThat(m.at(0, 1), complexClose(0, EPSILON));
-        assertThat(m.at(0, 2), complexClose(0, EPSILON));
-        assertThat(m.at(0, 3), complexClose(0, EPSILON));
-        assertThat(m.at(1, 0), complexClose(0, EPSILON));
-        assertThat(m.at(1, 1), complexClose(1, EPSILON));
-        assertThat(m.at(1, 2), complexClose(0, EPSILON));
-        assertThat(m.at(1, 3), complexClose(0, EPSILON));
-        assertThat(m.at(2, 0), complexClose(0, EPSILON));
-        assertThat(m.at(2, 1), complexClose(0, EPSILON));
-        assertThat(m.at(2, 2), complexClose(1, EPSILON));
-        assertThat(m.at(2, 3), complexClose(0, EPSILON));
-        assertThat(m.at(3, 0), complexClose(0, EPSILON));
-        assertThat(m.at(3, 1), complexClose(0, EPSILON));
-        assertThat(m.at(3, 2), complexClose(0, EPSILON));
-        assertThat(m.at(3, 3), complexClose(1, EPSILON));
-    }
-
-    @Test
-    void permutei1() {
-        Matrix m = Matrix.permute(3, 2, 1, 0); //
-
-        assertThat(m.at(0, 0), complexClose(0, EPSILON));
-        assertThat(m.at(0, 1), complexClose(0, EPSILON));
-        assertThat(m.at(0, 2), complexClose(0, EPSILON));
-        assertThat(m.at(0, 3), complexClose(1, EPSILON));
-        assertThat(m.at(1, 0), complexClose(0, EPSILON));
-        assertThat(m.at(1, 1), complexClose(0, EPSILON));
-        assertThat(m.at(1, 2), complexClose(1, EPSILON));
-        assertThat(m.at(1, 3), complexClose(0, EPSILON));
-        assertThat(m.at(2, 0), complexClose(0, EPSILON));
-        assertThat(m.at(2, 1), complexClose(1, EPSILON));
-        assertThat(m.at(2, 2), complexClose(0, EPSILON));
-        assertThat(m.at(2, 3), complexClose(0, EPSILON));
-        assertThat(m.at(3, 0), complexClose(1, EPSILON));
-        assertThat(m.at(3, 1), complexClose(0, EPSILON));
-        assertThat(m.at(3, 2), complexClose(0, EPSILON));
-        assertThat(m.at(3, 3), complexClose(0, EPSILON));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            // 000 001 010 011 100 101 110 111
-            // 000 010 001 011 100 110 101 111
-            "0,0",
-            "1,2",
-            "2,1",
-            "3,3",
-            "4,4",
-            "5,6",
-            "6,5",
-            "7,7",
-    })
-    void portMerge(int s, int exp) {
-        // Given
-        Matrix swap = Matrix.swap(); // 2 bit
-        Matrix id = Matrix.identity(); // 1 bit
-//        Matrix merge = swap.cross(id);
-        Matrix merge = id.cross(swap);
-        Ket ket = Ket.base(s, 3);
-        Ket expKet = Ket.base(exp, 3);
-        // When
-        Ket outKet = ket.mul(merge);
-        // Then
-        assertThat(outKet.at(0), complexClose(expKet.at(0), EPSILON));
-        assertThat(outKet.at(1), complexClose(expKet.at(1), EPSILON));
-        assertThat(outKet.at(2), complexClose(expKet.at(2), EPSILON));
-        assertThat(outKet.at(3), complexClose(expKet.at(3), EPSILON));
-        assertThat(outKet.at(4), complexClose(expKet.at(4), EPSILON));
-        assertThat(outKet.at(5), complexClose(expKet.at(5), EPSILON));
-        assertThat(outKet.at(6), complexClose(expKet.at(6), EPSILON));
-        assertThat(outKet.at(7), complexClose(expKet.at(7), EPSILON));
-    }
-
-    @Test
-    void sub() {
-        Matrix a = Matrix.create(2, 3, IntStream.range(0, 6)
-                .mapToObj(Complex::create)
-                .toArray(Complex[]::new));
-        Matrix b = Matrix.create(2, 3, IntStream.range(0, 6)
-                .mapToObj(i -> Complex.create(i * 2))
-                .toArray(Complex[]::new));
-        Matrix aa = a.sub(b);
-        assertThat(aa.at(0, 0), complexClose(0, EPSILON));
-        assertThat(aa.at(0, 1), complexClose(-1, EPSILON));
-        assertThat(aa.at(0, 2), complexClose(-2, EPSILON));
-        assertThat(aa.at(1, 0), complexClose(-3, EPSILON));
-        assertThat(aa.at(1, 1), complexClose(-4, EPSILON));
-        assertThat(aa.at(1, 2), complexClose(-5, EPSILON));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "0,0",
-            "1,2",
-            "2,1",
-            "3,3",
-    })
-    void swap(int instate, int expState) {
-        // Given
-        Matrix swap = Matrix.swap();
-        // When
-        Ket result = Ket.base(instate, 2).mul(swap);
-        // Then
-        Ket exp = Ket.base(expState, 2);
-        assertThat(result.values()[0], complexClose(exp.values()[0], EPSILON));
-        assertThat(result.values()[1], complexClose(exp.values()[1], EPSILON));
-        assertThat(result.values()[2], complexClose(exp.values()[2], EPSILON));
-        assertThat(result.values()[3], complexClose(exp.values()[3], EPSILON));
-    }
-
-    @Test
-    void t() {
-        Matrix m = Matrix.t();
-        assertThat(m.at(0, 0), complexClose(1, EPSILON));
-        assertThat(m.at(0, 1), complexClose(0, EPSILON));
-        assertThat(m.at(1, 0), complexClose(0, EPSILON));
-        assertThat(m.at(1, 1), complexClose(new Complex(HALF_SQRT2, HALF_SQRT2), EPSILON));
-    }
-
-    @Test
-    void testMul() {
-        Matrix m0 = Matrix.identity(3);
-        Matrix m1 = m0.mul(2);
-
-        assertThat(m1.at(0, 0), complexClose(2, EPSILON));
-        assertThat(m1.at(0, 1), complexClose(0, EPSILON));
-        assertThat(m1.at(0, 2), complexClose(0, EPSILON));
-        assertThat(m1.at(1, 0), complexClose(0, EPSILON));
-        assertThat(m1.at(1, 1), complexClose(2, EPSILON));
-        assertThat(m1.at(1, 2), complexClose(0, EPSILON));
-        assertThat(m1.at(2, 0), complexClose(0, EPSILON));
-        assertThat(m1.at(2, 1), complexClose(0, EPSILON));
-        assertThat(m1.at(2, 2), complexClose(2, EPSILON));
     }
 
     @Test
@@ -558,6 +370,234 @@ class MatrixTest {
     }
 
     @Test
+    void testNeg() {
+        Matrix m0 = Matrix.identity(3);
+        Matrix m1 = m0.neg();
+        assertTrue(m1.hasShape(3, 3));
+        assertThat(m1.at(0, 0), complexClose(-1, EPSILON));
+        assertThat(m1.at(0, 1), complexClose(0, EPSILON));
+        assertThat(m1.at(0, 2), complexClose(0, EPSILON));
+        assertThat(m1.at(1, 0), complexClose(0, EPSILON));
+        assertThat(m1.at(1, 1), complexClose(-1, EPSILON));
+        assertThat(m1.at(1, 2), complexClose(0, EPSILON));
+        assertThat(m1.at(2, 0), complexClose(0, EPSILON));
+        assertThat(m1.at(2, 1), complexClose(0, EPSILON));
+        assertThat(m1.at(2, 2), complexClose(-1, EPSILON));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            // p=(0 1 2 3)
+            // ia=(0 1 2 3) => ib=(0 1 2 3)
+            // a=(1 0 0 0) => b=(1 0 0 0) 0->0
+            // a=(0 1 0 0) => b=(0 1 0 0) 1->1
+            // a=(0 0 1 0) => b=(0 0 1 0) 2->2
+            // a=(0 0 0 1) => b=(0 0 0 1) 3->3
+            "0,1,2,3, 0,0",
+            "0,1,2,3, 1,1",
+            "0,1,2,3, 2,2",
+            "0,1,2,3, 3,3",
+
+            // p=(0 2 1 3)
+            // ia=(0 2 1 3) => ib=(0 1 2 3)
+            // a=(1 0 0 0) => b=(1 0 0 0) b[p[0]]=b[0]=1
+            // a=(0 1 0 0) => b=(0 0 1 0) b[p[1]]=b[2]=1
+            // a=(0 0 1 0) => b=(0 1 0 0) b[p[2]]=b[1]=1
+            // a=(0 0 0 1) => b=(0 0 0 1) b[p[3]]=b[3]=1
+            "0,2,1,3, 0,0",
+            "0,2,1,3, 1,2",
+            "0,2,1,3, 2,1",
+            "0,2,1,3, 3,3",
+
+            // p=(1 2 3 0)
+            // ia=(1 2 3 0) => ib=(0 1 2 3)
+            // a=(1 0 0 0) => b=(0 1 0 0) b[p[0]]=b[1]=1
+            // a=(0 1 0 0) => b=(0 0 1 0) b[p[1]]=b[2]=1
+            // a=(0 0 1 0) => b=(0 0 0 1) b[p[2]]=b[3]=1
+            // a=(0 0 0 1) => b=(1 0 0 0) b[p[3]]=b[0]=1
+            "1,2,3,0, 0,1",
+            "1,2,3,0, 1,2",
+            "1,2,3,0, 2,3",
+            "1,2,3,0, 3,0",
+    })
+    void testPermute2(int s0, int s1, int s2, int s3, int v0, int exp0) {
+        // Given
+        Matrix m = Matrix.permute(s0, s1, s2, s3);
+        Ket ket = Ket.base(v0).extend(4);
+        Ket exp = Ket.base(exp0).extend(4);
+        // When
+        Ket res = ket.mul(m);
+        // Then
+
+        assertThat(m.at(s0, 0), complexClose(1, EPSILON));
+        assertThat(m.at(s1, 1), complexClose(1, EPSILON));
+        assertThat(m.at(s2, 2), complexClose(1, EPSILON));
+        assertThat(m.at(s3, 3), complexClose(1, EPSILON));
+
+        assertThat(res.at(0), complexClose(exp.at(0), EPSILON));
+        assertThat(res.at(1), complexClose(exp.at(1), EPSILON));
+        assertThat(res.at(2), complexClose(exp.at(2), EPSILON));
+        assertThat(res.at(3), complexClose(exp.at(3), EPSILON));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "0,1,2,3,4,5,6,7, 0,0",
+            "0,1,2,3,4,5,6,7, 1,1",
+            "0,1,2,3,4,5,6,7, 2,2",
+            "0,1,2,3,4,5,6,7, 3,3",
+            "0,1,2,3,4,5,6,7, 4,4",
+            "0,1,2,3,4,5,6,7, 5,5",
+            "0,1,2,3,4,5,6,7, 6,6",
+            "0,1,2,3,4,5,6,7, 7,7",
+
+            "0,2,1,3,4,6,5,7, 0,0",
+            "0,2,1,3,4,6,5,7, 1,2",
+            "0,2,1,3,4,6,5,7, 2,1",
+            "0,2,1,3,4,6,5,7, 3,3",
+            "0,2,1,3,4,6,5,7, 4,4",
+            "0,2,1,3,4,6,5,7, 5,6",
+            "0,2,1,3,4,6,5,7, 6,5",
+            "0,2,1,3,4,6,5,7, 7,7",
+    })
+    void testPermute3(int s0, int s1, int s2, int s3, int s4, int s5, int s6, int s7, int v0, int exp0) {
+        // Given
+        Matrix m = Matrix.permute(s0, s1, s2, s3, s4, s5, s6, s7);
+        Ket ket = Ket.base(v0);
+        Ket exp = Ket.base(exp0).extend(8);
+        // When
+        Ket res = ket.mul(m);
+        assertThat(res.at(0), complexClose(exp.at(0), EPSILON));
+        assertThat(res.at(1), complexClose(exp.at(1), EPSILON));
+        assertThat(res.at(2), complexClose(exp.at(2), EPSILON));
+        assertThat(res.at(3), complexClose(exp.at(3), EPSILON));
+    }
+
+    @Test
+    void testPermutei() {
+        Matrix m = Matrix.permute(0, 1, 2, 3); //Identity
+        assertTrue(m.hasShape(4, 4));
+        assertThat(m.at(0, 0), complexClose(1, EPSILON));
+        assertThat(m.at(0, 1), complexClose(0, EPSILON));
+        assertThat(m.at(0, 2), complexClose(0, EPSILON));
+        assertThat(m.at(0, 3), complexClose(0, EPSILON));
+        assertThat(m.at(1, 0), complexClose(0, EPSILON));
+        assertThat(m.at(1, 1), complexClose(1, EPSILON));
+        assertThat(m.at(1, 2), complexClose(0, EPSILON));
+        assertThat(m.at(1, 3), complexClose(0, EPSILON));
+        assertThat(m.at(2, 0), complexClose(0, EPSILON));
+        assertThat(m.at(2, 1), complexClose(0, EPSILON));
+        assertThat(m.at(2, 2), complexClose(1, EPSILON));
+        assertThat(m.at(2, 3), complexClose(0, EPSILON));
+        assertThat(m.at(3, 0), complexClose(0, EPSILON));
+        assertThat(m.at(3, 1), complexClose(0, EPSILON));
+        assertThat(m.at(3, 2), complexClose(0, EPSILON));
+        assertThat(m.at(3, 3), complexClose(1, EPSILON));
+    }
+
+    @Test
+    void testPermutei1() {
+        Matrix m = Matrix.permute(3, 2, 1, 0); //
+
+        assertThat(m.at(0, 0), complexClose(0, EPSILON));
+        assertThat(m.at(0, 1), complexClose(0, EPSILON));
+        assertThat(m.at(0, 2), complexClose(0, EPSILON));
+        assertThat(m.at(0, 3), complexClose(1, EPSILON));
+        assertThat(m.at(1, 0), complexClose(0, EPSILON));
+        assertThat(m.at(1, 1), complexClose(0, EPSILON));
+        assertThat(m.at(1, 2), complexClose(1, EPSILON));
+        assertThat(m.at(1, 3), complexClose(0, EPSILON));
+        assertThat(m.at(2, 0), complexClose(0, EPSILON));
+        assertThat(m.at(2, 1), complexClose(1, EPSILON));
+        assertThat(m.at(2, 2), complexClose(0, EPSILON));
+        assertThat(m.at(2, 3), complexClose(0, EPSILON));
+        assertThat(m.at(3, 0), complexClose(1, EPSILON));
+        assertThat(m.at(3, 1), complexClose(0, EPSILON));
+        assertThat(m.at(3, 2), complexClose(0, EPSILON));
+        assertThat(m.at(3, 3), complexClose(0, EPSILON));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            // 000 001 010 011 100 101 110 111
+            // 000 010 001 011 100 110 101 111
+            "0,0",
+            "1,2",
+            "2,1",
+            "3,3",
+            "4,4",
+            "5,6",
+            "6,5",
+            "7,7",
+    })
+    void testPortMerge(int s, int exp) {
+        // Given
+        Matrix swap = Matrix.swap(); // 2 bit
+        Matrix id = Matrix.identity(); // 1 bit
+//        Matrix merge = swap.cross(id);
+        Matrix merge = id.cross(swap);
+        Ket ket = Ket.base(s);
+        Ket expKet = Ket.base(exp).extend(8);
+        // When
+        Ket outKet = ket.mul(merge);
+        // Then
+        assertThat(outKet.at(0), complexClose(expKet.at(0), EPSILON));
+        assertThat(outKet.at(1), complexClose(expKet.at(1), EPSILON));
+        assertThat(outKet.at(2), complexClose(expKet.at(2), EPSILON));
+        assertThat(outKet.at(3), complexClose(expKet.at(3), EPSILON));
+        assertThat(outKet.at(4), complexClose(expKet.at(4), EPSILON));
+        assertThat(outKet.at(5), complexClose(expKet.at(5), EPSILON));
+        assertThat(outKet.at(6), complexClose(expKet.at(6), EPSILON));
+        assertThat(outKet.at(7), complexClose(expKet.at(7), EPSILON));
+    }
+
+    @Test
+    void testSub() {
+        Matrix a = Matrix.create(2, 3, IntStream.range(0, 6)
+                .mapToObj(Complex::create)
+                .toArray(Complex[]::new));
+        Matrix b = Matrix.create(2, 3, IntStream.range(0, 6)
+                .mapToObj(i -> Complex.create(i * 2))
+                .toArray(Complex[]::new));
+        Matrix aa = a.sub(b);
+        assertThat(aa.at(0, 0), complexClose(0, EPSILON));
+        assertThat(aa.at(0, 1), complexClose(-1, EPSILON));
+        assertThat(aa.at(0, 2), complexClose(-2, EPSILON));
+        assertThat(aa.at(1, 0), complexClose(-3, EPSILON));
+        assertThat(aa.at(1, 1), complexClose(-4, EPSILON));
+        assertThat(aa.at(1, 2), complexClose(-5, EPSILON));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "0,0",
+            "1,2",
+            "2,1",
+            "3,3",
+    })
+    void testSwap(int instate, int expState) {
+        // Given
+        Matrix swap = Matrix.swap();
+        // When
+        Ket result = Ket.base(instate).mul(swap);
+        // Then
+        Ket exp = Ket.base(expState).extend(4);
+        assertThat(result.values()[0], complexClose(exp.values()[0], EPSILON));
+        assertThat(result.values()[1], complexClose(exp.values()[1], EPSILON));
+        assertThat(result.values()[2], complexClose(exp.values()[2], EPSILON));
+        assertThat(result.values()[3], complexClose(exp.values()[3], EPSILON));
+    }
+
+    @Test
+    void testT() {
+        Matrix m = Matrix.t();
+        assertThat(m.at(0, 0), complexClose(1, EPSILON));
+        assertThat(m.at(0, 1), complexClose(0, EPSILON));
+        assertThat(m.at(1, 0), complexClose(0, EPSILON));
+        assertThat(m.at(1, 1), complexClose(new Complex(HALF_SQRT2, HALF_SQRT2), EPSILON));
+    }
+
+    @Test
     void testToString() {
         // Given
         Matrix m = Matrix.y();
@@ -568,7 +608,7 @@ class MatrixTest {
     }
 
     @Test
-    void transpose() {
+    void testTranspose() {
         Matrix m = Matrix.create(3, 4,
                 IntStream.range(0, 12)
                         .mapToObj(Complex::create)
@@ -590,7 +630,7 @@ class MatrixTest {
     }
 
     @Test
-    void unsafeIndex() {
+    void testUnsafeIndex() {
         // Shape 2x3
         assertEquals(0, Matrix.unsafeIndex(3, 0, 0));
         assertEquals(1, Matrix.unsafeIndex(3, 0, 1));
@@ -601,7 +641,7 @@ class MatrixTest {
     }
 
     @Test
-    void x() {
+    void testX() {
         Matrix m = Matrix.x();
 
         assertThat(m.at(0, 0), complexClose(0, EPSILON));
@@ -611,7 +651,7 @@ class MatrixTest {
     }
 
     @Test
-    void y() {
+    void testY() {
         Matrix m = Matrix.y();
 
         assertThat(m.at(0, 0), complexClose(0, EPSILON));

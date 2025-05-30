@@ -67,26 +67,15 @@ public record Ket(Complex[] values) {
     );
 
     /**
-     * Returns a ket base for the given value and size
-     *
-     * @param value the value
-     * @param size  the number of qubit
-     */
-    public static Ket base(int value, int size) {
-        int n = 1 << size;
-        return new Ket(IntStream.range(0, n)
-                .mapToObj(i -> value == i ? Complex.one() : Complex.zero())
-                .toArray(Complex[]::new));
-    }
-
-    /**
      * Returns a ket base for the given value
      *
      * @param state the state value
      */
     public static Ket base(int state) {
-        int n = numBitsByState(state);
-        return base(state, n);
+        int n = 1 << numBitsByState(state);
+        return new Ket(IntStream.range(0, n)
+                .mapToObj(i -> state == i ? Complex.one() : Complex.zero())
+                .toArray(Complex[]::new));
     }
 
     /**
@@ -204,15 +193,24 @@ public record Ket(Complex[] values) {
      * @param other the other ket
      */
     public Ket add(Ket other) {
-        return new Ket(VectorUtils.add(values, other.values));
+        Ket left = this;
+        int n = left.numStates();
+        int m = other.numStates();
+        if (n > m) {
+            other = other.extend(n);
+        }
+        if (m > n) {
+            left = left.extend(m);
+        }
+        return new Ket(VectorUtils.add(left.values, other.values));
     }
 
     /***
      * Returns value
-     * @param i the index
+     * @param index the index
      */
-    public Complex at(int i) {
-        return values[i];
+    public Complex at(int index) {
+        return values[index];
     }
 
     /**
@@ -263,10 +261,10 @@ public record Ket(Complex[] values) {
     /**
      * Return the promoted Ket
      *
-     * @param size the new ket size
+     * @param numStates the new ket size
      */
-    public Ket extend(int size) {
-        return new Ket(VectorUtils.extend(values, size));
+    public Ket extend(int numStates) {
+        return new Ket(VectorUtils.extend(values, numStates));
     }
 
     @Override
@@ -287,15 +285,15 @@ public record Ket(Complex[] values) {
      * @param matrix the matrix operator
      */
     public Ket mul(Matrix matrix) {
-        int n = values.length;
-        if (matrix.numCols() != n) {
-            throw new IllegalArgumentException(format("Matrix operator must have shape ? x %d (%dx%d)",
-                    n,
-                    matrix.numRows(), matrix.numCols()));
+        int m = matrix.numCols();
+        int m1 = numStates();
+        if (m < m1) {
+            throw new IllegalArgumentException("Expected matrix with " + m1 + " or more number of columns (" + m + ")");
         }
-        int m = matrix.numRows();
-        Complex[] cells = new Complex[m];
-        partMul(cells, 0, matrix.numRows(), 1, matrix.cells(), 0, matrix.numCols(), this.values, 0, 1);
+        Ket left = this.extend(m);
+        int n = matrix.numRows();
+        Complex[] cells = new Complex[n];
+        partMul(cells, 0, m, 1, matrix.cells(), 0, m, left.values, 0, 1);
         return create(cells);
     }
 
@@ -337,6 +335,13 @@ public record Ket(Complex[] values) {
     }
 
     /**
+     * Returns the num states of Ket
+     */
+    public int numStates() {
+        return values.length;
+    }
+
+    /**
      * Returns the probability of each state
      */
     public double[] prob() {
@@ -373,7 +378,16 @@ public record Ket(Complex[] values) {
      * @param other the other ket
      */
     public Ket sub(Ket other) {
-        return new Ket(VectorUtils.sub(values, other.values));
+        Ket left = this;
+        int n = left.numStates();
+        int m = other.numStates();
+        if (n > m) {
+            other = other.extend(n);
+        }
+        if (m > n) {
+            left = left.extend(m);
+        }
+        return new Ket(VectorUtils.sub(left.values, other.values));
     }
 
     @Override

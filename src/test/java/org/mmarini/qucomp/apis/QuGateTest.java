@@ -27,10 +27,10 @@ class QuGateTest {
         QuGate gate = QuGate.swap(1, 0);
         // When
         Matrix m = gate.build(2);
-        Ket ket0 = Ket.base(in, 2);
+        Ket ket0 = Ket.base(in);
         Ket ket = ket0.mul(m);
         // Then
-        Ket expKet = Ket.base(exp, 2);
+        Ket expKet = Ket.base(exp);
         assertThat(ket.values()[0], complexClose(expKet.values()[0], EPSILON));
         assertThat(ket.values()[1], complexClose(expKet.values()[1], EPSILON));
         assertThat(ket.values()[2], complexClose(expKet.values()[2], EPSILON));
@@ -53,10 +53,10 @@ class QuGateTest {
         QuGate gate = QuGate.swap(b0, b1);
         // When
         Matrix m = gate.build(2);
-        Ket ket0 = Ket.base(s, 2);
+        Ket ket0 = Ket.base(s);
         Ket ket = ket0.mul(m);
         // Then
-        Ket expKet = Ket.base(exp, 2);
+        Ket expKet = Ket.base(exp);
         assertThat(ket.values()[0], complexClose(expKet.values()[0], EPSILON));
         assertThat(ket.values()[1], complexClose(expKet.values()[1], EPSILON));
         assertThat(ket.values()[2], complexClose(expKet.values()[2], EPSILON));
@@ -115,11 +115,11 @@ class QuGateTest {
         QuGate gate = QuGate.swap(bit0, bit1);
         // When
         Matrix m = gate.build(3);
-        Ket ket0 = Ket.base(in, 3);
+        Ket ket0 = Ket.base(in);
         Ket ket = ket0.mul(m);
         // Then
         logger.atDebug().log("build3Bit m=\n{}", m);
-        Ket expKet = Ket.base(exp, 3);
+        Ket expKet = Ket.base(exp);
         assertThat(ket.values()[0], complexClose(expKet.values()[0], EPSILON));
         assertThat(ket.values()[1], complexClose(expKet.values()[1], EPSILON));
         assertThat(ket.values()[2], complexClose(expKet.values()[2], EPSILON));
@@ -154,10 +154,10 @@ class QuGateTest {
         QuGate gate = QuGate.swap(bit0, bit1);
         // When
         Matrix m = gate.build(4);
-        Ket ket0 = Ket.base(in, 4);
+        Ket ket0 = Ket.base(in);
         Ket ket = ket0.mul(m);
         // Then
-        Ket expKet = Ket.base(exp, 4);
+        Ket expKet = Ket.base(exp);
         assertThat(ket.values()[0], complexClose(expKet.values()[0], EPSILON));
         assertThat(ket.values()[1], complexClose(expKet.values()[1], EPSILON));
         assertThat(ket.values()[2], complexClose(expKet.values()[2], EPSILON));
@@ -286,7 +286,7 @@ class QuGateTest {
 
         for (int i = 0; i < 8; i++) {
             // When
-            Ket k = Ket.base(i, 3).mul(m);
+            Ket k = Ket.base(i).mul(m);
             // Then
             assertThat("on state " + i, k.at(0), complexClose(states[i] == 0 ? 1 : 0, EPSILON));
             assertThat("on state " + i, k.at(1), complexClose(states[i] == 1 ? 1 : 0, EPSILON));
@@ -383,9 +383,9 @@ class QuGateTest {
         int[] bitPerm = QuGate.computeMap(3, b0, b1);
         int[] statePerm = QuGate.computeStatePermutation(bitPerm);
         Matrix m = Matrix.permute(statePerm);
-        Ket ket = Ket.base(s, 3);
+        Ket ket = Ket.base(s);
         Ket res = ket.mul(m);
-        Ket expKet = Ket.base(exp, 3);
+        Ket expKet = Ket.base(exp);
 
         assertEquals(exp, statePerm[s]);
 

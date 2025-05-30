@@ -155,6 +155,23 @@ public class Matrix {
         return H;
     }
 
+
+    /**
+     * Returns the H operator (Hadamard) for the i-th bit
+     */
+    public static Matrix h(int index) {
+        return index == 0 ? H : iGate(index - 1).cross(H);
+    }
+
+    /**
+     * Returns the matrig that maps the i-th bit with I gate
+     *
+     * @param bit the bit index
+     */
+    public static Matrix iGate(int bit) {
+        return identity(2 << bit);
+    }
+
     /**
      * Returns the identity square matrix
      *
@@ -273,7 +290,7 @@ public class Matrix {
      * @param index the i-th qu-bit
      */
     public static Matrix x(int index) {
-        return index > 0 ? identity(1 << index).cross(X) : X;
+        return index > 0 ? iGate(index - 1).cross(X) : X;
     }
 
     /**
@@ -377,6 +394,28 @@ public class Matrix {
                     cells[idx] = cell;
                 });
         return new Matrix(nm, nm, cells);
+    }
+
+    /**
+     * Returns the extended the matrix to the specified shape
+     *
+     * @param n the number of rows
+     * @param m the number of columns
+     */
+    public Matrix extend(int n, int m) {
+        Matrix x = this;
+        if (n > x.numRows) {
+            // Promotes rows
+            int nn = n / x.numRows;
+            x = Matrix.identity(nn).cross(this);
+        }
+        if (m > x.numCols) {
+            // Promotes cols
+            int nn = m / x.numCols;
+            //x = x.cross(Matrix.identity(nn));
+            x = Matrix.identity(nn).cross(x);
+        }
+        return x;
     }
 
     /**

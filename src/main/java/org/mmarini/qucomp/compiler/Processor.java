@@ -29,6 +29,7 @@
 package org.mmarini.qucomp.compiler;
 
 import org.mmarini.Function2Throws;
+import org.mmarini.NotImplementedException;
 import org.mmarini.qucomp.apis.*;
 
 import java.util.HashMap;
@@ -69,8 +70,247 @@ public class Processor implements ExecutionContext {
         return switch (right) {
             case Integer value -> left + value;
             case Complex value -> Complex.create(left).add(value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
+            case Ket value -> throw context.execException("Invalid right ket argument (%s)", value);
+            case Bra value -> throw context.execException("Invalid right bra argument (%s)", value);
+            case Matrix ignored -> throw context.execException("Invalid right matrix argument (%s)", right);
+            default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Return the sum of the two operands
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object add(SourceContext context, Complex left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> left.add(value);
+            case Complex value -> left.add(value);
+            case Ket value -> throw context.execException("Invalid right ket argument (%s)", value);
+            case Bra value -> throw context.execException("Invalid right bra argument (%s)", value);
+            case Matrix ignored -> throw context.execException("Invalid right matrix argument (%s)", right);
+            default -> throw context.execException("Invalid right operand (%s)", right);
+        };
+    }
+
+    /**
+     * Return the sum of the two operands
+     *
+     * @param context the command
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object add(SourceContext context, Ket left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> throw context.execException("Invalid right integer argument (%s)", value);
+            case Complex value -> throw context.execException("Invalid right complex argument (%s)", value);
+            case Ket value -> left.extend(value.values().length)
+                    .add(value.extend(left.values().length));
+            case Bra value -> throw context.execException("Invalid right bra argument (%s)", value);
+            case Matrix ignored -> throw context.execException("Invalid right matrix argument (%s)", right);
+            default -> throw context.execException("Invalid right argument %s", right);
+        };
+    }
+
+    /**
+     * Return the sum of the two operands
+     *
+     * @param context the command
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object add(SourceContext context, Matrix left, Object right) throws QuExecException {
+        return switch (right) {
+            case null -> null;
+            case Integer value -> throw context.execException("Invalid right integer argument (%s)", value);
+            case Complex value -> throw context.execException("Invalid right complex argument (%s)", value);
+            case Ket value -> throw context.execException("Invalid right ket argument (%s)", value);
+            case Bra value -> throw context.execException("Invalid right bra argument (%s)", value);
+            case Matrix value -> throw new NotImplementedException();
+            default -> throw context.execException("Invalid right argument %s", right);
+        };
+    }
+
+    /**
+     * Return the sum of the two operands
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object add(SourceContext context, Bra left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> throw context.execException("Invalid right integer argument (%s)", value);
+            case Complex value -> throw context.execException("Invalid right complex argument (%s)", value);
+            case Bra value -> left.extend(value.values().length)
+                    .add(value.extend(left.values().length));
+            case Ket value -> throw context.execException("Invalid right ket argument (%s)", value);
+            case Matrix ignored -> throw context.execException("Invalid right matrix argument (%s)", right);
+            default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Return the cross product of the two operands
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object cross(SourceContext context, Ket left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer ignored -> throw context.execException("Invalid right integer argument (%s)", right);
+            case Complex ignored -> throw context.execException("Invalid right complex argument (%s)", right);
+            case Bra ignored -> throw context.execException("Invalid right bra argument (%s)", right);
+            case Ket value -> left.cross(value);
+            case Matrix ignored -> throw context.execException("Invalid right matrix argument (%s)", right);
+            default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Return the cross product of the two operands
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object cross(SourceContext context, Matrix left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer ignored -> throw context.execException("Invalid right integer argument (%s)", right);
+            case Complex ignored -> throw context.execException("Invalid right complex argument (%s)", right);
+            case Bra ignored -> throw context.execException("Invalid right bra argument (%s)", right);
+            case Ket ignored -> throw context.execException("Invalid right ket argument (%s)", right);
+            case Matrix value -> left.cross(value);
+            default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Return the cross product of the two operands
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object cross(SourceContext context, Bra left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer ignored -> throw context.execException("Invalid right integer argument (%s)", right);
+            case Complex ignored -> throw context.execException("Invalid right complex argument (%s)", right);
+            case Bra value -> left.cross(value);
+            case Ket ignored -> throw context.execException("Invalid right ket argument (%s)", right);
+            case Matrix ignored -> throw context.execException("Invalid right matrix argument (%s)", right);
+            default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Return the division of the two operands left / right
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object divide(SourceContext context, Bra left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> left.mul(1f / value);
+            case Complex value -> left.mul(value.inv());
+            case Ket value -> throw context.execException("Invalid right ket argument (%s)", value);
+            case Bra value -> {
+                left = left.extend(value.values().length);
+                value = value.extend(left.values().length);
+                Ket ket = value.conj();
+                yield left.mul(ket).mul(value.mul(ket).inv());
+            }
+            case Matrix value -> throw context.execException("Invalid right matrix argument (%s)", value);
+            default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Return the division of the two operands left / right
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object divide(SourceContext context, Ket left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> left.mul(1f / value);
+            case Complex value -> left.mul(value.inv());
+            case Bra value -> throw context.execException("Invalid right bra argument (%s)", value);
+            case Ket value -> throw context.execException("Invalid right ket argument (%s)", value);
+            case Matrix value -> throw context.execException("Invalid right matrix argument (%s)", value);
+            default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Return the division of the two operands left / right
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object divide(SourceContext context, Matrix left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> left.mul(1f / value);
+            case Complex value -> left.mul(value.inv());
+            case Bra value -> throw new NotImplementedException();
+            case Ket value -> throw context.execException("Invalid right ket argument (%s)", value);
+            case Matrix value -> throw context.execException("Invalid right matrix argument (%s)", value);
+            default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Return the division of the two operands left / right
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object divide(SourceContext context, int left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> left % value == 0
+                    ? left / value
+                    : Complex.create(left).div(Complex.create(value));
+            case Complex value -> Complex.create(left).div(value);
+            case Ket value -> {
+                Bra bra = value.conj();
+                yield bra.mul(bra.mul(value).inv().mul(left));
+            }
+            case Bra value -> {
+                Ket ket = value.conj();
+                yield ket.mul(value.mul(ket).inv().mul(left));
+            }
+            case Matrix value -> throw context.execException("Invalid right matrix argument (%s)", value);
+            default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Return the division of the two operands left / right
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object divide(SourceContext context, Complex left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> left.div(Complex.create(value));
+            case Complex value -> left.div(value);
+            case Ket value -> {
+                Bra bra = value.conj();
+                yield bra.mul(bra.mul(value).inv().mul(left));
+            }
+            case Bra value -> {
+                Ket ket = value.conj();
+                yield ket.mul(value.mul(ket).inv().mul(left));
+            }
+            case Matrix value -> throw context.execException("Invalid right matrix argument (%s)", value);
             default -> throw context.execException("Invalid right operand %s", right);
         };
     }
@@ -104,6 +344,135 @@ public class Processor implements ExecutionContext {
     }
 
     /**
+     * Return the product of the two operands left / right
+     *
+     * @param context the command
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object multiply(SourceContext context, Bra left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> left.mul(value);
+            case Complex value -> left.mul(value);
+            case Ket value -> left.extend(value.values().length)
+                    .mul(value.extend(left.values().length));
+            case Bra value -> throw context.execException("Invalid right bra argument (%s)", value);
+            case Matrix matrix -> {
+                if (left.numStates() > matrix.numRows()) {
+                    matrix = promote(matrix, left.numStates(), matrix.numCols());
+                }
+                if (matrix.numRows() > left.numStates()) {
+                    left = left.extend(matrix.numRows());
+                }
+                yield left.mul(matrix);
+            }
+            default -> throw context.execException("Invalid right operand (%s)", right);
+        };
+    }
+
+    /**
+     * Return the product of the two operands left / right
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object multiply(SourceContext context, int left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> left * value;
+            case Complex value -> value.mul(left);
+            case Ket value -> value.mul(left);
+            case Bra value -> value.mul(left);
+            case Matrix value -> value.mul(left);
+            default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Return the product of the two operands left / right
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object multiply(SourceContext context, Ket left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> left.mul(value);
+            case Complex value -> left.mul(value);
+            case Ket value -> throw context.execException("Invalid right ket argument (%s)", value);
+            case Bra value -> throw context.execException("Invalid right bra argument (%s)", value);
+            case Matrix value -> throw context.execException("Invalid right matrix argument (%s)", value);
+            default -> throw context.execException("Invalid right operand (%s)", right);
+        };
+    }
+
+
+    /**
+     * Return the product of the two operands left / right
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object multiply(SourceContext context, Matrix left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> left.mul(value);
+            case Complex value -> left.mul(value);
+            case Bra value -> throw context.execException("Invalid right bra argument (%s)", value);
+            case Ket ket -> {
+                if (left.numCols() > ket.numStates()) {
+                    ket = ket.extend(left.numCols());
+                }
+                if (left.numCols() < ket.numStates()) {
+                    left = promote(left, left.numRows(), ket.numStates());
+                }
+                yield ket.mul(left);
+            }
+            case Matrix value -> promote(left, value.numRows(), value.numCols())
+                    .mul(promote(value, left.numRows(), left.numCols()));
+            default -> throw context.execException("Invalid right operand (%s)", right);
+        };
+    }
+
+    /**
+     * Return the product of the two operands left / right
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object multiply(SourceContext context, Complex left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> left.mul(value);
+            case Complex value -> value.mul(left);
+            case Ket value -> value.mul(left);
+            case Bra value -> value.mul(left);
+            case Matrix value -> value.mul(left);
+            default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     *
+     * @param x
+     * @param n
+     * @param m
+     * @return
+     */
+    private static Matrix promote(Matrix x, int n, int m) {
+        if (n > x.numRows()) {
+            // Promotes rows
+            int nn = n / x.numRows();
+            x = Matrix.identity(nn).cross(x);
+        }
+        if (m > x.numCols()) {
+            int nn = m / x.numCols();
+            x = Matrix.identity(nn).cross(x);
+        }
+        return x;
+    }
+
+    /**
      * Returns the matrix of S gate for the given qu-bit
      *
      * @param context the source context
@@ -114,6 +483,128 @@ public class Processor implements ExecutionContext {
         return switch (arg) {
             case Integer n -> QuGate.s(n).build(n + 1);
             default -> throw context.execException("Argument should be an integer: actual (%s)", arg.toString());
+        };
+    }
+
+    /**
+     * Return the square root of the first argument
+     *
+     * @param context the source context
+     * @param args    the arguments
+     */
+    private static Object sqrt(SourceContext context, Object... args) throws QuExecException {
+        Object value = args[0];
+        return switch (value) {
+            case null -> throw context.execException("Missing argument value");
+            case Integer val -> Complex.create((float) Math.sqrt(val));
+            case Complex val when abs(val.module()) == 0 -> Complex.zero();
+            case Complex val when val.real() >= 0 -> {
+                float reDelta = val.real() + val.module();
+                float re = (float) Math.sqrt(reDelta / 2);
+                float im = (float) (val.im() / Math.sqrt(2 * reDelta));
+                yield new Complex(re, im);
+            }
+            case Complex val -> {
+                float reDelta = -val.real() + val.module();
+                float re = (float) (val.im() / Math.sqrt(2 * reDelta));
+                float im = (float) Math.sqrt(reDelta / 2);
+                yield new Complex(re, im);
+            }
+            case Bra val -> throw context.execException("Invalid bra argument (%s)", val);
+            case Ket val -> throw context.execException("Invalid ket argument (%s)", val);
+            default -> throw context.execException("Invalid argument (%s)", value);
+        };
+    }
+
+    /**
+     * Return the sum of the two operands
+     *
+     * @param context the command
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object sub(SourceContext context, Matrix left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> throw context.execException("Invalid right integer argument (%s)", value);
+            case Complex value -> throw context.execException("Invalid right complex argument (%s)", value);
+            case Ket value -> throw context.execException("Invalid right ket argument (%s)", value);
+            case Bra value -> throw context.execException("Invalid right bra argument (%s)", value);
+            case Matrix value -> null;
+            default -> throw context.execException("Invalid right argument %s", right);
+        };
+    }
+
+    /**
+     * Return the difference of the two operands left - right
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object sub(SourceContext context, Bra left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> throw context.execException("Invalid right argument int (%s)", value);
+            case Complex value -> throw context.execException("Invalid right complex argument (%s)", value);
+            case Ket value -> throw context.execException("Invalid right ket argument (%s)", value);
+            case Bra value -> left.extend(value.values().length)
+                    .sub(value.extend(left.values().length));
+            case Matrix ignored -> throw context.execException("Invalid right matrix argument (%s)", right);
+            default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Return the difference of the two operands left - right
+     *
+     * @param context the source context
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object sub(SourceContext context, Complex left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> left.sub(value);
+            case Complex value -> left.sub(value);
+            case Ket value -> throw context.execException("Invalid right ket argument (%s)", value);
+            case Bra value -> throw context.execException("Invalid right bra argument (%s)", value);
+            case Matrix ignored -> throw context.execException("Invalid right matrix argument (%s)", right);
+            default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Return the difference of the two operands left - right
+     *
+     * @param context the command
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object sub(SourceContext context, Ket left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> throw context.execException("Invalid right argument int (%s)", value);
+            case Complex value -> throw context.execException("Invalid right complex argument (%s)", value);
+            case Ket value -> left.extend(value.values().length)
+                    .sub(value.extend(left.values().length));
+            case Bra value -> throw context.execException("Invalid right bra argument (%s)", value);
+            case Matrix ignored -> throw context.execException("Invalid right matrix argument (%s)", right);
+            default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Return the difference of the two operands left - right
+     *
+     * @param context the command
+     * @param left    the left operand
+     * @param right   the right operand
+     */
+    private static Object sub(SourceContext context, int left, Object right) throws QuExecException {
+        return switch (right) {
+            case Integer value -> left - value;
+            case Complex value -> Complex.create(left).sub(value);
+            case Ket value -> throw context.execException("Invalid right ket argument (%s)", value);
+            case Bra value -> throw context.execException("Invalid right bra argument (%s)", value);
+            case Matrix ignored -> throw context.execException("Invalid right matrix argument (%s)", right);
+            default -> throw context.execException("Invalid right operand %s", right);
         };
     }
 
@@ -172,355 +663,10 @@ public class Processor implements ExecutionContext {
             default -> throw context.execException("Argument should be an integer: actual (%s)", arg.toString());
         };
     }
-
-    /**
-     * Return the sum of the two operands
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object add(SourceContext context, Complex left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> left.add(value);
-            case Complex value -> left.add(value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
-            default -> throw context.execException("Invalid right operand (%s)", right);
-        };
-    }
-
-    /**
-     * Return the sum of the two operands
-     *
-     * @param context the command
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object add(SourceContext context, Ket left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> throw context.execException("Unexpected right argument integer (%s)", value);
-            case Complex value -> throw context.execException("Unexpected right argument complex (%s)", value);
-            case Ket value -> left.extend(value.values().length)
-                    .add(value.extend(left.values().length));
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
-            default -> throw context.execException("Unexpected right argument %s", right);
-        };
-    }
-
-    /**
-     * Return the sum of the two operands
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object add(SourceContext context, Bra left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> throw context.execException("Unexpected right argument integer (%s)", value);
-            case Complex value -> throw context.execException("Unexpected right argument complex (%s)", value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> left.extend(value.values().length)
-                    .add(value.extend(left.values().length));
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the cross product of the two operands
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object cross(SourceContext context, Ket left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer ignored -> throw context.execException("Unexpected right argument integer (%s)", right);
-            case Complex ignored -> throw context.execException("Unexpected right argument complex (%s)", right);
-            case Ket value -> left.cross(value);
-            case Bra ignored -> throw context.execException("Unexpected right argument bra (%s)", right);
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the cross product of the two operands
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object cross(SourceContext context, Bra left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer ignored -> throw context.execException("Unexpected right argument integer (%s)", right);
-            case Complex ignored -> throw context.execException("Unexpected right argument complex (%s)", right);
-            case Bra value -> left.cross(value);
-            case Ket ignored -> throw context.execException("Unexpected right argument ket (%s)", right);
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the division of the two operands left / right
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object divide(SourceContext context, Bra left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> left.mul(1f / value);
-            case Complex value -> left.mul(value.inv());
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> {
-                left = left.extend(value.values().length);
-                value = value.extend(left.values().length);
-                Ket ket = value.conj();
-                yield left.mul(ket).mul(value.mul(ket).inv());
-            }
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the division of the two operands left / right
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object divide(SourceContext context, Ket left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> left.mul(1f / value);
-            case Complex value -> left.mul(value.inv());
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the division of the two operands left / right
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object divide(SourceContext context, int left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> left % value == 0
-                    ? left / value
-                    : Complex.create(left).div(Complex.create(value));
-            case Complex value -> Complex.create(left).div(value);
-            case Ket value -> {
-                Bra bra = value.conj();
-                yield bra.mul(bra.mul(value).inv().mul(left));
-            }
-            case Bra value -> {
-                Ket ket = value.conj();
-                yield ket.mul(value.mul(ket).inv().mul(left));
-            }
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the division of the two operands left / right
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object divide(SourceContext context, Complex left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> left.div(Complex.create(value));
-            case Complex value -> left.div(value);
-            case Ket value -> {
-                Bra bra = value.conj();
-                yield bra.mul(bra.mul(value).inv().mul(left));
-            }
-            case Bra value -> {
-                Ket ket = value.conj();
-                yield ket.mul(value.mul(ket).inv().mul(left));
-            }
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the product of the two operands left / right
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object multiply(SourceContext context, int left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> left * value;
-            case Complex value -> value.mul(left);
-            case Ket value -> value.mul(left);
-            case Bra value -> value.mul(left);
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the product of the two operands left / right
-     *
-     * @param context the command
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object multiply(SourceContext context, Bra left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> left.mul(value);
-            case Complex value -> left.mul(value);
-            case Ket value -> left.extend(value.values().length)
-                    .mul(value.extend(left.values().length));
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
-            default -> throw context.execException("Invalid right operand (%s)", right);
-        };
-    }
-
-    /**
-     * Return the product of the two operands left / right
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object multiply(SourceContext context, Ket left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> left.mul(value);
-            case Complex value -> left.mul(value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
-            default -> throw context.execException("Invalid right operand (%s)", right);
-        };
-    }
-
-    /**
-     * Return the product of the two operands left / right
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object multiply(SourceContext context, Complex left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> left.mul(value);
-            case Complex value -> value.mul(left);
-            case Ket value -> value.mul(left);
-            case Bra value -> value.mul(left);
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the square root of the first argument
-     *
-     * @param context the source context
-     * @param args    the arguments
-     */
-    private static Object sqrt(SourceContext context, Object... args) throws QuExecException {
-        Object value = args[0];
-        return switch (value) {
-            case null -> throw context.execException("Missing argument value");
-            case Integer val -> Complex.create((float) Math.sqrt(val));
-            case Complex val when abs(val.module()) == 0 -> Complex.zero();
-            case Complex val when val.real() >= 0 -> {
-                float reDelta = val.real() + val.module();
-                float re = (float) Math.sqrt(reDelta / 2);
-                float im = (float) (val.im() / Math.sqrt(2 * reDelta));
-                yield new Complex(re, im);
-            }
-            case Complex val -> {
-                float reDelta = -val.real() + val.module();
-                float re = (float) (val.im() / Math.sqrt(2 * reDelta));
-                float im = (float) Math.sqrt(reDelta / 2);
-                yield new Complex(re, im);
-            }
-            case Bra val -> throw context.execException("Unexpected argument bra (%s)", val);
-            case Ket val -> throw context.execException("Unexpected argument ket (%s)", val);
-            default -> throw context.execException("Unexpected argument (%s)", value);
-        };
-    }
-
-    /**
-     * Return the difference of the two operands left - right
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object sub(SourceContext context, Bra left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> throw context.execException("Unexpected right argument int (%s)", value);
-            case Complex value -> throw context.execException("Unexpected right argument complex (%s)", value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> left.extend(value.values().length)
-                    .sub(value.extend(left.values().length));
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the difference of the two operands left - right
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object sub(SourceContext context, Complex left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> left.sub(value);
-            case Complex value -> left.sub(value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the difference of the two operands left - right
-     *
-     * @param context the command
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object sub(SourceContext context, Ket left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> throw context.execException("Unexpected right argument int (%s)", value);
-            case Complex value -> throw context.execException("Unexpected right argument complex (%s)", value);
-            case Ket value -> left.extend(value.values().length)
-                    .sub(value.extend(left.values().length));
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the difference of the two operands left - right
-     *
-     * @param context the command
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object sub(SourceContext context, int left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> left - value;
-            case Complex value -> Complex.create(left).sub(value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
     private final Map<String, Object> variables;
 
     /**
      * Creates the processor
-     *
      */
     public Processor() {
         this.variables = new HashMap<>();
@@ -533,6 +679,7 @@ public class Processor implements ExecutionContext {
             case Complex value -> add(context, value, right);
             case Ket value -> add(context, value, right);
             case Bra value -> add(context, value, right);
+            case Matrix value -> add(context, value, right);
             default -> throw context.execException("Invalid left operand %s", left);
         };
     }
@@ -560,17 +707,19 @@ public class Processor implements ExecutionContext {
             case Complex val -> val.conj();
             case Ket val -> val.conj();
             case Bra val -> val.conj();
-            default -> throw context.execException("Unexpected value: " + arg);
+            case Matrix val -> val.conj();
+            default -> throw context.execException("Invalid value: " + arg);
         };
     }
 
     @Override
     public Object cross(SourceContext context, Object left, Object right) throws QuExecException {
         return switch (left) {
-            case Integer ignored -> throw context.execException("Unexpected left argument integer (%s)", left);
-            case Complex ignored -> throw context.execException("Unexpected left argument complex (%s)", left);
+            case Integer ignored -> throw context.execException("Invalid left integer argument (%s)", left);
+            case Complex ignored -> throw context.execException("Invalid left complex argument (%s)", left);
             case Ket leftVal -> cross(context, leftVal, right);
             case Bra leftVal -> cross(context, leftVal, right);
+            case Matrix leftVal -> cross(context, leftVal, right);
             default -> throw context.execException("Invalid left operand %s", left);
         };
     }
@@ -580,8 +729,9 @@ public class Processor implements ExecutionContext {
         return switch (left) {
             case Integer value -> divide(context, value, right);
             case Complex value -> divide(context, value, right);
-            case Ket value -> divide(context, value, right);
             case Bra value -> divide(context, value, right);
+            case Ket value -> divide(context, value, right);
+            case Matrix value -> divide(context, value, right);
             default -> throw context.execException("Invalid left operand %s", left);
         };
     }
@@ -613,6 +763,7 @@ public class Processor implements ExecutionContext {
             case Complex value -> multiply(context, value, right);
             case Ket value -> multiply(context, value, right);
             case Bra value -> multiply(context, value, right);
+            case Matrix value -> multiply(context, value, right);
             default -> throw context.execException("Invalid left operand %s", left);
         };
     }
@@ -625,7 +776,8 @@ public class Processor implements ExecutionContext {
             case Complex val -> val.neg();
             case Ket val -> val.neg();
             case Bra val -> val.neg();
-            default -> throw context.execException("Unexpected value: " + arg);
+            case Matrix val -> val.neg();
+            default -> throw context.execException("Invalid value: " + arg);
         };
     }
 
@@ -648,6 +800,7 @@ public class Processor implements ExecutionContext {
             case Complex value -> sub(context, value, right);
             case Ket value -> sub(context, value, right);
             case Bra value -> sub(context, value, right);
+            case Matrix value -> sub(context, value, right);
             default -> throw context.execException("Invalid left operand %s", left);
         };
     }

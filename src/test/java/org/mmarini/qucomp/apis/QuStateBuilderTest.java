@@ -28,11 +28,11 @@ class QuStateBuilderTest {
     void build(int in, int exp) {
         // Given
         Matrix m = QuCircuitBuilder.build(swap(1, 2));
-        Ket ket0 = Ket.base(in, 3);
+        Ket ket0 = Ket.base(in);
         // When
         Ket ket1 = ket0.mul(m);
         // Then
-        Ket expKet = Ket.base(exp, 3);
+        Ket expKet = Ket.base(exp);
         assertThat(ket1.values()[0], complexClose(expKet.values()[0], EPSILON));
         assertThat(ket1.values()[1], complexClose(expKet.values()[1], EPSILON));
         assertThat(ket1.values()[2], complexClose(expKet.values()[2], EPSILON));
@@ -54,11 +54,11 @@ class QuStateBuilderTest {
     void build1(int in, int exp) {
         // Given
         Matrix m = QuCircuitBuilder.build(x(0), x(1));
-        Ket ket0 = Ket.base(in, 2);
+        Ket ket0 = Ket.base(in);
         // When
         Ket ket1 = ket0.mul(m);
         // Then
-        Ket expKet = Ket.base(exp, 2);
+        Ket expKet = Ket.base(exp);
         assertThat(ket1.values()[0], complexClose(expKet.values()[0], EPSILON));
         assertThat(ket1.values()[1], complexClose(expKet.values()[1], EPSILON));
         assertThat(ket1.values()[2], complexClose(expKet.values()[2], EPSILON));
