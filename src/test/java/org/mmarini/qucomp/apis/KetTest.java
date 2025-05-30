@@ -127,29 +127,23 @@ class KetTest {
 
     @ParameterizedTest
     @CsvSource({
-            "0, 1",
-            "1, 1",
             "0, 2",
             "1, 2",
-            "2, 2",
-            "3, 2",
-            "0, 3",
-            "1, 3",
-            "2, 3",
-            "3, 3",
-            "4, 3",
-            "5, 3",
-            "6, 3",
-            "7, 3",
+            "2, 4",
+            "3, 4",
+            "4, 8",
+            "5, 8",
+            "6, 8",
+            "7, 8",
     })
     void base(int value, int size) {
-        Ket b = Ket.base(value, size);
-        int n = 1 << size;
-        assertEquals(n, b.values().length);
+        Ket b = Ket.base(value);
+        assertEquals(size, b.numStates());
         for (int i = 0; i < size; i++) {
             assertEquals(i == value
                             ? Complex.one() : Complex.zero(),
-                    b.values()[i]);
+                    b.values()[i],
+                    "value at " + i);
         }
     }
 
@@ -383,7 +377,7 @@ class KetTest {
     }
 
     @Test
-    void testMulReal() {
+    void testMulFloat() {
         Ket ket0 = new Ket(new Complex[]{Complex.one(), Complex.one()});
         Ket ket = ket0.mul(3);
         assertArrayEquals(new Complex[]{

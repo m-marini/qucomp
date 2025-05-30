@@ -38,8 +38,9 @@ import java.util.stream.Stream;
 
 import static java.lang.Math.sqrt;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mmarini.qucomp.Matchers.braCloseTo;
 import static org.mmarini.qucomp.Matchers.complexClose;
 
 class BraTest {
@@ -47,84 +48,92 @@ class BraTest {
     public static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
     public static final float EPSILON = 1e-3F;
 
-    public static Stream<Arguments> dataBraket() {
+    public static Stream<Arguments> argTestMulKet() {
         return Stream.of(
-                Arguments.arguments(
-                        Bra.zero(), Ket.zero(), Complex.one()
-                ),
-                Arguments.arguments(
-                        Bra.one(), Ket.one(), Complex.one()
-                ),
-                Arguments.arguments(
-                        Bra.plus(), Ket.plus(), Complex.one()
-                ),
-                Arguments.arguments(
-                        Bra.minus(), Ket.minus(), Complex.one()
-                ),
-                Arguments.arguments(
-                        Bra.i(), Ket.i(), Complex.one()
-                ),
-                Arguments.arguments(
-                        Bra.minus_i(), Ket.minus_i(), Complex.one()
-                ),
-                Arguments.arguments(
-                        Bra.zero(), Ket.one(), Complex.zero()
-                ),
-                Arguments.arguments(
-                        Bra.one(), Ket.zero(), Complex.zero()
-                ),
-                Arguments.arguments(
-                        Bra.plus(), Ket.minus(), Complex.zero()
-                ),
-                Arguments.arguments(
-                        Bra.minus(), Ket.plus(), Complex.zero()
-                ),
-                Arguments.arguments(
-                        Bra.i(), Ket.minus_i(), Complex.zero()
-                ),
-                Arguments.arguments(
-                        Bra.minus_i(), Ket.i(), Complex.zero()
-                )
+                Arguments.arguments(Bra.zero(), Ket.zero(), Complex.one()),
+                Arguments.arguments(Bra.one(), Ket.one(), Complex.one()),
+                Arguments.arguments(Bra.plus(), Ket.plus(), Complex.one()),
+                Arguments.arguments(Bra.minus(), Ket.minus(), Complex.one()),
+                Arguments.arguments(Bra.i(), Ket.i(), Complex.one()),
+                Arguments.arguments(Bra.minus_i(), Ket.minus_i(), Complex.one()),
+
+                Arguments.arguments(Bra.zero(), Ket.zero(), Complex.one()),
+                Arguments.arguments(Bra.zero(), Ket.one(), Complex.zero()),
+                Arguments.arguments(Bra.zero(), Ket.base(2), Complex.zero()),
+                Arguments.arguments(Bra.zero(), Ket.base(3), Complex.zero()),
+                Arguments.arguments(Bra.one(), Ket.zero(), Complex.zero()),
+                Arguments.arguments(Bra.one(), Ket.one(), Complex.one()),
+                Arguments.arguments(Bra.one(), Ket.base(2), Complex.zero()),
+                Arguments.arguments(Bra.one(), Ket.base(3), Complex.zero()),
+                Arguments.arguments(Bra.base(2), Ket.zero(), Complex.zero()),
+                Arguments.arguments(Bra.base(2), Ket.one(), Complex.zero()),
+                Arguments.arguments(Bra.base(2), Ket.base(2), Complex.one()),
+                Arguments.arguments(Bra.base(2), Ket.base(3), Complex.zero()),
+                Arguments.arguments(Bra.base(3), Ket.zero(), Complex.zero()),
+                Arguments.arguments(Bra.base(3), Ket.one(), Complex.zero()),
+                Arguments.arguments(Bra.base(3), Ket.base(2), Complex.zero()),
+                Arguments.arguments(Bra.base(3), Ket.base(3), Complex.one())
         );
     }
 
-    @Test
-    void add() {
-        Bra bra0 = Bra.ZERO;
-        Bra bra1 = Bra.ONE;
-        Bra add = bra0.add(bra1);
-        assertArrayEquals(new Complex[]{
-                        Complex.ONE.conj(),
-                        Complex.ONE.conj()},
-                add.values());
+    public static Stream<Arguments> argTestMulMatrix() {
+        Matrix m22 = Matrix.create(2, 2,
+                0, 1,
+                1, 0);
+        Matrix m42 = Matrix.create(4, 2,
+                1, 0,
+                0, 1,
+                1, 0,
+                0, 1
+        );
+        Matrix m44 = Matrix.create(4, 4,
+                0, 1, 0, 0,
+                1, 0, 0, 0,
+                0, 0, 0, 1,
+                0, 0, 1, 0);
+        return Stream.of(
+                Arguments.of(Bra.zero(), m22, Bra.one()),
+                Arguments.of(Bra.one(), m22, Bra.zero()),
+
+                Arguments.of(Bra.zero(), m44, Bra.create(0, 1, 0, 0)),
+                Arguments.of(Bra.one(), m44, Bra.create(1, 0, 0, 0)),
+                Arguments.of(Bra.base(2), m44, Bra.create(0, 0, 0, 1)),
+                Arguments.of(Bra.base(3), m44, Bra.create(0, 0, 1, 0)),
+                Arguments.of(Bra.base(2), m44, Bra.create(0, 0, 0, 1)),
+
+                Arguments.of(Bra.zero(), m42, Bra.zero()),
+                Arguments.of(Bra.one(), m42, Bra.one()),
+                Arguments.of(Bra.base(2), m42, Bra.zero()),
+                Arguments.of(Bra.base(3), m42, Bra.one())
+        );
     }
 
-    @ParameterizedTest
-    @CsvSource({
-            "0, 1",
-            "1, 1",
-            "0, 2",
-            "1, 2",
-            "2, 2",
-            "3, 2",
-            "0, 3",
-            "1, 3",
-            "2, 3",
-            "3, 3",
-            "4, 3",
-            "5, 3",
-            "6, 3",
-            "7, 3",
-    })
-    void base(int value, int size) {
-        Bra b = Bra.base(value, size);
-        int n = 1 << size;
-        assertEquals(n, b.values().length);
-        for (int i = 0; i < size; i++) {
-            assertEquals(i == value
-                            ? Complex.one().conj() : Complex.zero().conj(),
-                    b.values()[i]);
-        }
+    public static Stream<Arguments> argTestMulMatrixError() {
+        Matrix m22 = Matrix.create(2, 2,
+                0, 1,
+                1, 0);
+        return Stream.of(
+                Arguments.of(m22, Bra.base(2), "Expected matrix with at least 4 rows (2)")
+        );
+    }
+
+    public static Stream<Arguments> argsTestAdd() {
+        return Stream.of(
+                Arguments.of(Bra.zero(), Bra.zero(), Bra.create(2, 0)),
+                Arguments.of(Bra.zero(), Bra.one(), Bra.create(1, 1)),
+                Arguments.of(Bra.one(), Bra.zero(), Bra.create(1, 1)),
+                Arguments.of(Bra.zero(), Bra.base(2), Bra.create(1, 0, 1, 0)),
+                Arguments.of(Bra.base(2), Bra.zero(), Bra.create(1, 0, 1, 0))
+        );
+    }
+
+    public static Stream<Arguments> argsTestSub() {
+        return Stream.of(
+                Arguments.of(Bra.zero(), Bra.zero(), Bra.create(0, 0)),
+                Arguments.of(Bra.zero(), Bra.base(2), Bra.create(1, 0, -1, 0)),
+                Arguments.of(Bra.base(2), Bra.zero(), Bra.create(-1, 0, 1, 0)),
+                Arguments.of(Bra.base(2), Bra.base(3), Bra.create(0, 0, 1, -1))
+        );
     }
 
     @Test
@@ -198,23 +207,6 @@ class BraTest {
     }
 
     @Test
-    void mul() {
-        Bra ket0 = new Bra(new Complex[]{Complex.one(), Complex.one()});
-        Bra ket = ket0.mul(3);
-        assertArrayEquals(new Complex[]{
-                        Complex.create(3),
-                        Complex.create(3)},
-                ket.values());
-    }
-
-    @ParameterizedTest
-    @MethodSource("dataBraket")
-    void mulScalar(Bra bra, Ket ket, Complex expected) {
-        Complex mul = bra.mul(ket);
-        assertThat(mul, complexClose(expected, EPSILON));
-    }
-
-    @Test
     void neg() {
         Bra ket0 = Bra.ZERO;
         Bra add = ket0.neg();
@@ -242,25 +234,33 @@ class BraTest {
                 one.values());
     }
 
-    @Test
-    void sub() {
-        Bra ket0 = Bra.ZERO;
-        Bra ket1 = Bra.ONE;
-        Bra add = ket0.sub(ket1);
-        assertArrayEquals(new Complex[]{
-                        Complex.ONE,
-                        Complex.create(-1)},
-                add.values());
+    @ParameterizedTest
+    @MethodSource("argsTestAdd")
+    void testAdd(Bra left, Bra right, Bra exp) {
+        Bra add = left.add(right);
+        assertThat(add, braCloseTo(exp, EPSILON));
     }
 
-    @Test
-    void testMul() {
-        Bra ket0 = new Bra(new Complex[]{Complex.one(), Complex.one()});
-        Bra ket = ket0.mul(Complex.i());
-        assertArrayEquals(new Complex[]{
-                        Complex.i(),
-                        Complex.i()},
-                ket.values());
+    @ParameterizedTest
+    @CsvSource({
+            "0, 2",
+            "1, 2",
+            "2, 4",
+            "3, 4",
+            "4, 8",
+            "5, 8",
+            "6, 8",
+            "7, 8",
+    })
+    void testBase(int value, int size) {
+        Bra b = Bra.base(value);
+        assertEquals(size, b.numStates());
+        for (int i = 0; i < size; i++) {
+            assertEquals(i == value
+                            ? Complex.one().conj() : Complex.zero().conj(),
+                    b.at(i),
+                    "value at " + i);
+        }
     }
 
     @Test
@@ -277,6 +277,54 @@ class BraTest {
         assertThat(notZero.values()[1], complexClose(1, EPSILON));
         assertThat(notOne.values()[0], complexClose(1, EPSILON));
         assertThat(notOne.values()[1], complexClose(0, EPSILON));
+    }
+
+    @Test
+    void testMulComplex() {
+        Bra ket0 = new Bra(new Complex[]{Complex.one(), Complex.one()});
+        Bra ket = ket0.mul(Complex.i());
+        assertArrayEquals(new Complex[]{
+                        Complex.i(),
+                        Complex.i()},
+                ket.values());
+    }
+
+    @Test
+    void testMulFloat() {
+        Bra ket0 = new Bra(new Complex[]{Complex.one(), Complex.one()});
+        Bra ket = ket0.mul(3);
+        assertArrayEquals(new Complex[]{
+                        Complex.create(3),
+                        Complex.create(3)},
+                ket.values());
+    }
+
+    @ParameterizedTest
+    @MethodSource("argTestMulKet")
+    void testMulKet(Bra bra, Ket ket, Complex expected) {
+        Complex mul = bra.mul(ket);
+        assertThat(mul, complexClose(expected, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("argTestMulMatrix")
+    void testMulMatrix(Bra right, Matrix left, Bra exp) {
+        Bra ket = right.mul(left);
+        assertThat(ket, braCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("argTestMulMatrixError")
+    void testMulMatrixError(Matrix left, Bra right, String exp) {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> right.mul(left));
+        assertThat(ex.getMessage(), equalTo(exp));
+    }
+
+    @ParameterizedTest
+    @MethodSource("argsTestSub")
+    void testSub(Bra left, Bra right, Bra exp) {
+        Bra add = left.sub(right);
+        assertThat(add, braCloseTo(exp, EPSILON));
     }
 
     @Test

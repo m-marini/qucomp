@@ -30,7 +30,7 @@ package org.mmarini.qucomp.apis;
 
 import java.util.Arrays;
 
-import static java.lang.String.format;
+import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 import static org.mmarini.qucomp.apis.VectorUtils.partMul;
 
@@ -53,7 +53,17 @@ public record Bra(Complex[] values) {
      * @param size  the number of qubit
      */
     public static Bra base(int value, int size) {
+        // TODO to remove
         return Ket.base(value, size).conj();
+    }
+
+    /**
+     * Returns a bra base for the given value
+     *
+     * @param state the value
+     */
+    public static Bra base(int state) {
+        return Ket.base(state).conj();
     }
 
     /**
@@ -129,12 +139,15 @@ public record Bra(Complex[] values) {
     }
 
     /**
-     * Returns the ket added to other (this + other)
+     * Returns the ket added to right (this + right)
      *
-     * @param other the other ket
+     * @param right the right ket
      */
-    public Bra add(Bra other) {
-        return new Bra(VectorUtils.add(values, other.values));
+    public Bra add(Bra right) {
+        Bra left = this;
+        int n = max(left.numStates(), right.numStates());
+        return new Bra(VectorUtils.add(
+                left.extend(n).values, right.extend(n).values));
     }
 
     /***
@@ -183,7 +196,8 @@ public record Bra(Complex[] values) {
      * @param ket the ket
      */
     public Complex mul(Ket ket) {
-        return VectorUtils.mulScalar(values, ket.values());
+        int n = max(numStates(), ket.numStates());
+        return VectorUtils.mulScalar(extend(n).values, ket.extend(n).values());
     }
 
     /**
@@ -192,15 +206,15 @@ public record Bra(Complex[] values) {
      * @param matrix the matrix operator
      */
     public Bra mul(Matrix matrix) {
-        int n = values.length;
-        if (matrix.numRows() != n) {
-            throw new IllegalArgumentException(format("Matrix operator must have shape ? x %d (%d x %d)",
-                    n,
-                    matrix.numRows(), matrix.numCols()));
+        int numRows = matrix.numRows();
+        int numCols = matrix.numCols();
+        int numStates = numStates();
+        if (numStates > matrix.numRows()) {
+            throw new IllegalArgumentException("Expected matrix with at least " + numStates + " rows (" + matrix.numRows() + ")");
         }
-        int m = matrix.numCols();
-        Complex[] cells = new Complex[m];
-        partMul(cells, 0, 1, matrix.numCols(), this.values, 0, values.length, matrix.cells(), 0, matrix.numCols());
+        Bra left = this.extend(numRows);
+        Complex[] cells = new Complex[numCols];
+        partMul(cells, 0, 1, numCols, left.values, 0, numRows, matrix.cells(), 0, numCols);
         return create(cells);
     }
 
@@ -237,12 +251,15 @@ public record Bra(Complex[] values) {
     }
 
     /**
-     * Returns the ket subtracted by other (this - other)
+     * Returns the ket subtracted by right (this - right)
      *
-     * @param other the other ket
+     * @param right the right ket
      */
-    public Bra sub(Bra other) {
-        return new Bra(VectorUtils.sub(values, other.values));
+    public Bra sub(Bra right) {
+        Bra left = this;
+        int n = max(left.numStates(), right.numStates());
+        return new Bra(VectorUtils.sub(
+                left.extend(n).values, right.extend(n).values));
     }
 
     @Override
