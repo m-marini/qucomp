@@ -2,48 +2,308 @@ package org.mmarini.qucomp.apis;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static java.lang.Math.sqrt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mmarini.qucomp.Matchers.complexClose;
+import static org.mmarini.qucomp.Matchers.matrixCloseTo;
 
 class MatrixTest {
     public static final float EPSILON = 1e-6F;
     public static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
     private static final Logger logger = LoggerFactory.getLogger(MatrixTest.class);
 
-    @Test
-    void testAdd() {
-        Matrix a = Matrix.create(2, 3, IntStream.range(0, 6)
-                .mapToObj(Complex::create)
-                .toArray(Complex[]::new));
-        Matrix aa = a.add(a);
-        assertTrue(aa.hasShape(2, 3));
-        assertThat(aa.at(0, 0), complexClose(0, EPSILON));
-        assertThat(aa.at(0, 1), complexClose(2, EPSILON));
-        assertThat(aa.at(0, 2), complexClose(4, EPSILON));
-        assertThat(aa.at(1, 0), complexClose(6, EPSILON));
-        assertThat(aa.at(1, 1), complexClose(8, EPSILON));
-        assertThat(aa.at(1, 2), complexClose(10, EPSILON));
+    public static Stream<Arguments> argTestExtends0() {
+        Matrix x = Matrix.create(2, 2,
+                1, 1,
+                1, 1);
+        Matrix y24 = Matrix.create(2, 4,
+                1, 1, 0, 0,
+                1, 1, 0, 0);
+        Matrix y42 = Matrix.create(4, 2,
+                1, 1,
+                1, 1,
+                0, 0,
+                0, 0);
+        Matrix y44 = Matrix.create(4, 4,
+                1, 1, 0, 0,
+                1, 1, 0, 0,
+                0, 0, 0, 0,
+                0, 0, 0, 0);
+        return Stream.of(
+                Arguments.of(x, 2, 2, x),
+                Arguments.of(x, 2, 4, y24),
+                Arguments.of(x, 4, 2, y42),
+                Arguments.of(x, 4, 4, y44)
+        );
     }
 
-    @Test
-    void at() {
-        Matrix m = Matrix.create(2, 2,
-                Complex.zero(), Complex.one(),
-                Complex.create(2), Complex.create(3));
+    public static Stream<Arguments> argsTestAdd() {
+        Matrix x22 = Matrix.create(2, 2,
+                0, 1,
+                1, 0);
+        Matrix x24 = Matrix.create(2, 4,
+                0, 1, 0, 1,
+                1, 0, 1, 0);
+        Matrix x42 = Matrix.create(4, 2,
+                0, 1,
+                1, 0,
+                0, 1,
+                1, 0);
+        Matrix x44 = Matrix.create(4, 4,
+                0, 1, 0, 1,
+                1, 0, 1, 0,
+                0, 1, 0, 1,
+                1, 0, 1, 0);
+        Matrix y22 = Matrix.create(2, 2,
+                1, 0,
+                0, 1);
+        Matrix y24 = Matrix.create(2, 4,
+                1, 0, 1, 0,
+                0, 1, 0, 1);
+        Matrix y42 = Matrix.create(4, 2,
+                1, 0,
+                0, 1,
+                1, 0,
+                0, 1);
+        Matrix y44 = Matrix.create(4, 4,
+                1, 0, 1, 0,
+                0, 1, 0, 1,
+                1, 0, 1, 0,
+                0, 1, 0, 1);
+        Matrix z22 = Matrix.create(2, 2,
+                1, 1,
+                1, 1);
+        Matrix z2224 = Matrix.create(2, 4,
+                1, 1, 1, 0,
+                1, 1, 0, 1);
+        Matrix z2242 = Matrix.create(4, 2,
+                1, 1,
+                1, 1,
+                1, 0,
+                0, 1);
+        Matrix z2244 = Matrix.create(4, 4,
+                1, 1, 1, 0,
+                1, 1, 0, 1,
+                1, 0, 1, 0,
+                0, 1, 0, 1);
+        Matrix z2422 = Matrix.create(2, 4,
+                1, 1, 0, 1,
+                1, 1, 1, 0);
+        Matrix z2424 = Matrix.create(2, 4,
+                1, 1, 1, 1,
+                1, 1, 1, 1);
+        Matrix z2442 = Matrix.create(4, 4,
+                1, 1, 0, 1,
+                1, 1, 1, 0,
+                1, 0, 0, 0,
+                0, 1, 0, 0);
+        Matrix z2444 = Matrix.create(4, 4,
+                1, 1, 1, 1,
+                1, 1, 1, 1,
+                1, 0, 1, 0,
+                0, 1, 0, 1);
+        Matrix z4222 = Matrix.create(4, 2,
+                1, 1,
+                1, 1,
+                0, 1,
+                1, 0);
+        Matrix z4224 = Matrix.create(4, 4,
+                1, 1, 1, 0,
+                1, 1, 0, 1,
+                0, 1, 0, 0,
+                1, 0, 0, 0);
+        Matrix z4242 = Matrix.create(4, 2,
+                1, 1,
+                1, 1,
+                1, 1,
+                1, 1);
+        Matrix z4244 = Matrix.create(4, 4,
+                1, 1, 1, 0,
+                1, 1, 0, 1,
+                1, 1, 1, 0,
+                1, 1, 0, 1);
+        Matrix z4422 = Matrix.create(4, 4,
+                1, 1, 0, 1,
+                1, 1, 1, 0,
+                0, 1, 0, 1,
+                1, 0, 1, 0);
+        Matrix z4424 = Matrix.create(4, 4,
+                1, 1, 1, 1,
+                1, 1, 1, 1,
+                0, 1, 0, 1,
+                1, 0, 1, 0);
+        Matrix z4442 = Matrix.create(4, 4,
+                1, 1, 0, 1,
+                1, 1, 1, 0,
+                1, 1, 0, 1,
+                1, 1, 1, 0);
+        Matrix z4444 = Matrix.create(4, 4,
+                1, 1, 1, 1,
+                1, 1, 1, 1,
+                1, 1, 1, 1,
+                1, 1, 1, 1);
 
-        assertThat(m.at(0, 0), complexClose(0, EPSILON));
-        assertThat(m.at(0, 1), complexClose(1, EPSILON));
-        assertThat(m.at(1, 0), complexClose(2, EPSILON));
-        assertThat(m.at(1, 1), complexClose(3, EPSILON));
+        return Stream.of(
+                Arguments.of(x22, y22, z22),
+                Arguments.of(x22, y24, z2224),
+                Arguments.of(x22, y42, z2242),
+                Arguments.of(x22, y44, z2244),
+
+                Arguments.of(x24, y22, z2422),
+                Arguments.of(x24, y24, z2424),
+                Arguments.of(x24, y42, z2442),
+                Arguments.of(x24, y44, z2444),
+
+                Arguments.of(x42, y22, z4222),
+                Arguments.of(x42, y24, z4224),
+                Arguments.of(x42, y42, z4242),
+                Arguments.of(x42, y44, z4244),
+
+                Arguments.of(x44, y22, z4422),
+                Arguments.of(x44, y24, z4424),
+                Arguments.of(x44, y42, z4442),
+                Arguments.of(x44, y44, z4444)
+        );
+    }
+
+    public static Stream<Arguments> argsTestSub() {
+        Matrix x22 = Matrix.create(2, 2,
+                0, 1,
+                1, 0);
+        Matrix x24 = Matrix.create(2, 4,
+                0, 1, 0, 1,
+                1, 0, 1, 0);
+        Matrix x42 = Matrix.create(4, 2,
+                0, 1,
+                1, 0,
+                0, 1,
+                1, 0);
+        Matrix x44 = Matrix.create(4, 4,
+                0, 1, 0, 1,
+                1, 0, 1, 0,
+                0, 1, 0, 1,
+                1, 0, 1, 0);
+        Matrix y22 = Matrix.create(2, 2,
+                1, 0,
+                0, 1);
+        Matrix y24 = Matrix.create(2, 4,
+                1, 0, 1, 0,
+                0, 1, 0, 1);
+        Matrix y42 = Matrix.create(4, 2,
+                1, 0,
+                0, 1,
+                1, 0,
+                0, 1);
+        Matrix y44 = Matrix.create(4, 4,
+                1, 0, 1, 0,
+                0, 1, 0, 1,
+                1, 0, 1, 0,
+                0, 1, 0, 1);
+        Matrix z22 = Matrix.create(2, 2,
+                -1, 1,
+                1, -1);
+        Matrix z2224 = Matrix.create(2, 4,
+                -1, 1, -1, 0,
+                1, -1, 0, -1);
+        Matrix z2242 = Matrix.create(4, 2,
+                -1, 1,
+                1, -1,
+                -1, 0,
+                0, -1);
+        Matrix z2244 = Matrix.create(4, 4,
+                -1, 1, -1, 0,
+                1, -1, 0, -1,
+                -1, 0, -1, 0,
+                0, -1, 0, -1);
+        Matrix z2422 = Matrix.create(2, 4,
+                -1, 1, 0, 1,
+                1, -1, 1, 0);
+        Matrix z2424 = Matrix.create(2, 4,
+                -1, 1, -1, 1,
+                1, -1, 1, -1);
+        Matrix z2442 = Matrix.create(4, 4,
+                -1, 1, 0, 1,
+                1, -1, 1, 0,
+                -1, 0, 0, 0,
+                0, -1, 0, 0);
+        Matrix z2444 = Matrix.create(4, 4,
+                -1, 1, -1, 1,
+                1, -1, 1, -1,
+                -1, 0, -1, 0,
+                0, -1, 0, -1);
+        Matrix z4222 = Matrix.create(4, 2,
+                -1, 1,
+                1, -1,
+                0, 1,
+                1, 0);
+        Matrix z4224 = Matrix.create(4, 4,
+                -1, 1, -1, 0,
+                1, -1, 0, -1,
+                0, 1, 0, 0,
+                1, 0, 0, 0);
+        Matrix z4242 = Matrix.create(4, 2,
+                -1, 1,
+                1, -1,
+                -1, 1,
+                1, -1);
+        Matrix z4244 = Matrix.create(4, 4,
+                -1, 1, -1, 0,
+                1, -1, 0, -1,
+                -1, 1, -1, 0,
+                1, -1, 0, -1);
+        Matrix z4422 = Matrix.create(4, 4,
+                -1, 1, 0, 1,
+                1, -1, 1, 0,
+                0, 1, 0, 1,
+                1, 0, 1, 0);
+        Matrix z4424 = Matrix.create(4, 4,
+                -1, 1, -1, 1,
+                1, -1, 1, -1,
+                0, 1, 0, 1,
+                1, 0, 1, 0);
+        Matrix z4442 = Matrix.create(4, 4,
+                -1, 1, 0, 1,
+                1, -1, 1, 0,
+                -1, 1, 0, 1,
+                1, -1, 1, 0);
+        Matrix z4444 = Matrix.create(4, 4,
+                -1, 1, -1, 1,
+                1, -1, 1, -1,
+                -1, 1, -1, 1,
+                1, -1, 1, -1);
+
+        return Stream.of(
+                Arguments.of(x22, y22, z22),
+                Arguments.of(x22, y24, z2224),
+                Arguments.of(x22, y42, z2242),
+                Arguments.of(x22, y44, z2244),
+
+                Arguments.of(x24, y22, z2422),
+                Arguments.of(x24, y24, z2424),
+                Arguments.of(x24, y42, z2442),
+                Arguments.of(x24, y44, z2444),
+
+                Arguments.of(x42, y22, z4222),
+                Arguments.of(x42, y24, z4224),
+                Arguments.of(x42, y42, z4242),
+                Arguments.of(x42, y44, z4244),
+
+                Arguments.of(x44, y22, z4422),
+                Arguments.of(x44, y24, z4424),
+                Arguments.of(x44, y42, z4442),
+                Arguments.of(x44, y44, z4444)
+        );
     }
 
     @ParameterizedTest
@@ -475,6 +735,71 @@ class MatrixTest {
         assertThat(m.at(0, 1), complexClose(0, EPSILON));
         assertThat(m.at(1, 0), complexClose(0, EPSILON));
         assertThat(m.at(1, 1), complexClose(new Complex(HALF_SQRT2, HALF_SQRT2), EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("argsTestAdd")
+    void testAdd(Matrix left, Matrix right, Matrix exp) {
+        Matrix result = left.add(right);
+        assertThat(result, matrixCloseTo(exp, EPSILON));
+    }
+
+    /*
+    @ParameterizedTest
+    @MethodSource("argsTestAddError")
+    void testAddError(Matrix left, Matrix right, String exp) {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> left.add(right));
+        assertEquals(exp, ex.getMessage());
+    }
+
+
+     */
+    @Test
+    void testAt() {
+        Matrix m = Matrix.create(2, 2,
+                Complex.zero(), Complex.one(),
+                Complex.create(2), Complex.create(3));
+
+        assertThat(m.at(0, 0), complexClose(0, EPSILON));
+        assertThat(m.at(0, 1), complexClose(1, EPSILON));
+        assertThat(m.at(1, 0), complexClose(2, EPSILON));
+        assertThat(m.at(1, 1), complexClose(3, EPSILON));
+    }
+
+    @Test
+    void testExtendRows() {
+        Matrix m = Matrix.identity();
+        Matrix exp = Matrix.create(4, 2,
+                1, 0,
+                0, 1,
+                0, 0,
+                0, 0);
+        Matrix result = m.extendsRows(4);
+        assertThat(result, matrixCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("argTestExtends0")
+    void testExtends0(Matrix matrix, int n, int m, Matrix exp) {
+        Matrix result = matrix.extends0(n, m);
+        assertThat(result, matrixCloseTo(exp, EPSILON));
+    }
+
+    @Test
+    void testExtendsCols() {
+        Matrix m = Matrix.identity();
+        Matrix exp = Matrix.create(2, 4,
+                1, 0, 0, 0,
+                0, 1, 0, 0);
+        Matrix result = m.extendsCols(4);
+        assertThat(result, matrixCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("argsTestSub")
+    void testSub(Matrix left, Matrix right, Matrix exp) {
+        Matrix result = left.sub(right);
+        assertThat(result, matrixCloseTo(exp, EPSILON));
     }
 
     @Test

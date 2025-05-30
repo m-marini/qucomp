@@ -38,8 +38,7 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static java.lang.Math.min;
-import static java.lang.Math.sqrt;
+import static java.lang.Math.*;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.mmarini.qucomp.apis.VectorUtils.partMul;
@@ -310,16 +309,17 @@ public class Matrix {
      * @param other the other matrix
      */
     public Matrix add(Matrix other) {
-        if (!hasShape(other.numRows, other.numCols)) {
+        int n = max(numRows, other.numRows);
+        int m = max(numCols, other.numCols);
+        Matrix left = extends0(n, m);
+        Matrix right = other.extends0(n, m);
+        if (!left.hasShape(right)) {
             throw new IllegalArgumentException(format("shapes must be congruent %dx%d + %dx%d",
                     numRows, numCols, other.numRows, other.numCols
             ));
         }
-        return create(numRows, numCols, indices -> {
-            Complex a = at(indices);
-            Complex b = other.at(indices);
-            return a.add(b);
-        });
+        Complex[] cells = VectorUtils.add(left.cells, right.cells);
+        return new Matrix(n, m, cells);
     }
 
     /**
@@ -380,10 +380,61 @@ public class Matrix {
     }
 
     /**
+     * Returns the extended matrix by appending zero filled cell
+     *
+     * @param numRows the number of resulting rows
+     * @param numCols the number of resulting columns
+     */
+    public Matrix extends0(int numRows, int numCols) {
+        return extendsCols(numCols)
+                .extendsRows(numRows);
+    }
+
+    /**
+     * Returns the extended matrix by appending zero filled cols
+     *
+     * @param numCols the number resulting of rows
+     */
+    public Matrix extendsCols(int numCols) {
+        if (this.numCols >= numCols) {
+            return this;
+        }
+        Complex[] cells = new Complex[numRows * numCols];
+
+        for (int i = 0; i < numRows; i++) {
+            System.arraycopy(this.cells, i * this.numCols, cells, i * numCols, this.numCols);
+            Arrays.fill(cells, i * numCols + this.numCols, i * numCols + numCols, Complex.zero());
+        }
+        return new Matrix(numRows, numCols, cells);
+    }
+
+    /**
+     * Returns the extended matrix by appending zer filled rows
+     *
+     * @param numRows the number resulting of rows
+     */
+    public Matrix extendsRows(int numRows) {
+        if (this.numRows >= numRows) {
+            return this;
+        }
+        Complex[] cells = new Complex[numRows * numCols];
+        System.arraycopy(this.cells, 0, cells, 0, this.cells.length);
+        Arrays.fill(cells, this.cells.length, cells.length, Complex.zero());
+        return new Matrix(numRows, numCols, cells);
+    }
+
+    /**
      * Returns true if the arrays has the same size
      */
     boolean hasShape(int numRows, int numCols) {
         return numRows == this.numRows && numCols == this.numCols;
+    }
+
+    /**
+     * Returns true if the arrays has the same size
+     */
+    boolean hasShape(Matrix other) {
+        return hasShape(other.numRows, other.numCols);
     }
 
     /**
@@ -394,11 +445,11 @@ public class Matrix {
     public int index(int... indices) {
         if (indices.length != 2) {
             throw new IllegalArgumentException(format(
-                    "indices must be 2 (%d)", indices.length));
+                    "Expected 2 indices (%d)", indices.length));
         }
         if (indices[0] < 0 || indices[0] >= numRows || indices[1] < 0 || indices[1] >= numCols) {
             throw new IllegalArgumentException(format(
-                    "index must have range (0-%d)x(0%d) (%dx %d)",
+                    "index must have range (0-%d)x(0-%d) (%dx%d)",
                     numRows, numCols, indices[0], indices[1]));
         }
         return unsafeIndex(numCols, indices);
@@ -526,16 +577,17 @@ public class Matrix {
      * @param other the other matrix
      */
     public Matrix sub(Matrix other) {
-        if (!hasShape(other.numRows, other.numCols)) {
+        int n = max(numRows, other.numRows);
+        int m = max(numCols, other.numCols);
+        Matrix left = extends0(n, m);
+        Matrix right = other.extends0(n, m);
+        if (!left.hasShape(right)) {
             throw new IllegalArgumentException(format("shapes must be congruent %dx%d + %dx%d",
                     numRows, numCols, other.numRows, other.numCols
             ));
         }
-        return create(numRows, numCols, indices -> {
-            Complex a = at(indices);
-            Complex b = other.at(indices);
-            return a.sub(b);
-        });
+        Complex[] cells = VectorUtils.sub(left.cells, right.cells);
+        return new Matrix(n, m, cells);
     }
 
     @Override

@@ -548,7 +548,7 @@ public interface Matchers {
                     return false;
                 }
                 for (int i = 0; i < m.numRows(); i++) {
-                    for (int j = 0; j < m.numRows(); j++) {
+                    for (int j = 0; j < m.numCols(); j++) {
                         if (!m.at(i, j).isClose(expected.at(i, j), epsilon)) {
                             return false;
                         }
