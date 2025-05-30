@@ -155,6 +155,15 @@ public class Matrix {
     }
 
     /**
+     * Returns the matrix of H gate applied to the i-th bit
+     *
+     * @param index the bit index
+     */
+    public static Matrix hGate(int index) {
+        return index > 0 ? iGate(index - 1).cross(H) : H;
+    }
+
+    /**
      * Returns the identity square matrix
      *
      * @param size the size of matrix
@@ -267,12 +276,55 @@ public class Matrix {
     }
 
     /**
-     * Returns the X operator (Not)
+     * Returns the matrix of identity port for i-th bit
      *
-     * @param index the i-th qu-bit
+     * @param index the bit index
      */
-    public static Matrix x(int index) {
-        return index > 0 ? identity(1 << index).cross(X) : X;
+    public static Matrix iGate(int index) {
+        return identity(2 << index);
+    }
+
+    /**
+     * Returns the matrix of S gate applied to the i-th bit
+     *
+     * @param index the bit index
+     */
+    public static Matrix sGate(int index) {
+        return index > 0 ? iGate(index - 1).cross(S) : S;
+    }
+
+    /**
+     * Returns the matrix of T gate applied to the i-th bit
+     *
+     * @param index the bit index
+     */
+    public static Matrix tGate(int index) {
+        return index > 0 ? iGate(index - 1).cross(T) : T;
+    }
+
+    /**
+     * Returns the matrix of X gate applied to the i-th bit
+     *
+     * @param index the bit index
+     */
+    public static Matrix xGate(int index) {
+        return index > 0 ? iGate(index - 1).cross(X) : X;
+    }
+
+    /**
+     * Returns the matrix of Y gate applied to the i-th bit
+     *
+     * @param index the bit index
+     */
+    public static Matrix yGate(int index) {
+        return index > 0 ? iGate(index - 1).cross(Y) : Y;
+    }
+
+    /**
+     * Returns the Z operator
+     */
+    public static Matrix z() {
+        return Z;
     }
 
     /**
@@ -282,8 +334,13 @@ public class Matrix {
         return Y;
     }
 
-    public static Matrix z() {
-        return Z;
+    /**
+     * Returns the matrix of Z gate applied to the i-th bit
+     *
+     * @param index the bit index
+     */
+    public static Matrix zGate(int index) {
+        return index > 0 ? iGate(index - 1).cross(Z) : Z;
     }
 
     private final int numRows;
@@ -313,11 +370,6 @@ public class Matrix {
         int m = max(numCols, other.numCols);
         Matrix left = extends0(n, m);
         Matrix right = other.extends0(n, m);
-        if (!left.hasShape(right)) {
-            throw new IllegalArgumentException(format("shapes must be congruent %dx%d + %dx%d",
-                    numRows, numCols, other.numRows, other.numCols
-            ));
-        }
         Complex[] cells = VectorUtils.add(left.cells, right.cells);
         return new Matrix(n, m, cells);
     }
@@ -409,6 +461,25 @@ public class Matrix {
     }
 
     /**
+     * Returns the extended matrix by cross-product of square matrices
+     *
+     * @param n the size of the resulting matrix
+     */
+    public Matrix extendsCrossSquare(int n) {
+        if (numCols != numRows) {
+            throw new IllegalArgumentException(format("Expected square matrix (%dx%d)", numRows, numCols));
+        }
+        if (n == numRows) {
+            return this;
+        }
+        if ((n % numRows) > 0) {
+            throw new IllegalArgumentException(format("Expected size multiple of %dx%d (%dx%d)", numRows, numRows, n, n));
+        }
+        int q = n / numRows;
+        return identity(q).cross(this);
+    }
+
+    /**
      * Returns the extended matrix by appending zer filled rows
      *
      * @param numRows the number resulting of rows
@@ -465,22 +536,39 @@ public class Matrix {
     }
 
     /**
-     * Returns the matrix multiplication (this x other)
+     * Returns the matrix multiplication (this x right) with extensions
      *
-     * @param other the other matrix
+     * @param right the right matrix
      */
-    public Matrix mul(Matrix other) {
+    public Matrix mul(Matrix right) {
+        // Check for extensions
+        Matrix left = this;
+        if (left.numCols > right.numRows) {
+            right = right.extendsCrossSquare(left.numCols);
+        } else if (left.numCols < right.numRows) {
+            left = left.extendsCrossSquare(right.numRows);
+        }
+        return left.safeMul(right);
+    }
+
+    /**
+     * Returns the matrix multiplication (this x right)
+     *
+     * @param right the right matrix
+     */
+    private Matrix safeMul(Matrix right) {
         // Validates shapes
-        if (numCols != other.numRows) {
+        if (numCols != right.numRows) {
+            // Check for extensions
             throw new IllegalArgumentException(format("Invalid product operands shapes %dx%d by %dx%d",
                     numRows, numCols,
-                    other.numRows, other.numCols));
+                    right.numRows, right.numCols));
         }
-        long order = (long) numRows * numCols * numCols * other.numCols;
+        long order = (long) numRows * numCols * numCols * right.numCols;
         int cores = Runtime.getRuntime().availableProcessors();
         return (order / cores) > ORDER_BY_CORE_THRESHOLD
-                ? mulConc(other)
-                : mulSeq(other);
+                ? mulConc(right)
+                : mulSeq(right);
     }
 
     /**
@@ -581,11 +669,6 @@ public class Matrix {
         int m = max(numCols, other.numCols);
         Matrix left = extends0(n, m);
         Matrix right = other.extends0(n, m);
-        if (!left.hasShape(right)) {
-            throw new IllegalArgumentException(format("shapes must be congruent %dx%d + %dx%d",
-                    numRows, numCols, other.numRows, other.numCols
-            ));
-        }
         Complex[] cells = VectorUtils.sub(left.cells, right.cells);
         return new Matrix(n, m, cells);
     }

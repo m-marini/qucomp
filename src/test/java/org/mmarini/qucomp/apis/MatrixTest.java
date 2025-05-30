@@ -48,6 +48,21 @@ class MatrixTest {
         );
     }
 
+    public static Stream<Arguments> argTestExtendsCrossSquare() {
+        Matrix m2 = Matrix.create(2, 2,
+                0, 1,
+                1, 0);
+        Matrix z4 = Matrix.create(4, 4,
+                0, 1, 0, 0,
+                1, 0, 0, 0,
+                0, 0, 0, 1,
+                0, 0, 1, 0);
+        return Stream.of(
+                Arguments.of(m2, 4, z4),
+                Arguments.of(m2.mul(Complex.i()), 4, z4.mul(Complex.i()))
+        );
+    }
+
     public static Stream<Arguments> argsTestAdd() {
         Matrix x22 = Matrix.create(2, 2,
                 0, 1,
@@ -306,6 +321,145 @@ class MatrixTest {
         );
     }
 
+    public static Stream<Arguments> testHGateArgs() {
+        return Stream.of(
+                Arguments.of(0, Matrix.h()),
+                Arguments.of(1, Matrix.create(4, 4,
+                        HALF_SQRT2, HALF_SQRT2, 0, 0,
+                        HALF_SQRT2, -HALF_SQRT2, 0, 0,
+                        0, 0, HALF_SQRT2, HALF_SQRT2,
+                        0, 0, HALF_SQRT2, -HALF_SQRT2))
+        );
+    }
+
+    public static Stream<Arguments> testIGateArgs() {
+        return Stream.of(
+                Arguments.of(0, Matrix.identity(2)),
+                Arguments.of(1, Matrix.identity(4)),
+                Arguments.of(2, Matrix.identity(8))
+        );
+    }
+
+    public static Stream<Arguments> testMulMatrixArgs() {
+        Matrix m1 = Matrix.create(2, 3,
+                IntStream.range(0, 6).mapToObj(Complex::create).toArray(Complex[]::new));
+        Matrix m2 = Matrix.create(3, 2,
+                IntStream.range(0, 6).mapToObj(Complex::create).toArray(Complex[]::new));
+        /*
+        | 0 1 2 |   | 0 1 |   | 10 13 |
+        | 3 4 5 | x | 2 3 | = | 28 40 |
+                    | 4 5 |
+         */
+        Matrix m12 = Matrix.create(2, 2,
+                10, 13,
+                28, 40);
+                /*
+        | 0 1 |   | 0 1 2 |   |  3  4  5 |
+        | 2 3 | x | 3 4 5 | = |  9 14 19 |
+        | 4 5 |               | 15 24 33 |
+         */
+        Matrix m21 = Matrix.create(3, 3,
+                3, 4, 5,
+                9, 14, 19,
+                15, 24, 33);
+        Matrix mxz = Matrix.create(4, 4,
+                0, 0, 1, 0,
+                0, 0, 0, -1,
+                1, 0, 0, 0,
+                0, -1, 0, 0);
+        Matrix mzx = Matrix.create(4, 4,
+                0, 1, 0, 0,
+                1, 0, 0, 0,
+                0, 0, 0, -1,
+                0, 0, -1, 0);
+
+        return Stream.of(
+                Arguments.of(m1, m2, m12),
+                Arguments.of(m2, m1, m21),
+                Arguments.of(Matrix.xGate(1), Matrix.zGate(0), mxz),
+                Arguments.of(Matrix.zGate(1), Matrix.xGate(0), mzx),
+                Arguments.of(Matrix.xGate(0), Matrix.zGate(1), mzx),
+                Arguments.of(Matrix.zGate(0), Matrix.xGate(1), mxz)
+        );
+    }
+
+    public static Stream<Arguments> testMulMatrixErrorsArgs() {
+        Matrix m22 = Matrix.identity();
+        Matrix m33 = Matrix.identity(3);
+        Matrix m24 = Matrix.create(2, 4,
+                0, 1, 0, 1,
+                0, 1, 0, 1);
+        Matrix m42 = Matrix.create(4, 2,
+                0, 1,
+                0, 1,
+                0, 1,
+                0, 1);
+        return Stream.of(
+                Arguments.of(m22, m33, "Expected size multiple of 2x2 (3x3)"),
+                Arguments.of(m33, m24, "Expected square matrix (2x4)"),
+                Arguments.of(m42, m33, "Expected square matrix (4x2)")
+        );
+    }
+
+    public static Stream<Arguments> testSGateArgs() {
+        return Stream.of(
+                Arguments.of(0, Matrix.s()),
+                Arguments.of(1, Matrix.create(4, 4,
+                        Complex.one(), Complex.zero(), Complex.zero(), Complex.zero(),
+                        Complex.zero(), Complex.i(), Complex.zero(), Complex.zero(),
+                        Complex.zero(), Complex.zero(), Complex.one(), Complex.zero(),
+                        Complex.zero(), Complex.zero(), Complex.zero(), Complex.i()
+                ))
+        );
+    }
+
+    public static Stream<Arguments> testTGateArgs() {
+        return Stream.of(
+                Arguments.of(0, Matrix.t()),
+                Arguments.of(1, Matrix.create(4, 4,
+                        Complex.one(), Complex.zero(), Complex.zero(), Complex.zero(),
+                        Complex.zero(), new Complex(HALF_SQRT2, HALF_SQRT2), Complex.zero(), Complex.zero(),
+                        Complex.zero(), Complex.zero(), Complex.one(), Complex.zero(),
+                        Complex.zero(), Complex.zero(), Complex.zero(), new Complex(HALF_SQRT2, HALF_SQRT2)
+                ))
+        );
+    }
+
+    public static Stream<Arguments> testXGateArgs() {
+        return Stream.of(
+                Arguments.of(0, Matrix.x()),
+                Arguments.of(1, Matrix.create(4, 4,
+                        0, 1, 0, 0,
+                        1, 0, 0, 0,
+                        0, 0, 0, 1,
+                        0, 0, 1, 0))
+        );
+    }
+
+    public static Stream<Arguments> testYGateArgs() {
+        return Stream.of(
+                Arguments.of(0, Matrix.y()),
+                Arguments.of(1, Matrix.create(4, 4,
+                        Complex.zero(), Complex.i(-1), Complex.zero(), Complex.zero(),
+                        Complex.i(), Complex.zero(), Complex.zero(), Complex.zero(),
+                        Complex.zero(), Complex.zero(), Complex.zero(), Complex.i(-1),
+                        Complex.zero(), Complex.zero(), Complex.i(), Complex.zero()
+                ))
+        );
+    }
+
+    public static Stream<Arguments> testZGateArgs() {
+        return Stream.of(
+                Arguments.of(0, Matrix.z()),
+                Arguments.of(1, Matrix.create(4, 4,
+                        1, 0, 0, 0,
+                        0, -1, 0, 0,
+                        0, 0, 1, 0,
+                        0, 0, 0, -1
+                ))
+        );
+    }
+
     @ParameterizedTest
     @CsvSource({
             "0, 1,0,0,0,0,0,0,0",
@@ -443,31 +597,6 @@ class MatrixTest {
         assertThat(ket1.at(5), complexClose(expKet.at(5), EPSILON));
         assertThat(ket1.at(6), complexClose(expKet.at(6), EPSILON));
         assertThat(ket1.at(7), complexClose(expKet.at(7), EPSILON));
-    }
-
-    @Test
-    void h() {
-        Matrix h = Matrix.h();
-
-        assertThat(h.at(0, 0), complexClose(HALF_SQRT2, EPSILON));
-        assertThat(h.at(0, 1), complexClose(HALF_SQRT2, EPSILON));
-        assertThat(h.at(1, 0), complexClose(HALF_SQRT2, EPSILON));
-        assertThat(h.at(1, 1), complexClose(-HALF_SQRT2, EPSILON));
-    }
-
-    @Test
-    void identity() {
-        Matrix m = Matrix.identity(3);
-        assertTrue(m.hasShape(3, 3));
-        assertThat(m.at(0, 0), complexClose(1, EPSILON));
-        assertThat(m.at(0, 1), complexClose(0, EPSILON));
-        assertThat(m.at(0, 2), complexClose(0, EPSILON));
-        assertThat(m.at(1, 0), complexClose(0, EPSILON));
-        assertThat(m.at(1, 1), complexClose(1, EPSILON));
-        assertThat(m.at(1, 2), complexClose(0, EPSILON));
-        assertThat(m.at(2, 0), complexClose(0, EPSILON));
-        assertThat(m.at(2, 1), complexClose(0, EPSILON));
-        assertThat(m.at(2, 2), complexClose(1, EPSILON));
     }
 
     @Test
@@ -744,16 +873,6 @@ class MatrixTest {
         assertThat(result, matrixCloseTo(exp, EPSILON));
     }
 
-    /*
-    @ParameterizedTest
-    @MethodSource("argsTestAddError")
-    void testAddError(Matrix left, Matrix right, String exp) {
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> left.add(right));
-        assertEquals(exp, ex.getMessage());
-    }
-
-
-     */
     @Test
     void testAt() {
         Matrix m = Matrix.create(2, 2,
@@ -796,64 +915,38 @@ class MatrixTest {
     }
 
     @ParameterizedTest
-    @MethodSource("argsTestSub")
-    void testSub(Matrix left, Matrix right, Matrix exp) {
-        Matrix result = left.sub(right);
+    @MethodSource("argTestExtendsCrossSquare")
+    void testExtendsCrossSquare(Matrix matrix, int n, Matrix exp) {
+        Matrix result = matrix.extendsCrossSquare(n);
         assertThat(result, matrixCloseTo(exp, EPSILON));
     }
 
     @Test
-    void testMul() {
-        Matrix m0 = Matrix.identity(3);
-        Matrix m1 = m0.mul(2);
+    void testH() {
+        assertThat(Matrix.h(), matrixCloseTo(Matrix.create(2, 2,
+                HALF_SQRT2, HALF_SQRT2,
+                HALF_SQRT2, -HALF_SQRT2), EPSILON));
+    }
 
-        assertThat(m1.at(0, 0), complexClose(2, EPSILON));
-        assertThat(m1.at(0, 1), complexClose(0, EPSILON));
-        assertThat(m1.at(0, 2), complexClose(0, EPSILON));
-        assertThat(m1.at(1, 0), complexClose(0, EPSILON));
-        assertThat(m1.at(1, 1), complexClose(2, EPSILON));
-        assertThat(m1.at(1, 2), complexClose(0, EPSILON));
-        assertThat(m1.at(2, 0), complexClose(0, EPSILON));
-        assertThat(m1.at(2, 1), complexClose(0, EPSILON));
-        assertThat(m1.at(2, 2), complexClose(2, EPSILON));
+    @ParameterizedTest
+    @MethodSource("testHGateArgs")
+    void testHGate(int index, Matrix exp) {
+        assertThat(Matrix.hGate(index), matrixCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testIGateArgs")
+    void testIGate(int index, Matrix exp) {
+        assertThat(Matrix.iGate(index), matrixCloseTo(exp, EPSILON));
     }
 
     @Test
-    void testMul1() {
-        // Given
-        Matrix m1 = Matrix.create(2, 3,
-                IntStream.range(0, 6).mapToObj(Complex::create).toArray(Complex[]::new));
-        Matrix m2 = Matrix.create(3, 2,
-                IntStream.range(0, 6).mapToObj(Complex::create).toArray(Complex[]::new));
-        // When
-        Matrix m12 = m1.mul(m2);
-        Matrix m21 = m2.mul(m1);
-
-        // Then
-        /*
-        | 0 1 2 |   | 0 1 |   | 10 13 |
-        | 3 4 5 | x | 2 3 | = | 28 40 |
-                    | 4 5 |
-         */
-        assertThat(m12.at(0, 0), complexClose(10, EPSILON));
-        assertThat(m12.at(0, 1), complexClose(13, EPSILON));
-        assertThat(m12.at(1, 0), complexClose(28, EPSILON));
-        assertThat(m12.at(1, 1), complexClose(40, EPSILON));
-        /*
-        | 0 1 |   | 0 1 2 |   |  3  4  5 |
-        | 2 3 | x | 3 4 5 | = |  9 14 19 |
-        | 4 5 |               | 15 24 33 |
-         */
-
-        assertThat(m21.at(0, 0), complexClose(3, EPSILON));
-        assertThat(m21.at(0, 1), complexClose(4, EPSILON));
-        assertThat(m21.at(0, 2), complexClose(5, EPSILON));
-        assertThat(m21.at(1, 0), complexClose(9, EPSILON));
-        assertThat(m21.at(1, 1), complexClose(14, EPSILON));
-        assertThat(m21.at(1, 2), complexClose(19, EPSILON));
-        assertThat(m21.at(2, 0), complexClose(15, EPSILON));
-        assertThat(m21.at(2, 1), complexClose(24, EPSILON));
-        assertThat(m21.at(2, 2), complexClose(33, EPSILON));
+    void testIdentity() {
+        assertThat(Matrix.identity(4), matrixCloseTo(Matrix.create(4, 4,
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1), EPSILON));
     }
 
     @Test
@@ -883,6 +976,55 @@ class MatrixTest {
     }
 
     @Test
+    void testMulFloat() {
+        Matrix m0 = Matrix.identity(3);
+        Matrix m1 = m0.mul(2);
+
+        assertThat(m1.at(0, 0), complexClose(2, EPSILON));
+        assertThat(m1.at(0, 1), complexClose(0, EPSILON));
+        assertThat(m1.at(0, 2), complexClose(0, EPSILON));
+        assertThat(m1.at(1, 0), complexClose(0, EPSILON));
+        assertThat(m1.at(1, 1), complexClose(2, EPSILON));
+        assertThat(m1.at(1, 2), complexClose(0, EPSILON));
+        assertThat(m1.at(2, 0), complexClose(0, EPSILON));
+        assertThat(m1.at(2, 1), complexClose(0, EPSILON));
+        assertThat(m1.at(2, 2), complexClose(2, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testMulMatrixArgs")
+    void testMulMatrix(Matrix left, Matrix right, Matrix exp) {
+        Matrix result = left.mul(right);
+        assertThat(result, matrixCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testMulMatrixErrorsArgs")
+    void testMulMatrixErrors(Matrix left, Matrix right, String exp) {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> left.mul(right));
+        assertEquals(exp, ex.getMessage());
+    }
+
+    @ParameterizedTest
+    @MethodSource("testSGateArgs")
+    void testSGate(int index, Matrix exp) {
+        assertThat(Matrix.sGate(index), matrixCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("argsTestSub")
+    void testSub(Matrix left, Matrix right, Matrix exp) {
+        Matrix result = left.sub(right);
+        assertThat(result, matrixCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testTGateArgs")
+    void testTGate(int index, Matrix exp) {
+        assertThat(Matrix.tGate(index), matrixCloseTo(exp, EPSILON));
+    }
+
+    @Test
     void testToString() {
         // Given
         Matrix m = Matrix.y();
@@ -890,6 +1032,31 @@ class MatrixTest {
         String s = m.toString();
         // Then
         assertEquals("[ 0.0,  -i\n    i, 0.0 ]\n", s);
+    }
+
+    @ParameterizedTest
+    @MethodSource("testXGateArgs")
+    void testXGate(int index, Matrix exp) {
+        assertThat(Matrix.xGate(index), matrixCloseTo(exp, EPSILON));
+    }
+
+    @Test
+    void testY() {
+        assertThat(Matrix.y(), matrixCloseTo(Matrix.create(2, 2,
+                Complex.zero(), Complex.i().neg(),
+                Complex.i(), Complex.zero()), EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testYGateArgs")
+    void testYGate(int index, Matrix exp) {
+        assertThat(Matrix.yGate(index), matrixCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testZGateArgs")
+    void testZGate(int index, Matrix exp) {
+        assertThat(Matrix.zGate(index), matrixCloseTo(exp, EPSILON));
     }
 
     @Test
@@ -932,16 +1099,6 @@ class MatrixTest {
         assertThat(m.at(0, 0), complexClose(0, EPSILON));
         assertThat(m.at(0, 1), complexClose(1, EPSILON));
         assertThat(m.at(1, 0), complexClose(1, EPSILON));
-        assertThat(m.at(1, 1), complexClose(0, EPSILON));
-    }
-
-    @Test
-    void y() {
-        Matrix m = Matrix.y();
-
-        assertThat(m.at(0, 0), complexClose(0, EPSILON));
-        assertThat(m.at(0, 1), complexClose(Complex.i(-1), EPSILON));
-        assertThat(m.at(1, 0), complexClose(Complex.i(), EPSILON));
         assertThat(m.at(1, 1), complexClose(0, EPSILON));
     }
 }
