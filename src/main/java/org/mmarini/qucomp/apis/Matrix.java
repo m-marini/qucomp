@@ -160,7 +160,7 @@ public class Matrix {
      * @param index the bit index
      */
     public static Matrix hGate(int index) {
-        return index > 0 ? iGate(index - 1).cross(H) : H;
+        return index > 0 ? H.cross(identity(1 << index)) : H;
     }
 
     /**

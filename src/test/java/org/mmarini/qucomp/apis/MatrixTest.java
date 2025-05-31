@@ -257,10 +257,10 @@ class MatrixTest {
         return Stream.of(
                 Arguments.of(0, Matrix.h()),
                 Arguments.of(1, Matrix.create(4, 4,
-                        HALF_SQRT2, HALF_SQRT2, 0, 0,
-                        HALF_SQRT2, -HALF_SQRT2, 0, 0,
-                        0, 0, HALF_SQRT2, HALF_SQRT2,
-                        0, 0, HALF_SQRT2, -HALF_SQRT2))
+                        HALF_SQRT2, 0, HALF_SQRT2, 0,
+                        0, HALF_SQRT2, 0, HALF_SQRT2,
+                        HALF_SQRT2, 0, -HALF_SQRT2, 0,
+                        0, HALF_SQRT2, 0, -HALF_SQRT2))
         );
     }
 
