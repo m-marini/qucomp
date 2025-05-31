@@ -290,7 +290,7 @@ public class Matrix {
      * @param index the bit index
      */
     public static Matrix sGate(int index) {
-        return index > 0 ? iGate(index - 1).cross(S) : S;
+        return index > 0 ? S.cross(identity(1 << index)) : S;
     }
 
     /**
@@ -299,7 +299,7 @@ public class Matrix {
      * @param index the bit index
      */
     public static Matrix tGate(int index) {
-        return index > 0 ? iGate(index - 1).cross(T) : T;
+        return index > 0 ? T.cross(identity(1 << index)) : T;
     }
 
     /**
@@ -308,7 +308,7 @@ public class Matrix {
      * @param index the bit index
      */
     public static Matrix xGate(int index) {
-        return index > 0 ? iGate(index - 1).cross(X) : X;
+        return index > 0 ? X.cross(identity(1 << index)) : X;
     }
 
     /**
@@ -317,7 +317,7 @@ public class Matrix {
      * @param index the bit index
      */
     public static Matrix yGate(int index) {
-        return index > 0 ? iGate(index - 1).cross(Y) : Y;
+        return index > 0 ? Y.cross(identity(1 << index)) : Y;
     }
 
     /**
@@ -340,7 +340,7 @@ public class Matrix {
      * @param index the bit index
      */
     public static Matrix zGate(int index) {
-        return index > 0 ? iGate(index - 1).cross(Z) : Z;
+        return index > 0 ? Z.cross(identity(1 << index)) : Z;
     }
 
     private final int numRows;

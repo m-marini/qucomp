@@ -21,49 +21,37 @@ import static org.mmarini.qucomp.Matchers.matrixCloseTo;
 class MatrixTest {
     public static final float EPSILON = 1e-6F;
     public static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
+    public static final Matrix MX = Matrix.create(2, 2,
+            0, 1,
+            1, 0);
+    public static final Matrix MZ = Matrix.create(2, 2,
+            1, 0,
+            0, -1);
+    public static final Matrix MZ0 = Matrix.create(4, 4,
+            1, 0, 0, 0,
+            0, -1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, -1
+    );
+    public static final Matrix MZ1 = Matrix.create(4, 4,
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, -1, 0,
+            0, 0, 0, -1
+    );
     private static final Logger logger = LoggerFactory.getLogger(MatrixTest.class);
+    public static Matrix MX0 = Matrix.create(4, 4,
+            0, 1, 0, 0,
+            1, 0, 0, 0,
+            0, 0, 0, 1,
+            0, 0, 1, 0);
+    public static Matrix MX1 = Matrix.create(4, 4,
+            0, 0, 1, 0,
+            0, 0, 0, 1,
+            1, 0, 0, 0,
+            0, 1, 0, 0);
 
-    public static Stream<Arguments> argTestExtends0() {
-        Matrix x = Matrix.create(2, 2,
-                1, 1,
-                1, 1);
-        Matrix y24 = Matrix.create(2, 4,
-                1, 1, 0, 0,
-                1, 1, 0, 0);
-        Matrix y42 = Matrix.create(4, 2,
-                1, 1,
-                1, 1,
-                0, 0,
-                0, 0);
-        Matrix y44 = Matrix.create(4, 4,
-                1, 1, 0, 0,
-                1, 1, 0, 0,
-                0, 0, 0, 0,
-                0, 0, 0, 0);
-        return Stream.of(
-                Arguments.of(x, 2, 2, x),
-                Arguments.of(x, 2, 4, y24),
-                Arguments.of(x, 4, 2, y42),
-                Arguments.of(x, 4, 4, y44)
-        );
-    }
-
-    public static Stream<Arguments> argTestExtendsCrossSquare() {
-        Matrix m2 = Matrix.create(2, 2,
-                0, 1,
-                1, 0);
-        Matrix z4 = Matrix.create(4, 4,
-                0, 1, 0, 0,
-                1, 0, 0, 0,
-                0, 0, 0, 1,
-                0, 0, 1, 0);
-        return Stream.of(
-                Arguments.of(m2, 4, z4),
-                Arguments.of(m2.mul(Complex.i()), 4, z4.mul(Complex.i()))
-        );
-    }
-
-    public static Stream<Arguments> argsTestAdd() {
+    public static Stream<Arguments> testAddArgs() {
         Matrix x22 = Matrix.create(2, 2,
                 0, 1,
                 1, 0);
@@ -192,7 +180,178 @@ class MatrixTest {
         );
     }
 
-    public static Stream<Arguments> argsTestSub() {
+    public static Stream<Arguments> testCrossArgs() {
+        Matrix m1 = Matrix.create(2, 2,
+                1, 2,
+                3, 4);
+        Matrix m2 = Matrix.create(2, 2,
+                5, 6,
+                7, 8);
+        Matrix m12 = Matrix.create(4, 4,
+                5, 6, 10, 12,
+                7, 8, 14, 16,
+                15, 18, 20, 24,
+                21, 24, 28, 32);
+        Matrix m21 = Matrix.create(4, 4,
+                5, 10, 6, 12,
+                15, 20, 18, 24,
+                7, 14, 8, 16,
+                21, 28, 24, 32);
+        return Stream.of(
+                Arguments.of(m1, m2, m12),
+                Arguments.of(m2, m1, m21),
+                Arguments.of(MX, Matrix.identity(), MX1),
+                Arguments.of(Matrix.identity(), MX, MX0),
+                Arguments.of(MZ, Matrix.identity(), MZ1),
+                Arguments.of(Matrix.identity(), MZ, MZ0)
+        );
+    }
+
+    public static Stream<Arguments> testExtends0Args() {
+        Matrix x = Matrix.create(2, 2,
+                1, 1,
+                1, 1);
+        Matrix y24 = Matrix.create(2, 4,
+                1, 1, 0, 0,
+                1, 1, 0, 0);
+        Matrix y42 = Matrix.create(4, 2,
+                1, 1,
+                1, 1,
+                0, 0,
+                0, 0);
+        Matrix y44 = Matrix.create(4, 4,
+                1, 1, 0, 0,
+                1, 1, 0, 0,
+                0, 0, 0, 0,
+                0, 0, 0, 0);
+        return Stream.of(
+                Arguments.of(x, 2, 2, x),
+                Arguments.of(x, 2, 4, y24),
+                Arguments.of(x, 4, 2, y42),
+                Arguments.of(x, 4, 4, y44)
+        );
+    }
+
+    public static Stream<Arguments> testExtendsCrossSquareArgs() {
+        Matrix m2 = Matrix.create(2, 2,
+                0, 1,
+                1, 0);
+        Matrix mx0 = Matrix.create(4, 4,
+                0, 1, 0, 0,
+                1, 0, 0, 0,
+                0, 0, 0, 1,
+                0, 0, 1, 0);
+        Matrix mz0 = Matrix.create(4, 4,
+                1, 0, 0, 0,
+                0, -1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, -1);
+        return Stream.of(
+                Arguments.of(m2, 4, mx0),
+                Arguments.of(m2.mul(Complex.i()), 4, mx0.mul(Complex.i())),
+                Arguments.of(Matrix.z(), 4, mz0)
+        );
+    }
+
+    public static Stream<Arguments> testHGateArgs() {
+        return Stream.of(
+                Arguments.of(0, Matrix.h()),
+                Arguments.of(1, Matrix.create(4, 4,
+                        HALF_SQRT2, HALF_SQRT2, 0, 0,
+                        HALF_SQRT2, -HALF_SQRT2, 0, 0,
+                        0, 0, HALF_SQRT2, HALF_SQRT2,
+                        0, 0, HALF_SQRT2, -HALF_SQRT2))
+        );
+    }
+
+    public static Stream<Arguments> testIGateArgs() {
+        return Stream.of(
+                Arguments.of(0, Matrix.identity(2)),
+                Arguments.of(1, Matrix.identity(4)),
+                Arguments.of(2, Matrix.identity(8))
+        );
+    }
+
+    public static Stream<Arguments> testMulMatrixArgs() {
+        Matrix m1 = Matrix.create(2, 3,
+                IntStream.range(0, 6).mapToObj(Complex::create).toArray(Complex[]::new));
+        Matrix m2 = Matrix.create(3, 2,
+                IntStream.range(0, 6).mapToObj(Complex::create).toArray(Complex[]::new));
+        /*
+        | 0 1 2 |   | 0 1 |   | 10 13 |
+        | 3 4 5 | x | 2 3 | = | 28 40 |
+                    | 4 5 |
+         */
+        Matrix m12 = Matrix.create(2, 2,
+                10, 13,
+                28, 40);
+                /*
+        | 0 1 |   | 0 1 2 |   |  3  4  5 |
+        | 2 3 | x | 3 4 5 | = |  9 14 19 |
+        | 4 5 |               | 15 24 33 |
+         */
+        Matrix m21 = Matrix.create(3, 3,
+                3, 4, 5,
+                9, 14, 19,
+                15, 24, 33);
+        /*
+        | 0 0 1 0 |  | 1  0 0 0  |   | 0  0 1  0 |
+        | 0 0 0 1 |  | 0 -1 0 0  | = | 0  0 0 -1 |
+        | 1 0 0 0 |  | 0  0 1 0  |   | 1  0 0  0 |
+        | 0 1 0 0 |  | 0  0 0 -1 |   | 0 -1 0  0 |
+         */
+        Matrix mxz = Matrix.create(4, 4,
+                0, 0, 1, 0,
+                0, 0, 0, -1,
+                1, 0, 0, 0,
+                0, -1, 0, 0);
+        Matrix mzx = Matrix.create(4, 4,
+                0, 1, 0, 0,
+                1, 0, 0, 0,
+                0, 0, 0, -1,
+                0, 0, -1, 0);
+
+        return Stream.of(
+                Arguments.of(m1, m2, m12),
+                Arguments.of(m2, m1, m21),
+                Arguments.of(Matrix.xGate(1), Matrix.zGate(0), mxz),
+                Arguments.of(Matrix.zGate(1), Matrix.xGate(0), mzx),
+                Arguments.of(Matrix.xGate(0), Matrix.zGate(1), mzx),
+                Arguments.of(Matrix.zGate(0), Matrix.xGate(1), mxz)
+        );
+    }
+
+    public static Stream<Arguments> testMulMatrixErrorsArgs() {
+        Matrix m22 = Matrix.identity();
+        Matrix m33 = Matrix.identity(3);
+        Matrix m24 = Matrix.create(2, 4,
+                0, 1, 0, 1,
+                0, 1, 0, 1);
+        Matrix m42 = Matrix.create(4, 2,
+                0, 1,
+                0, 1,
+                0, 1,
+                0, 1);
+        return Stream.of(
+                Arguments.of(m22, m33, "Expected size multiple of 2x2 (3x3)"),
+                Arguments.of(m33, m24, "Expected square matrix (2x4)"),
+                Arguments.of(m42, m33, "Expected square matrix (4x2)")
+        );
+    }
+
+    public static Stream<Arguments> testSGateArgs() {
+        return Stream.of(
+                Arguments.of(0, Matrix.s()),
+                Arguments.of(1, Matrix.create(4, 4,
+                        Complex.one(), Complex.zero(), Complex.zero(), Complex.zero(),
+                        Complex.zero(), Complex.one(), Complex.zero(), Complex.zero(),
+                        Complex.zero(), Complex.zero(), Complex.i(), Complex.zero(),
+                        Complex.zero(), Complex.zero(), Complex.zero(), Complex.i()
+                ))
+        );
+    }
+
+    public static Stream<Arguments> testSubArgs() {
         Matrix x22 = Matrix.create(2, 2,
                 0, 1,
                 1, 0);
@@ -321,105 +480,13 @@ class MatrixTest {
         );
     }
 
-    public static Stream<Arguments> testHGateArgs() {
-        return Stream.of(
-                Arguments.of(0, Matrix.h()),
-                Arguments.of(1, Matrix.create(4, 4,
-                        HALF_SQRT2, HALF_SQRT2, 0, 0,
-                        HALF_SQRT2, -HALF_SQRT2, 0, 0,
-                        0, 0, HALF_SQRT2, HALF_SQRT2,
-                        0, 0, HALF_SQRT2, -HALF_SQRT2))
-        );
-    }
-
-    public static Stream<Arguments> testIGateArgs() {
-        return Stream.of(
-                Arguments.of(0, Matrix.identity(2)),
-                Arguments.of(1, Matrix.identity(4)),
-                Arguments.of(2, Matrix.identity(8))
-        );
-    }
-
-    public static Stream<Arguments> testMulMatrixArgs() {
-        Matrix m1 = Matrix.create(2, 3,
-                IntStream.range(0, 6).mapToObj(Complex::create).toArray(Complex[]::new));
-        Matrix m2 = Matrix.create(3, 2,
-                IntStream.range(0, 6).mapToObj(Complex::create).toArray(Complex[]::new));
-        /*
-        | 0 1 2 |   | 0 1 |   | 10 13 |
-        | 3 4 5 | x | 2 3 | = | 28 40 |
-                    | 4 5 |
-         */
-        Matrix m12 = Matrix.create(2, 2,
-                10, 13,
-                28, 40);
-                /*
-        | 0 1 |   | 0 1 2 |   |  3  4  5 |
-        | 2 3 | x | 3 4 5 | = |  9 14 19 |
-        | 4 5 |               | 15 24 33 |
-         */
-        Matrix m21 = Matrix.create(3, 3,
-                3, 4, 5,
-                9, 14, 19,
-                15, 24, 33);
-        Matrix mxz = Matrix.create(4, 4,
-                0, 0, 1, 0,
-                0, 0, 0, -1,
-                1, 0, 0, 0,
-                0, -1, 0, 0);
-        Matrix mzx = Matrix.create(4, 4,
-                0, 1, 0, 0,
-                1, 0, 0, 0,
-                0, 0, 0, -1,
-                0, 0, -1, 0);
-
-        return Stream.of(
-                Arguments.of(m1, m2, m12),
-                Arguments.of(m2, m1, m21),
-                Arguments.of(Matrix.xGate(1), Matrix.zGate(0), mxz),
-                Arguments.of(Matrix.zGate(1), Matrix.xGate(0), mzx),
-                Arguments.of(Matrix.xGate(0), Matrix.zGate(1), mzx),
-                Arguments.of(Matrix.zGate(0), Matrix.xGate(1), mxz)
-        );
-    }
-
-    public static Stream<Arguments> testMulMatrixErrorsArgs() {
-        Matrix m22 = Matrix.identity();
-        Matrix m33 = Matrix.identity(3);
-        Matrix m24 = Matrix.create(2, 4,
-                0, 1, 0, 1,
-                0, 1, 0, 1);
-        Matrix m42 = Matrix.create(4, 2,
-                0, 1,
-                0, 1,
-                0, 1,
-                0, 1);
-        return Stream.of(
-                Arguments.of(m22, m33, "Expected size multiple of 2x2 (3x3)"),
-                Arguments.of(m33, m24, "Expected square matrix (2x4)"),
-                Arguments.of(m42, m33, "Expected square matrix (4x2)")
-        );
-    }
-
-    public static Stream<Arguments> testSGateArgs() {
-        return Stream.of(
-                Arguments.of(0, Matrix.s()),
-                Arguments.of(1, Matrix.create(4, 4,
-                        Complex.one(), Complex.zero(), Complex.zero(), Complex.zero(),
-                        Complex.zero(), Complex.i(), Complex.zero(), Complex.zero(),
-                        Complex.zero(), Complex.zero(), Complex.one(), Complex.zero(),
-                        Complex.zero(), Complex.zero(), Complex.zero(), Complex.i()
-                ))
-        );
-    }
-
     public static Stream<Arguments> testTGateArgs() {
         return Stream.of(
                 Arguments.of(0, Matrix.t()),
                 Arguments.of(1, Matrix.create(4, 4,
                         Complex.one(), Complex.zero(), Complex.zero(), Complex.zero(),
-                        Complex.zero(), new Complex(HALF_SQRT2, HALF_SQRT2), Complex.zero(), Complex.zero(),
-                        Complex.zero(), Complex.zero(), Complex.one(), Complex.zero(),
+                        Complex.zero(), Complex.one(), Complex.zero(), Complex.zero(),
+                        Complex.zero(), Complex.zero(), new Complex(HALF_SQRT2, HALF_SQRT2), Complex.zero(),
                         Complex.zero(), Complex.zero(), Complex.zero(), new Complex(HALF_SQRT2, HALF_SQRT2)
                 ))
         );
@@ -428,11 +495,7 @@ class MatrixTest {
     public static Stream<Arguments> testXGateArgs() {
         return Stream.of(
                 Arguments.of(0, Matrix.x()),
-                Arguments.of(1, Matrix.create(4, 4,
-                        0, 1, 0, 0,
-                        1, 0, 0, 0,
-                        0, 0, 0, 1,
-                        0, 0, 1, 0))
+                Arguments.of(1, MX1)
         );
     }
 
@@ -440,10 +503,10 @@ class MatrixTest {
         return Stream.of(
                 Arguments.of(0, Matrix.y()),
                 Arguments.of(1, Matrix.create(4, 4,
-                        Complex.zero(), Complex.i(-1), Complex.zero(), Complex.zero(),
-                        Complex.i(), Complex.zero(), Complex.zero(), Complex.zero(),
+                        Complex.zero(), Complex.zero(), Complex.i(-1), Complex.zero(),
                         Complex.zero(), Complex.zero(), Complex.zero(), Complex.i(-1),
-                        Complex.zero(), Complex.zero(), Complex.i(), Complex.zero()
+                        Complex.i(), Complex.zero(), Complex.zero(), Complex.zero(),
+                        Complex.zero(), Complex.i(), Complex.zero(), Complex.zero()
                 ))
         );
     }
@@ -451,12 +514,7 @@ class MatrixTest {
     public static Stream<Arguments> testZGateArgs() {
         return Stream.of(
                 Arguments.of(0, Matrix.z()),
-                Arguments.of(1, Matrix.create(4, 4,
-                        1, 0, 0, 0,
-                        0, -1, 0, 0,
-                        0, 0, 1, 0,
-                        0, 0, 0, -1
-                ))
+                Arguments.of(1, MZ1)
         );
     }
 
@@ -533,70 +591,6 @@ class MatrixTest {
                 0, 1);
         assertEquals(2, m.numRows());
         assertEquals(2, m.numCols());
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            // 000 001 010 011 100 101 110 111
-            // 000 001 100 101 010 011 110 111
-            "0, 0",
-            "1, 1",
-            "2, 4",
-            "3, 5",
-            "4, 2",
-            "5, 3",
-            "6, 6",
-            "7, 7",
-    })
-    void cross1(int s, int exp) {
-        Matrix m0 = Matrix.swap();
-        Matrix m1 = Matrix.identity();
-        Matrix m = m0.cross(m1);
-        Ket ket0 = Ket.base(s, 3);
-        Ket expKet = Ket.base(exp, 3);
-
-        Ket ket1 = ket0.mul(m);
-
-        assertThat(ket1.at(0), complexClose(expKet.at(0), EPSILON));
-        assertThat(ket1.at(1), complexClose(expKet.at(1), EPSILON));
-        assertThat(ket1.at(2), complexClose(expKet.at(2), EPSILON));
-        assertThat(ket1.at(3), complexClose(expKet.at(3), EPSILON));
-        assertThat(ket1.at(4), complexClose(expKet.at(4), EPSILON));
-        assertThat(ket1.at(5), complexClose(expKet.at(5), EPSILON));
-        assertThat(ket1.at(6), complexClose(expKet.at(6), EPSILON));
-        assertThat(ket1.at(7), complexClose(expKet.at(7), EPSILON));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            // 000 001 010 011 100 101 110 111
-            // 000 010 001 011 100 110 101 111
-            "0, 0",
-            "1, 2",
-            "2, 1",
-            "3, 3",
-            "4, 4",
-            "5, 6",
-            "6, 5",
-            "7, 7",
-    })
-    void cross2(int s, int exp) {
-        Matrix m0 = Matrix.identity();
-        Matrix m1 = Matrix.swap();
-        Matrix m = m0.cross(m1);
-        Ket ket0 = Ket.base(s, 3);
-        Ket expKet = Ket.base(exp, 3);
-
-        Ket ket1 = ket0.mul(m);
-
-        assertThat(ket1.at(0), complexClose(expKet.at(0), EPSILON));
-        assertThat(ket1.at(1), complexClose(expKet.at(1), EPSILON));
-        assertThat(ket1.at(2), complexClose(expKet.at(2), EPSILON));
-        assertThat(ket1.at(3), complexClose(expKet.at(3), EPSILON));
-        assertThat(ket1.at(4), complexClose(expKet.at(4), EPSILON));
-        assertThat(ket1.at(5), complexClose(expKet.at(5), EPSILON));
-        assertThat(ket1.at(6), complexClose(expKet.at(6), EPSILON));
-        assertThat(ket1.at(7), complexClose(expKet.at(7), EPSILON));
     }
 
     @Test
@@ -867,7 +861,7 @@ class MatrixTest {
     }
 
     @ParameterizedTest
-    @MethodSource("argsTestAdd")
+    @MethodSource("testAddArgs")
     void testAdd(Matrix left, Matrix right, Matrix exp) {
         Matrix result = left.add(right);
         assertThat(result, matrixCloseTo(exp, EPSILON));
@@ -885,6 +879,77 @@ class MatrixTest {
         assertThat(m.at(1, 1), complexClose(3, EPSILON));
     }
 
+    @ParameterizedTest
+    @MethodSource("testCrossArgs")
+    void testCross(Matrix left, Matrix right, Matrix exp) {
+        Matrix result = left.cross(right);
+        assertThat(result, matrixCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            // 000 001 010 011 100 101 110 111
+            // 000 001 100 101 010 011 110 111
+            "0, 0",
+            "1, 1",
+            "2, 4",
+            "3, 5",
+            "4, 2",
+            "5, 3",
+            "6, 6",
+            "7, 7",
+    })
+    void testCross1(int s, int exp) {
+        Matrix m0 = Matrix.swap();
+        Matrix m1 = Matrix.identity();
+        Matrix m = m0.cross(m1);
+        Ket ket0 = Ket.base(s, 3);
+        Ket expKet = Ket.base(exp, 3);
+
+        Ket ket1 = ket0.mul(m);
+
+        assertThat(ket1.at(0), complexClose(expKet.at(0), EPSILON));
+        assertThat(ket1.at(1), complexClose(expKet.at(1), EPSILON));
+        assertThat(ket1.at(2), complexClose(expKet.at(2), EPSILON));
+        assertThat(ket1.at(3), complexClose(expKet.at(3), EPSILON));
+        assertThat(ket1.at(4), complexClose(expKet.at(4), EPSILON));
+        assertThat(ket1.at(5), complexClose(expKet.at(5), EPSILON));
+        assertThat(ket1.at(6), complexClose(expKet.at(6), EPSILON));
+        assertThat(ket1.at(7), complexClose(expKet.at(7), EPSILON));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            // 000 001 010 011 100 101 110 111
+            // 000 010 001 011 100 110 101 111
+            "0, 0",
+            "1, 2",
+            "2, 1",
+            "3, 3",
+            "4, 4",
+            "5, 6",
+            "6, 5",
+            "7, 7",
+    })
+    void testCross2(int s, int exp) {
+        Matrix m0 = Matrix.identity();
+        Matrix m1 = Matrix.swap();
+        Matrix m = m0.cross(m1);
+        Ket ket0 = Ket.base(s, 3);
+        Ket expKet = Ket.base(exp, 3);
+
+        Ket ket1 = ket0.mul(m);
+
+        assertThat(ket1.at(0), complexClose(expKet.at(0), EPSILON));
+        assertThat(ket1.at(1), complexClose(expKet.at(1), EPSILON));
+        assertThat(ket1.at(2), complexClose(expKet.at(2), EPSILON));
+        assertThat(ket1.at(3), complexClose(expKet.at(3), EPSILON));
+        assertThat(ket1.at(4), complexClose(expKet.at(4), EPSILON));
+        assertThat(ket1.at(5), complexClose(expKet.at(5), EPSILON));
+        assertThat(ket1.at(6), complexClose(expKet.at(6), EPSILON));
+        assertThat(ket1.at(7), complexClose(expKet.at(7), EPSILON));
+    }
+
     @Test
     void testExtendRows() {
         Matrix m = Matrix.identity();
@@ -898,7 +963,7 @@ class MatrixTest {
     }
 
     @ParameterizedTest
-    @MethodSource("argTestExtends0")
+    @MethodSource("testExtends0Args")
     void testExtends0(Matrix matrix, int n, int m, Matrix exp) {
         Matrix result = matrix.extends0(n, m);
         assertThat(result, matrixCloseTo(exp, EPSILON));
@@ -915,7 +980,7 @@ class MatrixTest {
     }
 
     @ParameterizedTest
-    @MethodSource("argTestExtendsCrossSquare")
+    @MethodSource("testExtendsCrossSquareArgs")
     void testExtendsCrossSquare(Matrix matrix, int n, Matrix exp) {
         Matrix result = matrix.extendsCrossSquare(n);
         assertThat(result, matrixCloseTo(exp, EPSILON));
@@ -1012,7 +1077,7 @@ class MatrixTest {
     }
 
     @ParameterizedTest
-    @MethodSource("argsTestSub")
+    @MethodSource("testSubArgs")
     void testSub(Matrix left, Matrix right, Matrix exp) {
         Matrix result = left.sub(right);
         assertThat(result, matrixCloseTo(exp, EPSILON));
