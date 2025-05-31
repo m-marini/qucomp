@@ -30,7 +30,6 @@ package org.mmarini.qucomp.apis;
 
 import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import org.mmarini.NotImplementedException;
 import org.mmarini.ParallelProcess;
 import org.mmarini.Tuple2;
 
@@ -42,116 +41,51 @@ import java.util.stream.Stream;
 import static java.lang.Math.*;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static org.mmarini.qucomp.apis.VectorUtils.numBitsByState;
 import static org.mmarini.qucomp.apis.VectorUtils.partMul;
 
 /**
  * Complex matrix
  */
-public class Matrix {
+public class Matrix1 {
 
-    public static final Matrix IDENTITY = permute(0, 1);
-    public static final Matrix CCNOT = permute(0, 1, 2, 3, 4, 5, 7, 6);
-    public static final Matrix SWAP = permute(0, 2, 1, 3);
-    public static final Matrix CNOT = permute(0, 1, 3, 2);
-    public static final Matrix X = permute(1, 0);
-
-    public static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
-    public static final Matrix S = create(2, 2,
-            Complex.one(), Complex.zero(),
-            Complex.zero(), Complex.i());
-    public static final Matrix Y = create(2, 2,
-            Complex.zero(), Complex.i(-1),
-            Complex.i(), Complex.zero());
-    public static final Matrix Z = create(2, 2,
-            Complex.one(), Complex.zero(),
-            Complex.zero(), Complex.create(-1));
-    public static final Matrix H = create(2, 2,
-            Complex.one(), Complex.one(),
-            Complex.one(), Complex.create(-1)).mul(HALF_SQRT2);
-    public static final Matrix T = create(2, 2,
-            Complex.one(), Complex.zero(),
-            Complex.zero(), new Complex(HALF_SQRT2, HALF_SQRT2));
     private static final long ORDER_BY_CORE_THRESHOLD = 64 * 64 * 64 * 64 / 12;
+    private static final Complex HALF_SQRT2 = Complex.create((float) (sqrt(2) / 2));
+    private static final Complex I_HALF_SQRT2 = new Complex(0, (float) (sqrt(2) / 2));
+    private static final Matrix1 I_KET = ket(HALF_SQRT2, I_HALF_SQRT2);
+    private static final Matrix1 MINUS_I_KET = ket(HALF_SQRT2, I_HALF_SQRT2.neg());
+    private static final Matrix1 PLUS_KET = ket(HALF_SQRT2, HALF_SQRT2);
+    private static final Matrix1 MINUS_KET = ket(HALF_SQRT2, HALF_SQRT2.neg());
 
     /**
-     * Returns Toffoli operator
+     * Returns the state permutation given the input bit permutation
      * <pre>
-     *      CCNOT |0> = |0>
-     *      CCNOT |1> = |1>
-     *      CCNOT |2> = |2>
-     *      CCNOT |3> = |3>
-     *      CCNOT |4> = |4>
-     *      CCNOT |5> = |5>
-     *      CCNOT |6> = |7>
-     *      CCNOT |7> = |6>
+     *     out[p[i]]=in[i]
      * </pre>
-     */
-    public static Matrix ccnot() {
-        return CCNOT;
-    }
-
-    /**
-     * Returns the cnot operator
-     * <pre>
-     *      CNOT |0> = |0>
-     *      CNOT |1> = |1>
-     *      CNOT |2> = |3>
-     *      CNOT |3> = |2>
-     * </pre>
-     */
-    public static Matrix cnot() {
-        return CNOT;
-    }
-
-    /**
-     * Returns the matrix of ccnot gate (Toffoli) applied to the given bits
      *
-     * @param data     the data bit
-     * @param control0 the control bit
-     * @param control1 the control bit
+     * @param bitPermutation the bit permutations in[i] = the bit index of the resulting bit for the i-th input bit
      */
-    public static Matrix ccnotGate(int data, int control0, int control1) {
-        throw new NotImplementedException();
-    }
-
-    /**
-     * Returns the matrix of cnot gate applied to the given bits
-     *
-     * @param data    the data bit
-     * @param control the control bit
-     */
-    public static Matrix cnotGate(int data, int control) {
-        if (data == control) {
-            throw new IllegalArgumentException(format("Expected control bit (%d) not equal to data bit (%d)", control, data));
-        }
-        Matrix swap = null;
-        if (data == 0) {
-            if (control == 1) {
-                return CNOT;
-            }
-            swap = swapGate(1, control);
-        } else if (control == 1) {
-            swap = swapGate(0, data);
-        } else {
-            swap = swapGate(0, data).mul(swapGate(1, control));
-        }
-        return swap.mul(Matrix.CNOT).mul(swap);
-    }
-
-    /**
-     * Returns the matrix from cell generator
-     *
-     * @param numRows the number of rows
-     * @param numCols the number of cols
-     * @param f       the cell generator by index
-     */
-    public static Matrix create(int numRows, int numCols, Function<int[], Complex> f) {
-        Complex[] cells = new Complex[numRows * numCols];
-        indexStream(numRows, numCols).forEach(indices -> {
-            Complex cell = f.apply(indices);
-            cells[unsafeIndex(numCols, indices)] = cell;
-        });
-        return new Matrix(numRows, numCols, cells);
+    static int[] computeStatePermutation(int... bitPermutation) {
+        return IntStream.range(0, 1 << bitPermutation.length)
+                .map(s -> {
+                    int s1 = 0;
+                    int mask = 1;
+                    for (int i = 0; i < bitPermutation.length; i++) {
+                        int b = s & mask;
+                        if (b != 0) {
+                            int sh = bitPermutation[i] - i;
+                            if (sh < 0) {
+                                b >>>= -sh;
+                            } else if (sh > 0) {
+                                b <<= sh;
+                            }
+                            s1 |= b;
+                        }
+                        mask <<= 1;
+                    }
+                    return s1;
+                })
+                .toArray();
     }
 
     /**
@@ -161,7 +95,7 @@ public class Matrix {
      * @param numCols the number of cols
      * @param cells   cell values
      */
-    public static Matrix create(int numRows, int numCols, Complex... cells) {
+    public static Matrix1 create(int numRows, int numCols, Complex... cells) {
         requireNonNull(cells);
         int size = numRows * numCols;
         if (cells.length != size) {
@@ -169,7 +103,7 @@ public class Matrix {
                     "expected %d cells (%d)",
                     size, cells.length));
         }
-        return new Matrix(numRows, numCols, cells);
+        return new Matrix1(numRows, numCols, cells);
     }
 
     /**
@@ -179,24 +113,31 @@ public class Matrix {
      * @param numCols the number of cols
      * @param values  cell values
      */
-    public static Matrix create(int numRows, int numCols, float... values) {
+    public static Matrix1 create(int numRows, int numCols, float... values) {
         return create(numRows, numCols, VectorUtils.create(values));
     }
 
     /**
-     * Returns the H operator (Hadamard)
+     * Returns the matrix from cell generator
+     *
+     * @param numRows the number of rows
+     * @param numCols the number of cols
+     * @param f       the cell generator by index
      */
-    public static Matrix h() {
-        return H;
+    public static Matrix1 create(int numRows, int numCols, Function<int[], Complex> f) {
+        Complex[] cells = new Complex[numRows * numCols];
+        indexStream(numRows, numCols).forEach(indices -> {
+            Complex cell = f.apply(indices);
+            cells[unsafeIndex(numCols, indices)] = cell;
+        });
+        return new Matrix1(numRows, numCols, cells);
     }
 
     /**
-     * Returns the matrix of H gate applied to the i-th bit
-     *
-     * @param index the bit index
+     * Returns the |i> ket
      */
-    public static Matrix hGate(int index) {
-        return index > 0 ? H.cross(identity(1 << index)) : H;
+    public static Matrix1 i() {
+        return I_KET;
     }
 
     /**
@@ -204,16 +145,9 @@ public class Matrix {
      *
      * @param size the size of matrix
      */
-    public static Matrix identity(int size) {
+    public static Matrix1 identity(int size) {
         return create(size, size, indices ->
                 indices[0] == indices[1] ? Complex.one() : Complex.zero());
-    }
-
-    /**
-     * Returns the identity matrix
-     */
-    public static Matrix identity() {
-        return IDENTITY;
     }
 
     /**
@@ -226,6 +160,68 @@ public class Matrix {
                         IntStream.range(0, numCols)
                                 .mapToObj(j -> new int[]{i, j})
                 );
+    }
+
+    /**
+     * Returns the inverse permutation
+     *
+     * @param s the permutation
+     */
+    static int[] inversePermutation(int[] s) {
+        int[] reverse = new int[s.length];
+        for (int i = 0; i < s.length; i++) {
+            reverse[s[i]] = i;
+        }
+        return reverse;
+    }
+
+    /**
+     * Returns the ket
+     *
+     * @param values the state values
+     */
+    public static Matrix1 ket(Complex... values) {
+        return new Matrix1(values.length, 1, values);
+    }
+
+    /**
+     * Returns the ket
+     *
+     * @param values the state values
+     */
+    public static Matrix1 ket(float... values) {
+        Complex[] cells = new Complex[values.length];
+        for (int i = 0; i < cells.length; i++) {
+            cells[i] = Complex.create(values[i]);
+        }
+        return ket(cells);
+    }
+
+    /**
+     * Returns the ket base of the given state
+     *
+     * @param state the state
+     */
+    public static Matrix1 ketBase(int state) {
+        int n = 1 << numBitsByState(state);
+        Complex[] cells = new Complex[n];
+        Arrays.fill(cells, Complex.zero());
+        cells[state] = Complex.one();
+        return new Matrix1(n, 1, cells);
+    }
+
+    /**
+     * Returns |->
+     */
+    public static Matrix1 minus() {
+        return MINUS_KET;
+    }
+
+    /**
+     * Return |-i>
+     */
+    public static Matrix1 minus_i() {
+        return MINUS_I_KET;
     }
 
     /**
@@ -262,7 +258,7 @@ public class Matrix {
      *
      * @param permutation the target mapping
      */
-    public static Matrix permute(int... permutation) {
+    public static Matrix1 permute(int... permutation) {
         int n = permutation.length;
         return create(n, permutation.length, indices -> {
             int i = indices[0];
@@ -274,91 +270,10 @@ public class Matrix {
     }
 
     /**
-     * Returns the s matrix
+     * Returns |+>
      */
-    public static Matrix s() {
-        return S;
-    }
-
-    /**
-     * Returns the swap matrix
-     */
-    public static Matrix swap() {
-        return SWAP;
-    }
-
-    /**
-     * Returns the state permutation given the input bit permutation
-     * <pre>
-     *     out[p[i]]=in[i]
-     * </pre>
-     *
-     * @param bitPermutation the bit permutations in[i] = the bit index of the resulting bit for the i-th input bit
-     */
-    static int[] computeStatePermutation(int... bitPermutation) {
-        return IntStream.range(0, 1 << bitPermutation.length)
-                .map(s -> {
-                    int s1 = 0;
-                    int mask = 1;
-                    for (int i = 0; i < bitPermutation.length; i++) {
-                        int b = s & mask;
-                        if (b != 0) {
-                            int sh = bitPermutation[i] - i;
-                            if (sh < 0) {
-                                b >>>= -sh;
-                            } else if (sh > 0) {
-                                b <<= sh;
-                            }
-                            s1 |= b;
-                        }
-                        mask <<= 1;
-                    }
-                    return s1;
-                })
-                .toArray();
-    }
-
-    /**
-     * Returns the inverse permutation
-     *
-     * @param s the permutation
-     */
-    static int[] inversePermutation(int[] s) {
-        int[] reverse = new int[s.length];
-        for (int i = 0; i < s.length; i++) {
-            reverse[s[i]] = i;
-        }
-        return reverse;
-    }
-
-    /**
-     * Returns the swap matrix for the given bits
-     *
-     * @param b0 the bit first index
-     * @param b1 the second bit index
-     */
-    public static Matrix swapGate(int b0, int b1) {
-        int nBits = max(b0, b1) + 1;
-        int nStates = 1 << nBits;
-        if (b0 == b1) {
-            return identity(nStates);
-        }
-        if (nStates == 4) {
-            return SWAP;
-        }
-        int[] bitPerm = IntStream.range(0, nBits).toArray();
-        bitPerm[b0] = b1;
-        bitPerm[b1] = b0;
-        int[] statePerm = computeStatePermutation(bitPerm);
-        statePerm = inversePermutation(statePerm);
-        return permute(statePerm);
-    }
-
-    /**
-     * Returns the T operator
-     */
-    public static Matrix t() {
-        return T;
+    public static Matrix1 plus() {
+        return PLUS_KET;
     }
 
     /**
@@ -369,81 +284,6 @@ public class Matrix {
      */
     static int unsafeIndex(int stride, int... indices) {
         return indices[0] * stride + indices[1];
-    }
-
-    /**
-     * Returns the X operator (Not)
-     */
-    public static Matrix x() {
-        return X;
-    }
-
-    /**
-     * Returns the matrix of identity port for i-th bit
-     *
-     * @param index the bit index
-     */
-    public static Matrix iGate(int index) {
-        return identity(2 << index);
-    }
-
-    /**
-     * Returns the matrix of S gate applied to the i-th bit
-     *
-     * @param index the bit index
-     */
-    public static Matrix sGate(int index) {
-        return index > 0 ? S.cross(identity(1 << index)) : S;
-    }
-
-    /**
-     * Returns the matrix of T gate applied to the i-th bit
-     *
-     * @param index the bit index
-     */
-    public static Matrix tGate(int index) {
-        return index > 0 ? T.cross(identity(1 << index)) : T;
-    }
-
-    /**
-     * Returns the matrix of X gate applied to the i-th bit
-     *
-     * @param index the bit index
-     */
-    public static Matrix xGate(int index) {
-        return index > 0 ? X.cross(identity(1 << index)) : X;
-    }
-
-    /**
-     * Returns the matrix of Y gate applied to the i-th bit
-     *
-     * @param index the bit index
-     */
-    public static Matrix yGate(int index) {
-        return index > 0 ? Y.cross(identity(1 << index)) : Y;
-    }
-
-    /**
-     * Returns the Z operator
-     */
-    public static Matrix z() {
-        return Z;
-    }
-
-    /**
-     * Returns the Y operator
-     */
-    public static Matrix y() {
-        return Y;
-    }
-
-    /**
-     * Returns the matrix of Z gate applied to the i-th bit
-     *
-     * @param index the bit index
-     */
-    public static Matrix zGate(int index) {
-        return index > 0 ? Z.cross(identity(1 << index)) : Z;
     }
 
     private final int numRows;
@@ -457,7 +297,7 @@ public class Matrix {
      * @param numCols the number of columns
      * @param cells   the cells values
      */
-    protected Matrix(int numRows, int numCols, Complex... cells) {
+    protected Matrix1(int numRows, int numCols, Complex... cells) {
         this.numRows = numRows;
         this.numCols = numCols;
         this.cells = cells;
@@ -468,13 +308,13 @@ public class Matrix {
      *
      * @param other the other matrix
      */
-    public Matrix add(Matrix other) {
+    public Matrix1 add(Matrix1 other) {
         int n = max(numRows, other.numRows);
         int m = max(numCols, other.numCols);
-        Matrix left = extends0(n, m);
-        Matrix right = other.extends0(n, m);
+        Matrix1 left = extends0(n, m);
+        Matrix1 right = other.extends0(n, m);
         Complex[] cells = VectorUtils.add(left.cells, right.cells);
-        return new Matrix(n, m, cells);
+        return new Matrix1(n, m, cells);
     }
 
     /**
@@ -496,8 +336,8 @@ public class Matrix {
     /**
      * Returns the conjugated matrix
      */
-    public Matrix conj() {
-        return new Matrix(numRows, numCols, Arrays.stream(cells).map(Complex::conj).toArray(Complex[]::new));
+    public Matrix1 conj() {
+        return new Matrix1(numRows, numCols, Arrays.stream(cells).map(Complex::conj).toArray(Complex[]::new));
     }
 
     /**
@@ -505,7 +345,7 @@ public class Matrix {
      *
      * @param other the other matrices
      */
-    public Matrix cross(Matrix other) {
+    public Matrix1 cross(Matrix1 other) {
         int n = numRows;
         int m = other.numRows;
         if (n != numCols || m != other.numCols) {
@@ -531,7 +371,34 @@ public class Matrix {
                     int idx = unsafeIndex(nm, r, q);
                     cells[idx] = cell;
                 });
-        return new Matrix(nm, nm, cells);
+        return new Matrix1(nm, nm, cells);
+    }
+
+    /**
+     * Returns the conjugate transpose matrix
+     */
+    public Matrix1 dagger() {
+        return conj().transpose();
+    }
+
+    /**
+     * Returns the division by divisor
+     *
+     * @param value the divisor
+     */
+    public Matrix1 div(float value) {
+        Complex[] cells = VectorUtils.divScalar(this.cells, value);
+        return new Matrix1(numRows, numCols, cells);
+    }
+
+    /**
+     * Returns the division by divisor
+     *
+     * @param value the divisor
+     */
+    public Matrix1 div(Complex value) {
+        Complex[] cells = VectorUtils.divScalar(this.cells, value);
+        return new Matrix1(numRows, numCols, cells);
     }
 
     /**
@@ -540,7 +407,7 @@ public class Matrix {
      * @param numRows the number of resulting rows
      * @param numCols the number of resulting columns
      */
-    public Matrix extends0(int numRows, int numCols) {
+    public Matrix1 extends0(int numRows, int numCols) {
         return extendsCols(numCols)
                 .extendsRows(numRows);
     }
@@ -550,7 +417,7 @@ public class Matrix {
      *
      * @param numCols the number resulting of rows
      */
-    public Matrix extendsCols(int numCols) {
+    public Matrix1 extendsCols(int numCols) {
         if (this.numCols >= numCols) {
             return this;
         }
@@ -560,7 +427,7 @@ public class Matrix {
             System.arraycopy(this.cells, i * this.numCols, cells, i * numCols, this.numCols);
             Arrays.fill(cells, i * numCols + this.numCols, i * numCols + numCols, Complex.zero());
         }
-        return new Matrix(numRows, numCols, cells);
+        return new Matrix1(numRows, numCols, cells);
     }
 
     /**
@@ -568,7 +435,7 @@ public class Matrix {
      *
      * @param n the size of the resulting matrix
      */
-    public Matrix extendsCrossSquare(int n) {
+    public Matrix1 extendsCrossSquare(int n) {
         if (numCols != numRows) {
             throw new IllegalArgumentException(format("Expected square matrix (%dx%d)", numRows, numCols));
         }
@@ -587,14 +454,14 @@ public class Matrix {
      *
      * @param numRows the number resulting of rows
      */
-    public Matrix extendsRows(int numRows) {
+    public Matrix1 extendsRows(int numRows) {
         if (this.numRows >= numRows) {
             return this;
         }
         Complex[] cells = new Complex[numRows * numCols];
         System.arraycopy(this.cells, 0, cells, 0, this.cells.length);
         Arrays.fill(cells, this.cells.length, cells.length, Complex.zero());
-        return new Matrix(numRows, numCols, cells);
+        return new Matrix1(numRows, numCols, cells);
     }
 
     /**
@@ -607,7 +474,7 @@ public class Matrix {
     /**
      * Returns true if the arrays has the same size
      */
-    boolean hasShape(Matrix other) {
+    boolean hasShape(Matrix1 other) {
         return hasShape(other.numRows, other.numCols);
     }
 
@@ -634,8 +501,8 @@ public class Matrix {
      *
      * @param scale the scale
      */
-    public Matrix mul(float scale) {
-        return new Matrix(numRows, numCols, Arrays.stream(cells).map(c -> c.mul(scale)).toArray(Complex[]::new));
+    public Matrix1 mul(float scale) {
+        return new Matrix1(numRows, numCols, Arrays.stream(cells).map(c -> c.mul(scale)).toArray(Complex[]::new));
     }
 
     /**
@@ -643,9 +510,9 @@ public class Matrix {
      *
      * @param right the right matrix
      */
-    public Matrix mul(Matrix right) {
+    public Matrix1 mul(Matrix1 right) {
         // Check for extensions
-        Matrix left = this;
+        Matrix1 left = this;
         if (left.numCols > right.numRows) {
             right = right.extendsCrossSquare(left.numCols);
         } else if (left.numCols < right.numRows) {
@@ -655,32 +522,12 @@ public class Matrix {
     }
 
     /**
-     * Returns the matrix multiplication (this x right)
-     *
-     * @param right the right matrix
-     */
-    private Matrix safeMul(Matrix right) {
-        // Validates shapes
-        if (numCols != right.numRows) {
-            // Check for extensions
-            throw new IllegalArgumentException(format("Invalid product operands shapes %dx%d by %dx%d",
-                    numRows, numCols,
-                    right.numRows, right.numCols));
-        }
-        long order = (long) numRows * numCols * numCols * right.numCols;
-        int cores = Runtime.getRuntime().availableProcessors();
-        return (order / cores) > ORDER_BY_CORE_THRESHOLD
-                ? mulConc(right)
-                : mulSeq(right);
-    }
-
-    /**
      * Returns the scaled matrix
      *
      * @param scale the scale
      */
-    public Matrix mul(Complex scale) {
-        return new Matrix(numRows, numCols, Arrays.stream(cells).map(c -> c.mul(scale)).toArray(Complex[]::new));
+    public Matrix1 mul(Complex scale) {
+        return new Matrix1(numRows, numCols, Arrays.stream(cells).map(c -> c.mul(scale)).toArray(Complex[]::new));
     }
 
     /**
@@ -688,7 +535,7 @@ public class Matrix {
      *
      * @param other the other matrix
      */
-    Matrix mulConc(Matrix other) {
+    Matrix1 mulConc(Matrix1 other) {
         int cores = Runtime.getRuntime().availableProcessors();
         int m = other.numCols;
         int numCells = numRows * m;
@@ -726,7 +573,7 @@ public class Matrix {
         }
         // Execute
         tasks.run();
-        return new Matrix(numRows, m, results);
+        return new Matrix1(numRows, m, results);
     }
 
     /**
@@ -734,18 +581,18 @@ public class Matrix {
      *
      * @param other the other matrix
      */
-    Matrix mulSeq(Matrix other) {
+    Matrix1 mulSeq(Matrix1 other) {
         int n = numRows * other.numCols;
         Complex[] cells = new Complex[n];
         partMul(cells, 0, numRows, other.numCols, this.cells, 0, numCols, other.cells, 0, other.numCols);
-        return new Matrix(numRows, other.numCols, cells);
+        return new Matrix1(numRows, other.numCols, cells);
     }
 
     /**
      * Returns the negated matrix (-this)
      */
-    public Matrix neg() {
-        return new Matrix(numRows, numCols, Arrays.stream(cells).map(Complex::neg).toArray(Complex[]::new));
+    public Matrix1 neg() {
+        return new Matrix1(numRows, numCols, Arrays.stream(cells).map(Complex::neg).toArray(Complex[]::new));
     }
 
     /**
@@ -763,17 +610,37 @@ public class Matrix {
     }
 
     /**
+     * Returns the matrix multiplication (this x right)
+     *
+     * @param right the right matrix
+     */
+    private Matrix1 safeMul(Matrix1 right) {
+        // Validates shapes
+        if (numCols != right.numRows) {
+            // Check for extensions
+            throw new IllegalArgumentException(format("Invalid product operands shapes %dx%d by %dx%d",
+                    numRows, numCols,
+                    right.numRows, right.numCols));
+        }
+        long order = (long) numRows * numCols * numCols * right.numCols;
+        int cores = Runtime.getRuntime().availableProcessors();
+        return (order / cores) > ORDER_BY_CORE_THRESHOLD
+                ? mulConc(right)
+                : mulSeq(right);
+    }
+
+    /**
      * Returns the difference matrix (this - other)
      *
      * @param other the other matrix
      */
-    public Matrix sub(Matrix other) {
+    public Matrix1 sub(Matrix1 other) {
         int n = max(numRows, other.numRows);
         int m = max(numCols, other.numCols);
-        Matrix left = extends0(n, m);
-        Matrix right = other.extends0(n, m);
+        Matrix1 left = extends0(n, m);
+        Matrix1 right = other.extends0(n, m);
         Complex[] cells = VectorUtils.sub(left.cells, right.cells);
-        return new Matrix(n, m, cells);
+        return new Matrix1(n, m, cells);
     }
 
     @Override
@@ -806,7 +673,7 @@ public class Matrix {
     /**
      * Returns the transpose matrix
      */
-    public Matrix transpose() {
+    public Matrix1 transpose() {
         return create(numCols, numRows, indices ->
                 at(indices[1], indices[0]));
     }

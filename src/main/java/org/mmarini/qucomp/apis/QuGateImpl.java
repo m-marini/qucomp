@@ -38,7 +38,7 @@ public record QuGateImpl(String type, int[] indices, Matrix transform) implement
         }
         // Swap the gate input to align to base transform
         int[] inBits = QuGate.computeMap(numBits, indices);
-        int[] statesPermutation = QuGate.computeStatePermutation(inBits);
+        int[] statesPermutation = Matrix.computeStatePermutation(inBits);
         int[] reverseState = QuGate.inversePermutation(statesPermutation);
         Matrix inSwapMatrix = Matrix.permute(statesPermutation);
         Matrix outSwapMatrix = Matrix.permute(reverseState);

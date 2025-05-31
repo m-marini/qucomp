@@ -218,42 +218,6 @@ class QuGateTest {
         assertArrayEquals(new int[]{e0, e1, e2, e3, e4}, oitMap);
     }
 
-    @ParameterizedTest(name = "[{index}] p=[{0} {1} {2}]")
-    @CsvSource({
-            // b[0]=a[0], b[1]=a[1], b[2]=a[2]
-            // in  = 000 001 010 011 100 101 110 111
-            // out = 000 001 010 011 100 101 110 111
-            "0,1,2, 0,1,2,3,4,5,6,7",
-
-            // b[1]=a[0], b[0]=a[1], b[2]=a[2]
-            // in  = 000 001 010 011 100 101 110 111
-            // out = 000 010 001 011 100 110 101 111
-            // iini = 0 1 2 3 4 5 6 7
-            // outi = 0 2 1 3 4 6 5 7
-            // outstate[s[i]]= instate[i]
-            // s=(0, 2, 1, 3, 4 5 6 7)
-            "1,0,2, 0,2,1,3,4,6,5,7",
-
-            // b[2]=a[0], b[1]=a[1], b[0]=a[2]
-            //  in 000 001 010 011 100 101 110 111
-            // out 000 100 010 110 001 101 011 111
-            "2,1,0, 0,4,2,6,1,5,3,7",
-
-            // b[1]=a[0], b[2]=a[1], b[0]=a[2]
-            //  in 000 001 010 011 100 101 110 111
-            // out 000 010 100 110 001 011 101 111
-            // iini = 0 1 2 3 4 5 6 7
-            // outi = 0 2 4 6 1 3 5 7
-            // outstate[s[i]]= instate[i]
-            "1,2,0, 0,2,4,6,1,3,5,7"
-    })
-    void computeStatePermutation3(int b0, int b1, int b2, int s0, int s1, int s2, int s3, int s4, int s5, int s6, int s7) {
-        // When
-        int[] states = QuGate.computeStatePermutation(b0, b1, b2);
-        // Then
-        assertArrayEquals(new int[]{s0, s1, s2, s3, s4, s5, s6, s7}, states);
-    }
-
     @ParameterizedTest
     @CsvSource({
             "0,1,2,3, 0,1,2,3",
@@ -381,7 +345,7 @@ class QuGateTest {
     })
     void testMap3bits(int b0, int b1, int s, int exp) {
         int[] bitPerm = QuGate.computeMap(3, b0, b1);
-        int[] statePerm = QuGate.computeStatePermutation(bitPerm);
+        int[] statePerm = Matrix.computeStatePermutation(bitPerm);
         Matrix m = Matrix.permute(statePerm);
         Ket ket = Ket.base(s, 3);
         Ket res = ket.mul(m);

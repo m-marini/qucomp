@@ -32,10 +32,7 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.mmarini.qucomp.apis.Bra;
-import org.mmarini.qucomp.apis.Complex;
-import org.mmarini.qucomp.apis.Ket;
-import org.mmarini.qucomp.apis.Matrix;
+import org.mmarini.qucomp.apis.*;
 import org.mmarini.qucomp.compiler.CommandNode;
 import org.mmarini.qucomp.compiler.SyntaxRule;
 import org.mmarini.qucomp.compiler.Token;
@@ -544,6 +541,70 @@ public interface Matchers {
             @Override
             public boolean matches(Object o) {
                 if (!(o instanceof Matrix m)) return false;
+                if (m.numRows() != expected.numRows() || m.numCols() != m.numCols()) {
+                    return false;
+                }
+                for (int i = 0; i < m.numRows(); i++) {
+                    for (int j = 0; j < m.numCols(); j++) {
+                        if (!m.at(i, j).isClose(expected.at(i, j), epsilon)) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+        };
+    }
+
+    static Matcher<Matrix1> matrixCloseTo(Matrix1 expected, float epsilon) {
+        requireNonNull(expected);
+        return new BaseMatcher<>() {
+
+            @Override
+            public void describeMismatch(Object item, Description description) {
+                if (item instanceof Matrix1 m) {
+                    if (m.numRows() != expected.numRows()
+                            || m.numCols() != expected.numCols()) {
+                        description.appendText(" matrix size ")
+                                .appendText(m.numRows() + "x" + m.numCols())
+                                .appendText(" differ from ")
+                                .appendText(expected.numRows() + "x" + expected.numCols());
+                    } else {
+                        int i;
+                        int j;
+                        for (i = 0; i < m.numRows(); i++) {
+                            for (j = 0; j < m.numCols(); j++) {
+                                Complex mCell = m.at(i, j);
+                                Complex expCell = expected.at(i, j);
+                                if (!mCell.isClose(expCell, epsilon)) {
+                                    description.appendText(" matrix\n" + m)
+                                            .appendText(" differs at [" + i + "," + j + "] ")
+                                            .appendValue(mCell)
+                                            .appendText(" from ")
+                                            .appendValue(expCell)
+                                            .appendText(" more then ")
+                                            .appendValue(epsilon);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    super.describeMismatch(item, description);
+                }
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("Matrix close to ")
+                        .appendText("\n" + expected)
+                        .appendText(" within +- ")
+                        .appendValue(epsilon);
+            }
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof Matrix1 m)) return false;
                 if (m.numRows() != expected.numRows() || m.numCols() != m.numCols()) {
                     return false;
                 }

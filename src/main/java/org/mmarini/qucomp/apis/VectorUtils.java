@@ -149,6 +149,30 @@ public interface VectorUtils {
     }
 
     /**
+     * Returns the ket scaled by real factor
+     *
+     * @param vector the vector
+     * @param alpha  scale
+     */
+    static Complex[] divScalar(Complex[] vector, float alpha) {
+        return Arrays.stream(vector)
+                .map(v -> v.div(alpha))
+                .toArray(Complex[]::new);
+    }
+
+    /**
+     * Returns the ket scaled by real factor
+     *
+     * @param vector the vector
+     * @param alpha  scale
+     */
+    static Complex[] divScalar(Complex[] vector, Complex alpha) {
+        return Arrays.stream(vector)
+                .map(v -> v.div(alpha))
+                .toArray(Complex[]::new);
+    }
+
+    /**
      * Returns the negated vector
      *
      * @param vector the vector

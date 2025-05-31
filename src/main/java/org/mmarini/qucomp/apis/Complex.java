@@ -88,6 +88,15 @@ public record Complex(float real, float im) {
     }
 
     /**
+     * Returns the ratio of complex numbers (this / other)
+     *
+     * @param other the other complex
+     */
+    public Complex div(float other) {
+        return new Complex(real / other, im / other);
+    }
+
+    /**
      * Returns the inverse comples
      */
     public Complex inv() {

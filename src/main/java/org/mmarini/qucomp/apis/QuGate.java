@@ -1,7 +1,6 @@
 package org.mmarini.qucomp.apis;
 
 import java.util.Arrays;
-import java.util.stream.IntStream;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -68,37 +67,6 @@ public interface QuGate {
 
         }
         return result;
-    }
-
-    /**
-     * Returns the state permutation given the input bit permutation
-     * <pre>
-     *     out[p[i]]=in[i]
-     * </pre>
-     *
-     * @param bitPermutation the bit permutations in[i] = the bit index of the resulting bit for the i-th input bit
-     */
-    static int[] computeStatePermutation(int... bitPermutation) {
-        return IntStream.range(0, 1 << bitPermutation.length)
-                .map(s -> {
-                    int s1 = 0;
-                    int mask = 1;
-                    for (int i = 0; i < bitPermutation.length; i++) {
-                        int b = s & mask;
-                        if (b != 0) {
-                            int sh = bitPermutation[i] - i;
-                            if (sh < 0) {
-                                b >>>= -sh;
-                            } else if (sh > 0) {
-                                b <<= sh;
-                            }
-                            s1 |= b;
-                        }
-                        mask <<= 1;
-                    }
-                    return s1;
-                })
-                .toArray();
     }
 
     /**
