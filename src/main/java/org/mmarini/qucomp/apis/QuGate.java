@@ -36,7 +36,7 @@ public interface QuGate {
      * Returns the bit permutation from input to internal gate input
      *
      * @param numBits number of qubits
-     * @param portMap the bit mapping from internal gate input to input
+     * @param portMap the bits mapping from internal gate input to input
      */
     static int[] computeMap(int numBits, int... portMap) {
         int[] result = new int[numBits];
@@ -71,12 +71,12 @@ public interface QuGate {
     }
 
     /**
-     * Computes the state permutation
+     * Returns the state permutation given the input bit permutation
      * <pre>
      *     out[p[i]]=in[i]
      * </pre>
      *
-     * @param bitPermutation the bit permutation
+     * @param bitPermutation the bit permutations in[i] = the bit index of the resulting bit for the i-th input bit
      */
     static int[] computeStatePermutation(int... bitPermutation) {
         return IntStream.range(0, 1 << bitPermutation.length)

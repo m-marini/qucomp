@@ -252,6 +252,73 @@ public class Matrix {
     }
 
     /**
+     * Returns the state permutation given the input bit permutation
+     * <pre>
+     *     out[p[i]]=in[i]
+     * </pre>
+     *
+     * @param bitPermutation the bit permutations in[i] = the bit index of the resulting bit for the i-th input bit
+     */
+    private static int[] computeStatePermutation(int... bitPermutation) {
+        return IntStream.range(0, 1 << bitPermutation.length)
+                .map(s -> {
+                    int s1 = 0;
+                    int mask = 1;
+                    for (int i = 0; i < bitPermutation.length; i++) {
+                        int b = s & mask;
+                        if (b != 0) {
+                            int sh = bitPermutation[i] - i;
+                            if (sh < 0) {
+                                b >>>= -sh;
+                            } else if (sh > 0) {
+                                b <<= sh;
+                            }
+                            s1 |= b;
+                        }
+                        mask <<= 1;
+                    }
+                    return s1;
+                })
+                .toArray();
+    }
+
+    /**
+     * Returns the inverse permutation
+     *
+     * @param s the permutation
+     */
+    static int[] inversePermutation(int[] s) {
+        int[] reverse = new int[s.length];
+        for (int i = 0; i < s.length; i++) {
+            reverse[s[i]] = i;
+        }
+        return reverse;
+    }
+
+    /**
+     * Returns the swap matrix for the given bits
+     *
+     * @param b0 the bit first index
+     * @param b1 the second bit index
+     */
+    public static Matrix swapGate(int b0, int b1) {
+        int nBits = max(b0, b1) + 1;
+        int nStates = 1 << nBits;
+        if (b0 == b1) {
+            return identity(nStates);
+        }
+        if (nStates == 4) {
+            return SWAP;
+        }
+        int[] bitPerm = IntStream.range(0, nBits).toArray();
+        bitPerm[b0] = b1;
+        bitPerm[b1] = b0;
+        int[] statePerm = computeStatePermutation(bitPerm);
+        statePerm = inversePermutation(statePerm);
+        return permute(statePerm);
+    }
+
+    /**
      * Returns the T operator
      */
     public static Matrix t() {

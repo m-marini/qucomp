@@ -50,6 +50,26 @@ class MatrixTest {
             0, 0, 0, 1,
             1, 0, 0, 0,
             0, 1, 0, 0);
+    public static final Matrix SWAP02 = Matrix.create(8, 8,
+            1, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 1, 0, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 0,
+            0, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 1, 0, 0,
+            0, 0, 0, 1, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1
+    );
+    public static final Matrix SWAP12 = Matrix.create(8, 8,
+            1, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 1, 0, 0, 0,
+            0, 0, 0, 0, 0, 1, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 0,
+            0, 0, 0, 0, 0, 0, 0, 1
+    );
 
     public static Stream<Arguments> testAddArgs() {
         Matrix x22 = Matrix.create(2, 2,
@@ -480,6 +500,17 @@ class MatrixTest {
         );
     }
 
+    public static Stream<Arguments> testSwapGateArgs() {
+        return Stream.of(
+                Arguments.of(0, 0, Matrix.identity()),
+                Arguments.of(1, 1, Matrix.identity(4)),
+                Arguments.of(0, 1, Matrix.swap()),
+                Arguments.of(1, 0, Matrix.swap()),
+                Arguments.of(0, 2, SWAP02),
+                Arguments.of(1, 2, SWAP12)
+        );
+    }
+
     public static Stream<Arguments> testTGateArgs() {
         return Stream.of(
                 Arguments.of(0, Matrix.t()),
@@ -838,7 +869,7 @@ class MatrixTest {
             "2,1",
             "3,3",
     })
-    void swap(int instate, int expState) {
+    void testSwap(int instate, int expState) {
         // Given
         Matrix swap = Matrix.swap();
         // When
@@ -849,6 +880,13 @@ class MatrixTest {
         assertThat(result.values()[1], complexClose(exp.values()[1], EPSILON));
         assertThat(result.values()[2], complexClose(exp.values()[2], EPSILON));
         assertThat(result.values()[3], complexClose(exp.values()[3], EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testSwapGateArgs")
+    void testSwapGate(int b0, int b1, Matrix exp) {
+        Matrix result = Matrix.swapGate(b0, b1);
+        assertThat(result, matrixCloseTo(exp, EPSILON));
     }
 
     @Test
