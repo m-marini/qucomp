@@ -277,6 +277,22 @@ public class Matrix1 {
     }
 
     /**
+     * Returns the matrix that transforms the states by swapping two bits
+     *
+     * @param b0 the first bit index
+     * @param b1 the second bit index
+     */
+    public static Matrix1 swap(int b0, int b1) {
+        int nBits = max(max(b0, b1), 1) + 1;
+        int[] bitPerm = IntStream.range(0, nBits).toArray();
+        bitPerm[b0] = b1;
+        bitPerm[b1] = b0;
+        int[] statePerm = computeStatePermutation(bitPerm);
+        statePerm = inversePermutation(statePerm);
+        return permute(statePerm);
+    }
+
+    /**
      * Returns the index of element
      *
      * @param stride  the stride
@@ -436,6 +452,14 @@ public class Matrix1 {
      * @param n the size of the resulting matrix
      */
     public Matrix1 extendsCrossSquare(int n) {
+        if (numCols == 1) {
+            // Extend ket
+            return extendsRows(n);
+        }
+        if (numRows == 1) {
+            // Extend Bra
+            return extendsCols(n);
+        }
         if (numCols != numRows) {
             throw new IllegalArgumentException(format("Expected square matrix (%dx%d)", numRows, numCols));
         }
@@ -643,8 +667,62 @@ public class Matrix1 {
         return new Matrix1(n, m, cells);
     }
 
+    /**
+     * Returns the bra string
+     */
+    private String toBraString() {
+        StringBuilder builder = new StringBuilder();
+        boolean isZero = true;
+        for (int i = 0; i < cells.length; i++) {
+            if (cells[i].module() != 0) {
+                if (!isZero) {
+                    builder.append(" + ");
+                }
+                isZero = false;
+                builder.append("(");
+                builder.append(cells[i]);
+                builder.append(") <");
+                builder.append(i);
+                builder.append("|");
+            }
+        }
+        return isZero ? "(0.0) <" + (cells.length - 1) + "|" : builder.toString();
+    }
+
+    /**
+     * Returns the ket string
+     */
+    private String toKetString() {
+        StringBuilder builder = new StringBuilder();
+        boolean isZero = true;
+        for (int i = 0; i < cells.length; i++) {
+            if (cells[i].module() != 0) {
+                if (!isZero) {
+                    builder.append(" + ");
+                }
+                isZero = false;
+                builder.append("(");
+                builder.append(cells[i]);
+                builder.append(") |");
+                builder.append(i);
+                builder.append(">");
+            }
+        }
+        return isZero ? "(0.0) |" + (cells.length - 1) + ">" : builder.toString();
+    }
+
     @Override
     public String toString() {
+        if (numCols == 1) {
+            if (numRows == 1) {
+                // Scalar value
+                return String.valueOf(cells[0]);
+            } else {
+                return toKetString();
+            }
+        } else if (numRows == 1) {
+            return toBraString();
+        }
         StringBuilder builder = new StringBuilder();
         String[] cols = Arrays.stream(cells).map(Complex::toString).toArray(String[]::new);
         int[] colSize = IntStream.range(0, numCols)

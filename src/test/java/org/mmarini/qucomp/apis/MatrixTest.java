@@ -563,7 +563,7 @@ class MatrixTest {
         );
     }
 
-    public static Stream<Arguments> testSwapGateArgs() {
+    public static Stream<Arguments> testSwapArgs() {
         return Stream.of(
                 Arguments.of(0, 0, Matrix.identity()),
                 Arguments.of(1, 1, Matrix.identity(4)),
@@ -1217,7 +1217,7 @@ class MatrixTest {
     }
 
     @ParameterizedTest
-    @MethodSource("testSwapGateArgs")
+    @MethodSource("testSwapArgs")
     void testSwapGate(int b0, int b1, Matrix exp) {
         Matrix result = Matrix.swapGate(b0, b1);
         assertThat(result, matrixCloseTo(exp, EPSILON));

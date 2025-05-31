@@ -3,6 +3,7 @@ package org.mmarini.qucomp.apis;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,26 @@ class Matrix1Test {
             0, 0, 1, 0,
             0, 0, 0, -1
     );
+    public static final Matrix1 SWAP02 = Matrix1.create(8, 8,
+            1, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 1, 0, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 0,
+            0, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 1, 0, 0,
+            0, 0, 0, 1, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1
+    );
+    public static final Matrix1 SWAP12 = Matrix1.create(8, 8,
+            1, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 1, 0, 0, 0,
+            0, 0, 0, 0, 0, 1, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 0,
+            0, 0, 0, 0, 0, 0, 0, 1
+    );
     public static final Matrix1 MZ1 = Matrix1.create(4, 4,
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -49,6 +70,12 @@ class Matrix1Test {
     );
     private static final Logger logger = LoggerFactory.getLogger(MatrixTest.class);
     private static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
+    private static final Matrix1 SWAP01 = Matrix1.create(4, 4,
+            1, 0, 0, 0,
+            0, 0, 1, 0,
+            0, 1, 0, 0,
+            0, 0, 0, 1
+    );
 
     public static Stream<Arguments> testAddArgs() {
         Matrix1 x22 = Matrix1.create(2, 2,
@@ -245,10 +272,20 @@ class Matrix1Test {
                 0, -1, 0, 0,
                 0, 0, 1, 0,
                 0, 0, 0, -1);
+        Matrix1 ket2 = Matrix1.create(2, 1,
+                1, 2);
+        Matrix1 bra2 = Matrix1.create(1, 2,
+                1, 2);
+        Matrix1 ket4 = Matrix1.create(4, 1,
+                1, 2, 0, 0);
+        Matrix1 bra4 = Matrix1.create(1, 4,
+                1, 2, 0, 0);
         return Stream.of(
                 Arguments.of(m2, 4, mx0),
                 Arguments.of(m2.mul(Complex.i()), 4, mx0.mul(Complex.i())),
-                Arguments.of(MZ, 4, mz0)
+                Arguments.of(MZ, 4, mz0),
+                Arguments.of(ket2, 4, ket4),
+                Arguments.of(bra2, 4, bra4)
         );
     }
 
@@ -287,10 +324,27 @@ class Matrix1Test {
                 3, 4, 5,
                 9, 14, 19,
                 15, 24, 33);
-
+        Matrix1 m44 = Matrix1.create(4, 4,
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1);
+        Matrix1 m22 = Matrix1.create(2, 2,
+                0, 1,
+                1, 0);
+        Matrix1 ket02 = Matrix1.create(2, 1, 1, 0);
+        Matrix1 ket04 = Matrix1.create(4, 1, 1, 0, 0, 0);
+        Matrix1 ket12 = Matrix1.create(2, 1, 0, 1);
+        Matrix1 bra02 = Matrix1.create(1, 2, 1, 0);
+        Matrix1 bra12 = Matrix1.create(1, 2, 0, 1);
+        Matrix1 bra04 = Matrix1.create(1, 4, 1, 0, 0, 0);
         return Stream.of(
                 Arguments.of(m1, m2, m12),
-                Arguments.of(m2, m1, m21)
+                Arguments.of(m2, m1, m21),
+                Arguments.of(m22, ket02, ket12),
+                Arguments.of(bra02, m22, bra12),
+                Arguments.of(m44, ket02, ket04),
+                Arguments.of(bra02, m44, bra04)
         );
     }
 
@@ -441,6 +495,55 @@ class Matrix1Test {
         );
     }
 
+    public static Stream<Arguments> testSwapArgs() {
+        return Stream.of(
+                Arguments.of(0, 0, Matrix1.identity(4)),
+                Arguments.of(1, 1, Matrix1.identity(4)),
+                Arguments.of(0, 1, SWAP01),
+                Arguments.of(1, 0, SWAP01),
+                Arguments.of(0, 2, SWAP02),
+                Arguments.of(2, 0, SWAP02),
+                Arguments.of(1, 2, SWAP12),
+                Arguments.of(2, 1, SWAP12)
+        );
+    }
+
+    public static Stream<Arguments> testSwapKetArgs() {
+        return Stream.of(
+                Arguments.of(0, 0, Matrix1.ketBase(0), Matrix1.ketBase(0).extendsRows(4)),
+                Arguments.of(0, 0, Matrix1.ketBase(1), Matrix1.ketBase(1).extendsRows(4)),
+                Arguments.of(0, 0, Matrix1.ketBase(2), Matrix1.ketBase(2).extendsRows(4)),
+                Arguments.of(0, 0, Matrix1.ketBase(3), Matrix1.ketBase(3).extendsRows(4)),
+
+                Arguments.of(0, 1, Matrix1.ketBase(0), Matrix1.ketBase(0).extendsRows(4)),
+                Arguments.of(0, 1, Matrix1.ketBase(1), Matrix1.ketBase(2).extendsRows(4)),
+                Arguments.of(0, 1, Matrix1.ketBase(2), Matrix1.ketBase(1).extendsRows(4)),
+                Arguments.of(0, 1, Matrix1.ketBase(3), Matrix1.ketBase(3).extendsRows(4)),
+
+                Arguments.of(1, 2, Matrix1.ketBase(0), Matrix1.ketBase(0).extendsRows(8)),
+                Arguments.of(1, 2, Matrix1.ketBase(1), Matrix1.ketBase(1).extendsRows(8)),
+                Arguments.of(1, 2, Matrix1.ketBase(2), Matrix1.ketBase(4).extendsRows(8)),
+                Arguments.of(1, 2, Matrix1.ketBase(3), Matrix1.ketBase(5).extendsRows(8)),
+
+                Arguments.of(1, 2, Matrix1.ketBase(4), Matrix1.ketBase(2).extendsRows(8)),
+                Arguments.of(1, 2, Matrix1.ketBase(5), Matrix1.ketBase(3).extendsRows(8)),
+                Arguments.of(1, 2, Matrix1.ketBase(6), Matrix1.ketBase(6).extendsRows(8)),
+                Arguments.of(1, 2, Matrix1.ketBase(7), Matrix1.ketBase(7).extendsRows(8))
+        );
+    }
+
+    @Test
+    void testBraToString() {
+        Matrix1 ket = Matrix1.ket(new Complex(0, 0), new Complex(2, 0), new Complex(0, 2), new Complex(2, 2)).dagger();
+        assertEquals("(2.0) <1| + (-2.0 i) <2| + (2.0 -2.0 i) <3|", ket.toString());
+    }
+
+    @Test
+    void testBraToString0() {
+        Matrix1 ket = Matrix1.ket(0, 0, 0, 0).dagger();
+        assertEquals("(0.0) <3|", ket.toString());
+    }
+
     @ParameterizedTest
     @MethodSource("testAddArgs")
     void testAdd(Matrix1 left, Matrix1 right, Matrix1 exp) {
@@ -458,6 +561,48 @@ class Matrix1Test {
         assertThat(m.at(0, 1), complexClose(1, EPSILON));
         assertThat(m.at(1, 0), complexClose(2, EPSILON));
         assertThat(m.at(1, 1), complexClose(3, EPSILON));
+    }
+
+    @ParameterizedTest(name = "[{index}] sigma({0}, {1}, {2}])")
+    @CsvSource({
+            // b[0]=a[0], b[1]=a[1], b[2]=a[2]
+            // in  = 000 001 010 011 100 101 110 111
+            // out = 000 001 010 011 100 101 110 111
+            "0,1,2, 0,1,2,3,4,5,6,7",
+
+            // b[1]=a[0], b[0]=a[1], b[2]=a[2]
+            // in  = 000 001 010 011 100 101 110 111
+            // out = 000 010 001 011 100 110 101 111
+            // iini = 0 1 2 3 4 5 6 7
+            // outi = 0 2 1 3 4 6 5 7
+            // outstate[s[i]]= instate[i]
+            // s=(0, 2, 1, 3, 4 5 6 7)
+            "1,0,2, 0,2,1,3,4,6,5,7",
+
+            // b[2]=a[0], b[1]=a[1], b[0]=a[2]
+            //  in 000 001 010 011 100 101 110 111
+            // out 000 100 010 110 001 101 011 111
+            "2,1,0, 0,4,2,6,1,5,3,7",
+
+            // b[1]=a[0], b[2]=a[1], b[0]=a[2]
+            //  in 000 001 010 011 100 101 110 111
+            // out 000 010 100 110 001 011 101 111
+            // iini = 0 1 2 3 4 5 6 7
+            // outi = 0 2 4 6 1 3 5 7
+            // outstate[s[i]]= instate[i]
+            "1,2,0, 0,2,4,6,1,3,5,7"
+    })
+    void testComputeStatePermutation3(int b0, int b1, int b2, int s0, int s1, int s2, int s3, int s4, int s5, int s6, int s7) {
+        // When
+        int[] states = Matrix1.computeStatePermutation(b0, b1, b2);
+        // Then
+        assertArrayEquals(new int[]{s0, s1, s2, s3, s4, s5, s6, s7}, states);
+    }
+
+    @Test
+    void testKetToString() {
+        Matrix1 ket = Matrix1.ket(new Complex(0, 0), new Complex(2, 0), new Complex(0, 2), new Complex(2, 2));
+        assertEquals("(2.0) |1> + (2.0 i) |2> + (2.0 +2.0 i) |3>", ket.toString());
     }
 
     @Test
@@ -616,6 +761,59 @@ class Matrix1Test {
     }
 
     @Test
+    void testKetToString0() {
+        Matrix1 ket = Matrix1.ket(0, 0, 0, 0);
+        assertEquals("(0.0) |3>", ket.toString());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            // p=(0 1 2 3)
+            // ia=(0 1 2 3) => ib=(0 1 2 3)
+            // a=(1 0 0 0) => b=(1 0 0 0) 0->0
+            // a=(0 1 0 0) => b=(0 1 0 0) 1->1
+            // a=(0 0 1 0) => b=(0 0 1 0) 2->2
+            // a=(0 0 0 1) => b=(0 0 0 1) 3->3
+            "0,1,2,3, 0,0",
+            "0,1,2,3, 1,1",
+            "0,1,2,3, 2,2",
+            "0,1,2,3, 3,3",
+
+            // p=(0 2 1 3)
+            // ia=(0 2 1 3) => ib=(0 1 2 3)
+            // a=(1 0 0 0) => b=(1 0 0 0) b[p[0]]=b[0]=1
+            // a=(0 1 0 0) => b=(0 0 1 0) b[p[1]]=b[2]=1
+            // a=(0 0 1 0) => b=(0 1 0 0) b[p[2]]=b[1]=1
+            // a=(0 0 0 1) => b=(0 0 0 1) b[p[3]]=b[3]=1
+            "0,2,1,3, 0,0",
+            "0,2,1,3, 1,2",
+            "0,2,1,3, 2,1",
+            "0,2,1,3, 3,3",
+
+            // p=(1 2 3 0)
+            // ia=(1 2 3 0) => ib=(0 1 2 3)
+            // a=(1 0 0 0) => b=(0 1 0 0) b[p[0]]=b[1]=1
+            // a=(0 1 0 0) => b=(0 0 1 0) b[p[1]]=b[2]=1
+            // a=(0 0 1 0) => b=(0 0 0 1) b[p[2]]=b[3]=1
+            // a=(0 0 0 1) => b=(1 0 0 0) b[p[3]]=b[0]=1
+            "1,2,3,0, 0,1",
+            "1,2,3,0, 1,2",
+            "1,2,3,0, 2,3",
+            "1,2,3,0, 3,0",
+    })
+    void testPermute4(int s0, int s1, int s2, int s3, int v0, int exp0) {
+        // Given
+        Matrix1 m = Matrix1.permute(s0, s1, s2, s3);
+        Matrix1 ket = Matrix1.ketBase(v0);
+        Matrix1 exp = Matrix1.ketBase(exp0).extends0(4, 1);
+
+        // When
+        Matrix1 res = m.mul(ket);
+        // Then
+        assertThat(res, matrixCloseTo(exp, EPSILON));
+    }
+
+    @Test
     void testMinus() {
         assertThat(Matrix1.minus(), matrixCloseTo(Matrix1.create(2, 1,
                 HALF_SQRT2, -HALF_SQRT2), EPSILON));
@@ -703,6 +901,51 @@ class Matrix1Test {
                 0, -1, 0, 0,
                 0, 0, -1, 0,
                 0, 0, 0, -1), EPSILON));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "0,1,2,3,4,5,6,7, 0,0",
+            "0,1,2,3,4,5,6,7, 1,1",
+            "0,1,2,3,4,5,6,7, 2,2",
+            "0,1,2,3,4,5,6,7, 3,3",
+            "0,1,2,3,4,5,6,7, 4,4",
+            "0,1,2,3,4,5,6,7, 5,5",
+            "0,1,2,3,4,5,6,7, 6,6",
+            "0,1,2,3,4,5,6,7, 7,7",
+
+            "0,2,1,3,4,6,5,7, 0,0",
+            "0,2,1,3,4,6,5,7, 1,2",
+            "0,2,1,3,4,6,5,7, 2,1",
+            "0,2,1,3,4,6,5,7, 3,3",
+            "0,2,1,3,4,6,5,7, 4,4",
+            "0,2,1,3,4,6,5,7, 5,6",
+            "0,2,1,3,4,6,5,7, 6,5",
+            "0,2,1,3,4,6,5,7, 7,7",
+    })
+    void testPermute8(int s0, int s1, int s2, int s3, int s4, int s5, int s6, int s7, int v0, int exp0) {
+        // Given
+        Matrix1 m = Matrix1.permute(s0, s1, s2, s3, s4, s5, s6, s7);
+        Matrix1 ket = Matrix1.ketBase(v0);
+        Matrix1 exp = Matrix1.ketBase(exp0).extends0(8, 0);
+        // When
+        Matrix1 res = m.mul(ket);
+        assertThat(res, matrixCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testSwapArgs")
+    void testSwap(int b0, int b1, Matrix1 exp) {
+        Matrix1 result = Matrix1.swap(b0, b1);
+        assertThat(result, matrixCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testSwapKetArgs")
+    void testSwapKet(int b0, int b1, Matrix1 ket, Matrix1 exp) {
+        Matrix1 m = Matrix1.swap(b0, b1);
+        Matrix1 result = m.mul(ket);
+        assertThat(result, matrixCloseTo(exp, EPSILON));
     }
 
     @Test
