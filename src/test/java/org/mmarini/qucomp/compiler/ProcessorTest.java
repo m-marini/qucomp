@@ -34,108 +34,140 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mmarini.qucomp.apis.Bra;
 import org.mmarini.qucomp.apis.Complex;
-import org.mmarini.qucomp.apis.Ket;
+import org.mmarini.qucomp.apis.Matrix;
 
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mmarini.qucomp.Matchers.*;
+import static org.mmarini.qucomp.Matchers.complexClose;
+import static org.mmarini.qucomp.Matchers.matrixCloseTo;
 
 class ProcessorTest {
     public static final float EPSILON = 1e-5f;
 
-    public static Stream<Arguments> argsBra() {
+    public static Stream<Arguments> testMatrixArgs() {
         return Stream.of(
-                Arguments.of("<+|;", Bra.plus()),
-                Arguments.of("<-|;", Bra.minus()),
-                Arguments.of("<-i|;", Bra.minus_i()),
-                Arguments.of("<i|;", Bra.i()),
-                Arguments.of("<0|;", Bra.zero()),
-                Arguments.of("<1|;", Bra.one()),
-                Arguments.of("<2|;", Ket.base(2, 2).conj()),
-                Arguments.of("<9|;", Ket.base(9, 4).conj()),
+                Arguments.of("<+|;", Matrix.plus().dagger()),
+                Arguments.of("<-|;", Matrix.minus().dagger()),
+                Arguments.of("<-i|;", Matrix.minus_i().dagger()),
+                Arguments.of("<i|;", Matrix.i().dagger()),
+                // 5
+                Arguments.of("<0|;", Matrix.ketBase(0).dagger()),
+                Arguments.of("<1|;", Matrix.ketBase(1).dagger()),
+                Arguments.of("<2|;", Matrix.ketBase(2).dagger()),
+                Arguments.of("<9|;", Matrix.ketBase(9).dagger()),
+                Arguments.of("- <+|;", Matrix.plus().neg().dagger()),
+                // 10
+                Arguments.of("|+>^;", Matrix.plus().dagger()),
+                Arguments.of("<0| + <1|;", Matrix.ket(1, 1).dagger()),
+                Arguments.of("<1| + <0|;", Matrix.ket(1, 1).dagger()),
+                Arguments.of("<0| + <3|;", Matrix.ket(1, 0, 0, 1).dagger()),
+                Arguments.of("<3| + <0|;", Matrix.ket(1, 0, 0, 1).dagger()),
+                // 15
+                Arguments.of("<2| + <3|;", Matrix.ket(0, 0, 1, 1).dagger()),
+                Arguments.of("<3| + <2|;", Matrix.ket(0, 0, 1, 1).dagger()),
+                Arguments.of("<0| - <1|;", Matrix.ket(1, -1).dagger()),
+                Arguments.of("<1| - <0|;", Matrix.ket(-1, 1).dagger()),
+                Arguments.of("<0| - <3|;", Matrix.ket(1, 0, 0, -1).dagger()),
+                // 20
+                Arguments.of("<3| - <0|;", Matrix.ket(-1, 0, 0, 1).dagger()),
+                Arguments.of("<2| - <3|;", Matrix.ket(0, 0, 1, -1).dagger()),
+                Arguments.of("<3| - <2|;", Matrix.ket(0, 0, -1, 1).dagger()),
+                Arguments.of("<0| * i;", Matrix.ket(1, 0).dagger().mul(Complex.i())),
+                Arguments.of("i * <0|;", Matrix.ket(1, 0).dagger().mul(Complex.i())),
+                // 25
+                Arguments.of("<0| * 2;", Matrix.ket(1, 0).dagger().mul(2)),
+                Arguments.of("2 * <0|;", Matrix.ket(1, 0).dagger().mul(2)),
+                Arguments.of("<0| / 2;", Matrix.ketBase(0).dagger().div(2)),
+                Arguments.of("<0| / i;", Matrix.ketBase(0).dagger().div(Complex.i())),
+                Arguments.of("<0| x <1|;", Matrix.ketBase(1).dagger().extendsCols(4)),
+                // 30
+                Arguments.of("<1| x <0|;", Matrix.ketBase(2).dagger().extendsCols(4)),
+                Arguments.of("<0| x <2|;", Matrix.ketBase(2).dagger().extendsCols(8)),
+                Arguments.of("<2| x <0|;", Matrix.ketBase(4).dagger().extendsCols(8)),
+                Arguments.of("<2| x <2|;", Matrix.ketBase(10).dagger().extendsCols(8)),
+                Arguments.of("|+>;", Matrix.plus()),
+                // 35
+                Arguments.of("|->;", Matrix.minus()),
+                Arguments.of("|-i>;", Matrix.minus_i()),
+                Arguments.of("|i>;", Matrix.i()),
+                Arguments.of("|0>;", Matrix.ketBase(0)),
+                Arguments.of("|1>;", Matrix.ketBase(1)),
+                // 40
+                Arguments.of("|2>;", Matrix.ketBase(2)),
+                Arguments.of("- |+>;", Matrix.plus().neg()),
+                Arguments.of("<+|^;", Matrix.plus()),
+                Arguments.of("|0> + |1>;", Matrix.ketBase(0).add(Matrix.ketBase(1))),
+                Arguments.of("|1> + |0>;", Matrix.ketBase(0).add(Matrix.ketBase(1))),
+                // 45
+                Arguments.of("|0> + |3>;", Matrix.ketBase(0).add(Matrix.ketBase(3))),
+                Arguments.of("|3> + |0>;", Matrix.ketBase(0).add(Matrix.ketBase(3))),
+                Arguments.of("|2> + |3>;", Matrix.ketBase(2).add(Matrix.ketBase(3))),
+                Arguments.of("|3> + |2>;", Matrix.ketBase(2).add(Matrix.ketBase(3))),
+                Arguments.of("|0> * <0|;", Matrix.create(2, 2,
+                        1, 0,
+                        0, 0)),
+                // 50
+                Arguments.of("|0> - <0|;", Matrix.create(2, 2,
+                        0, 0,
+                        0, 0)),
+                Arguments.of("<0| - |0>;", Matrix.create(2, 2,
+                        0, 0,
+                        0, 0)),
+                Arguments.of("|0> - |1>;", Matrix.ketBase(0).sub(Matrix.ketBase(1))),
+                Arguments.of("|1> - |0>;", Matrix.ketBase(1).sub(Matrix.ketBase(0))),
+                Arguments.of("|0> - |3>;", Matrix.ketBase(0).sub(Matrix.ketBase(3))),
+                // 55
+                Arguments.of("|3> - |0>;", Matrix.ketBase(3).sub(Matrix.ketBase(0))),
+                Arguments.of("|2> - |3>;", Matrix.ketBase(2).sub(Matrix.ketBase(3))),
+                Arguments.of("|3> - |2>;", Matrix.ketBase(3).sub(Matrix.ketBase(2))),
+                Arguments.of("<0| + |0>;", Matrix.create(2, 2,
+                        2, 0,
+                        0, 0)),
 
-                Arguments.of("- <+|;", Bra.plus().neg()),
-                Arguments.of("|+>^;", Ket.plus().conj()),
+                Arguments.of("i * |0>;", Matrix.ketBase(0).mul(Complex.i())),
+                // 60
+                Arguments.of("|0> * i;", Matrix.ketBase(0).mul(Complex.i())),
+                Arguments.of("2 * |0>;", Matrix.ketBase(0).mul(2)),
+                Arguments.of("|0> * 2;", Matrix.ketBase(0).mul(2)),
+                Arguments.of("|0> / 2;", Matrix.ketBase(0).mul(0.5f)),
+                Arguments.of("|0> / i;", Matrix.ketBase(0).mul(Complex.i().inv())),
+                // 65
+                Arguments.of("|0> x |1>;", Matrix.ketBase(1).extendsRows(4)),
+                Arguments.of("|1> x |0>;", Matrix.ketBase(2).extendsRows(4)),
+                Arguments.of("|0> x |2>;", Matrix.ketBase(2).extendsRows(8)),
+                Arguments.of("|2> x |0>;", Matrix.ketBase(4).extendsRows(8)),
+                Arguments.of("|2> x |2>;", Matrix.ketBase(10).extendsRows(16)),
 
-                Arguments.of("<0| + <1|;", Bra.zero().add(Bra.one())),
-                Arguments.of("<1| + <0|;", Bra.one().add(Bra.zero())),
-                Arguments.of("<0| + <3|;", Bra.base(0, 2).add(Bra.base(3, 2))),
-                Arguments.of("<3| + <0|;", Bra.base(0, 2).add(Bra.base(3, 2))),
-                Arguments.of("<2| + <3|;", Bra.base(2, 2).add(Bra.base(3, 2))),
-                Arguments.of("<3| + <2|;", Bra.base(2, 2).add(Bra.base(3, 2))),
-
-                Arguments.of("<0| - <1|;", Bra.zero().sub(Bra.one())),
-                Arguments.of("<1| - <0|;", Bra.one().sub(Bra.zero())),
-                Arguments.of("<0| - <3|;", Bra.base(0, 2).sub(Bra.base(3, 2))),
-                Arguments.of("<3| - <0|;", Bra.base(3, 2).sub(Bra.base(0, 2))),
-                Arguments.of("<2| - <3|;", Bra.base(2, 2).sub(Bra.base(3, 2))),
-                Arguments.of("<3| - <2|;", Bra.base(3, 2).sub(Bra.base(2, 2))),
-
-                Arguments.of("<0| * i;", Bra.zero().mul(Complex.i())),
-                Arguments.of("i * <0|;", Bra.zero().mul(Complex.i())),
-                Arguments.of("<0| * 2;", Bra.zero().mul(Complex.create(2))),
-                Arguments.of("2 * <0|;", Bra.zero().mul(Complex.create(2))),
-
-                Arguments.of("<0| / 2;", Bra.zero().mul(0.5f)),
-                Arguments.of("<0| / i;", Bra.zero().mul(Complex.i().inv())),
-                Arguments.of("i / |0>;", Bra.zero().mul(Complex.i())),
-                Arguments.of("2 / |0>;", Bra.zero().mul(2)),
-
-                Arguments.of("<0| x <1|;", Ket.base(1, 2).conj()),
-                Arguments.of("<1| x <0|;", Ket.base(2, 2).conj()),
-                Arguments.of("<0| x <2|;", Ket.base(2, 3).conj()),
-                Arguments.of("<2| x <0|;", Ket.base(4, 3).conj()),
-                Arguments.of("<2| x <2|;", Ket.base(10, 4).conj())
-        );
-    }
-
-    public static Stream<Arguments> argsKet() {
-        return Stream.of(
-                Arguments.of("|+>;", Ket.plus()),
-                Arguments.of("|->;", Ket.minus()),
-                Arguments.of("|-i>;", Ket.minus_i()),
-                Arguments.of("|i>;", Ket.i()),
-                Arguments.of("|0>;", Ket.zero()),
-                Arguments.of("|1>;", Ket.one()),
-                Arguments.of("|2>;", Ket.base(2, 2)),
-
-                Arguments.of("- |+>;", Ket.plus().neg()),
-                Arguments.of("<+|^;", Bra.plus().conj()),
-
-                Arguments.of("|0> + |1>;", Ket.zero().add(Ket.one())),
-                Arguments.of("|1> + |0>;", Ket.zero().add(Ket.one())),
-                Arguments.of("|0> + |3>;", Ket.base(0, 2).add(Ket.base(3, 2))),
-                Arguments.of("|3> + |0>;", Ket.base(0, 2).add(Ket.base(3, 2))),
-                Arguments.of("|2> + |3>;", Ket.base(2, 2).add(Ket.base(3, 2))),
-                Arguments.of("|3> + |2>;", Ket.base(2, 2).add(Ket.base(3, 2))),
-
-                Arguments.of("|0> - |1>;", Ket.zero().sub(Ket.one())),
-                Arguments.of("|1> - |0>;", Ket.one().sub(Ket.zero())),
-                Arguments.of("|0> - |3>;", Ket.base(0, 2).sub(Ket.base(3, 2))),
-                Arguments.of("|3> - |0>;", Ket.base(3, 2).sub(Ket.base(0, 2))),
-                Arguments.of("|2> - |3>;", Ket.base(2, 2).sub(Ket.base(3, 2))),
-                Arguments.of("|3> - |2>;", Ket.base(3, 2).sub(Ket.base(2, 2))),
-
-                Arguments.of("i * |0>;", Ket.zero().mul(Complex.i())),
-                Arguments.of("|0> * i;", Ket.zero().mul(Complex.i())),
-                Arguments.of("2 * |0>;", Ket.zero().mul(2)),
-                Arguments.of("|0> * 2;", Ket.zero().mul(2)),
-
-                Arguments.of("|0> / 2;", Ket.zero().mul(0.5f)),
-                Arguments.of("|0> / i;", Ket.zero().mul(Complex.i().inv())),
-                Arguments.of("2 / <0|;", Ket.zero().mul(2)),
-                Arguments.of("i / <0|;", Ket.zero().mul(Complex.i())),
-
-                Arguments.of("|0> x |1>;", Ket.base(1, 2)),
-                Arguments.of("|1> x |0>;", Ket.base(2, 2)),
-                Arguments.of("|0> x |2>;", Ket.base(2, 3)),
-                Arguments.of("|2> x |0>;", Ket.base(4, 3)),
-                Arguments.of("|2> x |2>;", Ket.base(10, 4))
+                // 70
+                Arguments.of("I(0);", Matrix.identity(2)),
+                Arguments.of("I(1);", Matrix.identity(4)),
+                Arguments.of("H(0);", Matrix.h(0)),
+                Arguments.of("H(1);", Matrix.h(1)),
+                Arguments.of("X(0);", Matrix.x(0)),
+                // 75
+                Arguments.of("X(1);", Matrix.x(1)),
+                Arguments.of("Y(0);", Matrix.y(0)),
+                Arguments.of("Y(1);", Matrix.y(1)),
+                Arguments.of("Z(0);", Matrix.z(0)),
+                Arguments.of("Z(1);", Matrix.z(1)),
+                // 80
+                Arguments.of("S(0);", Matrix.s(0)),
+                Arguments.of("S(1);", Matrix.s(1)),
+                Arguments.of("T(0);", Matrix.t(0)),
+                Arguments.of("T(1);", Matrix.t(1)),
+                Arguments.of("|0> x <0|;", Matrix.ary(0, 0)),
+                // 85)
+                Arguments.of("<0| x |0>;", Matrix.ary(0, 0)),
+                Arguments.of("ary(2,3);", Matrix.ary(2, 3)),
+                Arguments.of("sim(2,3);", Matrix.sim(2, 3)),
+                Arguments.of("eps(2,3);", Matrix.eps(2, 3)),
+                Arguments.of("CNOT(1,2);", Matrix.cnot(1, 2)),
+                Arguments.of("CCNOT(1,2,3);", Matrix.ccnot(1, 2, 3)),
+                Arguments.of("SWAP(0,1);", Matrix.swap(0, 1))
         );
     }
 
@@ -166,15 +198,6 @@ class ProcessorTest {
         Object[] result = assertDoesNotThrow(() -> execute("let a = 1;"));
         assertThat(result[0], equalTo(1));
         assertThat(processor.variables(), hasEntry(equalTo("a"), equalTo(1)));
-    }
-
-    @ParameterizedTest
-    @MethodSource("argsBra")
-    void testBra(String text, Bra exp) {
-        Object[] results = assertDoesNotThrow(() -> execute(text));
-        Bra result = (Bra) results[0];
-        assertThat(result, braCloseTo(exp, EPSILON));
-        assertThat(processor.variables(), anEmptyMap());
     }
 
     @Test
@@ -228,12 +251,6 @@ class ProcessorTest {
             "1 / i;, 0, -1",
             "i / 2;, 0, 0.5",
             "i / i;, 1, 0",
-
-            "<0| / <0|;, 1,0",
-            "<2| / <2|;, 1,0",
-            "<0| / <2|;, 0,0",
-            "<2| / <0|;, 0,0",
-            "<2| / <2|;, 1,0",
     })
     void testComplex(String text, float re, float im) {
         Complex expected = new Complex(re, im);
@@ -246,47 +263,86 @@ class ProcessorTest {
     @CsvSource({
             "|1.>; , Expected integer value: (1.0) token(\"1.\")",
             "a; , Undefined variable a token(\"a\")",
-            "sqrt(|0>);,Unexpected argument ket ((1.0) |0>) token(\"sqrt\")",
-            "sqrt(<0|);,Unexpected argument bra ((1.0) <0|) token(\"sqrt\")",
-
-            "|0> * |0>;,Unexpected right argument ket ((1.0) |0>) token(\"*\")",
-            "|0> * <0|;,Unexpected right argument bra ((1.0) <0|) token(\"*\")",
-            "<0| * <0|;,Unexpected right argument bra ((1.0) <0|) token(\"*\")",
-
-            "1 + <0|;,Unexpected right argument bra ((1.0) <0|) token(\"+\")",
-            "i + <0|;,Unexpected right argument bra ((1.0) <0|) token(\"+\")",
-            "|0> + <0|;,Unexpected right argument bra ((1.0) <0|) token(\"+\")",
-            "1 + |0>;,Unexpected right argument ket ((1.0) |0>) token(\"+\")",
-            "i + |0>;,Unexpected right argument ket ((1.0) |0>) token(\"+\")",
-            "<0| + |0>;,Unexpected right argument ket ((1.0) |0>) token(\"+\")",
+            "sqrt(|0>);,Unexpected matrix argument ((1.0) |0>) token(\"0\")",
+            "sqrt(<0|);,Unexpected matrix argument ((1.0) <0|) token(\"<\")",
+            // 5
+            "|0> * |0>;,Invalid product operands shapes 2x1 by 2x1 token(\"*\")",
+            "<0| * <0|;,Invalid product operands shapes 1x2 by 1x2 token(\"*\")",
+            "1 + <0|;,Unexpected right argument ((1.0) <0|) token(\"+\")",
+            "i + <0|;,Unexpected right argument ((1.0) <0|) token(\"+\")",
+            "1 + |0>;,Unexpected right argument ((1.0) |0>) token(\"+\")",
+            // 10
+            "i + |0>;,Unexpected right argument ((1.0) |0>) token(\"+\")",
             "|0> + 1;,Unexpected right argument integer (1) token(\"+\")",
             "|0> + i;,Unexpected right argument complex (i) token(\"+\")",
             "<0| + 1;,Unexpected right argument integer (1) token(\"+\")",
             "<0| + i;,Unexpected right argument complex (i) token(\"+\")",
-
-            "1 - <0|;,Unexpected right argument bra ((1.0) <0|) token(\"-\")",
-            "i - <0|;,Unexpected right argument bra ((1.0) <0|) token(\"-\")",
-            "|0> - <0|;,Unexpected right argument bra ((1.0) <0|) token(\"-\")",
-            "1 - |0>;,Unexpected right argument ket ((1.0) |0>) token(\"-\")",
-            "i - |0>;,Unexpected right argument ket ((1.0) |0>) token(\"-\")",
-            "<0| - |0>;,Unexpected right argument ket ((1.0) |0>) token(\"-\")",
+            // 15
+            "1 - <0|;,Unexpected right argument ((1.0) <0|) token(\"-\")",
+            "i - <0|;,Unexpected right argument ((1.0) <0|) token(\"-\")",
+            "1 - |0>;,Unexpected right argument ((1.0) |0>) token(\"-\")",
+            "i - |0>;,Unexpected right argument ((1.0) |0>) token(\"-\")",
             "|0> - 1;,Unexpected right argument int (1) token(\"-\")",
+            // 20
             "|0> - i;,Unexpected right argument complex (i) token(\"-\")",
             "<0| - 1;,Unexpected right argument int (1) token(\"-\")",
             "<0| - i;,Unexpected right argument complex (i) token(\"-\")",
-
-            "<0| / |0>;,Unexpected right argument ket ((1.0) |0>) token(\"/\")",
-            "|0> / |0>;,Unexpected right argument ket ((1.0) |0>) token(\"/\")",
-            "|0> / <0|;,Unexpected right argument bra ((1.0) <0|) token(\"/\")",
-
+            "<0| / |0>;,Unexpected right argument ((1.0) |0>) token(\"/\")",
+            "|0> / |0>;,Unexpected right argument ((1.0) |0>) token(\"/\")",
+            // 25
+            "|0> / <0|;,Unexpected right argument ((1.0) <0|) token(\"/\")",
             "1 x 1;, Unexpected left argument integer (1) token(\"x\")",
             "i x 1;, Unexpected left argument complex (i) token(\"x\")",
             "|0> x 1;, Unexpected right argument integer (1) token(\"x\")",
             "|0> x i;, Unexpected right argument complex (i) token(\"x\")",
-            "|0> x <0|;, Unexpected right argument bra ((1.0) <0|) token(\"x\")",
+            // 30
             "<0| x 1;, Unexpected right argument integer (1) token(\"x\")",
             "<0| x i;, Unexpected right argument complex (i) token(\"x\")",
-            "<0| x |0>;, Unexpected right argument ket ((1.0) |0>) token(\"x\")",
+            "I(i);, Argument should be an integer: actual (i) token(\"i\")",
+            "I(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"0\")",
+            "I(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"<\")",
+            // 35
+            "H(i);, Argument should be an integer: actual (i) token(\"i\")",
+            "H(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"0\")",
+            "H(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"<\")",
+            "X(i);, Argument should be an integer: actual (i) token(\"i\")",
+            "X(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"0\")",
+            // 40
+            "X(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"<\")",
+            "Y(i);, Argument should be an integer: actual (i) token(\"i\")",
+            "Y(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"0\")",
+            "Y(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"<\")",
+            "Z(i);, Argument should be an integer: actual (i) token(\"i\")",
+            // 45
+            "Z(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"0\")",
+            "Z(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"<\")",
+            "S(i);, Argument should be an integer: actual (i) token(\"i\")",
+            "S(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"0\")",
+            "S(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"<\")",
+            // 50
+            "T(i);, Argument should be an integer: actual (i) token(\"i\")",
+            "T(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"0\")",
+            "T(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"<\")",
+            "<0| / <0|;, Unexpected right argument ((1.0) <0|) token(\"/\")",
+            "<2| / <2|;, Unexpected right argument ((1.0) <2|) token(\"/\")",
+            // 55
+            "'ary(1,i);', Argument should be an integer: actual (i) token(\"i\")",
+            "'ary(i,1);', Argument should be an integer: actual (i) token(\"i\")",
+            "'sim(1,i);', Argument should be an integer: actual (i) token(\"i\")",
+            "'sim(i,1);', Argument should be an integer: actual (i) token(\"i\")",
+            "'eps(1,i);', Argument should be an integer: actual (i) token(\"i\")",
+            "'eps(i,1);', Argument should be an integer: actual (i) token(\"i\")",
+            "'SWAP(1,i);', Argument should be an integer: actual (i) token(\"i\")",
+            "'SWAP(i,1);', Argument should be an integer: actual (i) token(\"i\")",
+            "'CNOT(1,i);', Argument should be an integer: actual (i) token(\"i\")",
+            "'CNOT(i,1);', Argument should be an integer: actual (i) token(\"i\")",
+            "'CNOT(0,0);', 'Expected all different indices [0, 0] token(\"CNOT\")'",
+            "'CCNOT(1,i,1);', Argument should be an integer: actual (i) token(\"i\")",
+            "'CCNOT(i,1,1);', Argument should be an integer: actual (i) token(\"i\")",
+            "'CCNOT(1,1,i);', Argument should be an integer: actual (i) token(\"i\")",
+            "'CCNOT(0,0,1);', 'Expected all different indices [0, 0, 1] token(\"CCNOT\")'",
+            "'CCNOT(0,1,0);', 'Expected all different indices [0, 1, 0] token(\"CCNOT\")'",
+            "'CCNOT(1,0,0);', 'Expected all different indices [1, 0, 0] token(\"CCNOT\")'",
     })
     void testError(String text, String msg) {
         QuException ex = assertThrows(QuException.class, () -> execute(text));
@@ -321,10 +377,10 @@ class ProcessorTest {
     }
 
     @ParameterizedTest
-    @MethodSource("argsKet")
-    void testKet(String text, Ket exp) {
+    @MethodSource("testMatrixArgs")
+    void testMatrix(String text, Matrix exp) {
         Object[] result = assertDoesNotThrow(() -> execute(text));
-        assertThat((Ket) result[0], ketCloseTo(exp, EPSILON));
+        assertThat((Matrix) result[0], matrixCloseTo(exp, EPSILON));
         assertThat(processor.variables(), anEmptyMap());
     }
 

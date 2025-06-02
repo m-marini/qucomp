@@ -29,7 +29,7 @@
 package org.mmarini.qucomp.swing;
 
 import org.mmarini.qucomp.apis.Complex;
-import org.mmarini.qucomp.apis.Ket;
+import org.mmarini.qucomp.apis.Matrix;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
@@ -38,12 +38,14 @@ import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 
 import static java.lang.String.format;
+import static org.mmarini.qucomp.apis.VectorUtils.numBits;
 
 /**
  * Shows the ket information: states, probabilities, bit probabilities
  * - states id
  * - states values
- * - probability values
+ * - probability value
+ * s
  * - bit id
  * - bit probabilities
  */
@@ -118,7 +120,8 @@ public class KetPanel extends JPanel {
     private final JTable bitTable;
     private final AbstractTableModel stateModel;
     private final AbstractTableModel bitModel;
-    private Ket ket;
+    private double[] bitProbabilities;
+    private Matrix ket;
 
     /**
      * Creates the panel
@@ -126,6 +129,7 @@ public class KetPanel extends JPanel {
     public KetPanel() {
         this.stateTable = new JTable();
         this.bitTable = new JTable();
+        this.bitProbabilities = new double[0];
         this.bitModel = new AbstractTableModel() {
 
             @Override
@@ -149,15 +153,14 @@ public class KetPanel extends JPanel {
 
             @Override
             public int getRowCount() {
-                return ket == null ? 0 : ket.numBits();
+                return bitProbabilities.length;
             }
 
             @Override
             public String getValueAt(int rowIndex, int columnIndex) {
-                double[] bitProb = ket.bitProbs();
                 return switch (columnIndex) {
                     case 0 -> String.valueOf(rowIndex);
-                    case 1 -> probString(bitProb[rowIndex]);
+                    case 1 -> probString(bitProbabilities[rowIndex]);
                     default -> "?";
                 };
             }
@@ -186,16 +189,16 @@ public class KetPanel extends JPanel {
 
             @Override
             public int getRowCount() {
-                return ket != null ? ket.values().length : 0;
+                return ket != null ? ket.numRows() : 0;
             }
 
             @Override
             public String getValueAt(int rowIndex, int columnIndex) {
-                Complex complex = ket.values()[rowIndex];
+                Complex complex = ket.at(rowIndex);
                 return switch (columnIndex) {
                     case 0 -> Messages.format("KetPanel.stateId.title", rowIndex);
                     case 1 -> complexString(complex);
-                    case 2 -> probString(complex.moduleSquare());
+                    case 2 -> probString(complex.normSquare());
                     default -> "?";
                 };
             }
@@ -240,12 +243,18 @@ public class KetPanel extends JPanel {
     }
 
     /**
+     *
      * Sets the ket to show
      *
      * @param ket the ket
      */
-    public void setKet(Ket ket) {
+    public void setKet(Matrix ket) {
         this.ket = ket;
+        int n = numBits(ket.numRows());
+        this.bitProbabilities = new double[n];
+        for (int i = 0; i < n; i++) {
+            bitProbabilities[i] = ket.prob(i);
+        }
         stateModel.fireTableChanged(new TableModelEvent(stateModel));
         bitModel.fireTableChanged(new TableModelEvent(stateModel));
         invalidate();

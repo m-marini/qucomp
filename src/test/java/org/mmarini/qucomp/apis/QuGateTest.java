@@ -9,6 +9,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mmarini.qucomp.Matchers.complexClose;
+import static org.mmarini.qucomp.Matchers.matrixCloseTo;
 
 class QuGateTest {
 
@@ -26,15 +27,12 @@ class QuGateTest {
         // Given
         QuGate gate = QuGate.swap(1, 0);
         // When
-        Matrix m = gate.build(2);
-        Ket ket0 = Ket.base(in, 2);
-        Ket ket = ket0.mul(m);
+        Matrix m = gate.build();
+        Matrix ket0 = Matrix.ketBase(in);
+        Matrix ket = m.mul(ket0);
         // Then
-        Ket expKet = Ket.base(exp, 2);
-        assertThat(ket.values()[0], complexClose(expKet.values()[0], EPSILON));
-        assertThat(ket.values()[1], complexClose(expKet.values()[1], EPSILON));
-        assertThat(ket.values()[2], complexClose(expKet.values()[2], EPSILON));
-        assertThat(ket.values()[3], complexClose(expKet.values()[3], EPSILON));
+        Matrix expKet = Matrix.ketBase(exp).extendsRows(4);
+        assertThat(ket, matrixCloseTo(expKet, EPSILON));
     }
 
     @ParameterizedTest
@@ -52,15 +50,12 @@ class QuGateTest {
         // Given
         QuGate gate = QuGate.swap(b0, b1);
         // When
-        Matrix m = gate.build(2);
-        Ket ket0 = Ket.base(s, 2);
-        Ket ket = ket0.mul(m);
+        Matrix m = gate.build();
+        Matrix ket0 = Matrix.ketBase(s);
+        Matrix ket = m.mul(ket0);
         // Then
-        Ket expKet = Ket.base(exp, 2);
-        assertThat(ket.values()[0], complexClose(expKet.values()[0], EPSILON));
-        assertThat(ket.values()[1], complexClose(expKet.values()[1], EPSILON));
-        assertThat(ket.values()[2], complexClose(expKet.values()[2], EPSILON));
-        assertThat(ket.values()[3], complexClose(expKet.values()[3], EPSILON));
+        Matrix expKet = Matrix.ketBase(exp).extendsRows(4);
+        assertThat(ket, matrixCloseTo(expKet, EPSILON));
     }
 
     @ParameterizedTest
@@ -114,20 +109,13 @@ class QuGateTest {
         // Given
         QuGate gate = QuGate.swap(bit0, bit1);
         // When
-        Matrix m = gate.build(3);
-        Ket ket0 = Ket.base(in, 3);
-        Ket ket = ket0.mul(m);
+        Matrix m = gate.build();
+        Matrix ket0 = Matrix.ketBase(in);
+        Matrix ket = m.mul(ket0);
         // Then
         logger.atDebug().log("build3Bit m=\n{}", m);
-        Ket expKet = Ket.base(exp, 3);
-        assertThat(ket.values()[0], complexClose(expKet.values()[0], EPSILON));
-        assertThat(ket.values()[1], complexClose(expKet.values()[1], EPSILON));
-        assertThat(ket.values()[2], complexClose(expKet.values()[2], EPSILON));
-        assertThat(ket.values()[3], complexClose(expKet.values()[3], EPSILON));
-        assertThat(ket.values()[4], complexClose(expKet.values()[4], EPSILON));
-        assertThat(ket.values()[5], complexClose(expKet.values()[5], EPSILON));
-        assertThat(ket.values()[6], complexClose(expKet.values()[6], EPSILON));
-        assertThat(ket.values()[7], complexClose(expKet.values()[7], EPSILON));
+        Matrix expKet = Matrix.ketBase(exp).extendsRows(8);
+        assertThat(ket.extendsRows(8), matrixCloseTo(expKet, EPSILON));
     }
 
     @ParameterizedTest
@@ -153,27 +141,12 @@ class QuGateTest {
         // Given
         QuGate gate = QuGate.swap(bit0, bit1);
         // When
-        Matrix m = gate.build(4);
-        Ket ket0 = Ket.base(in, 4);
-        Ket ket = ket0.mul(m);
+        Matrix m = gate.build();
+        Matrix ket0 = Matrix.ketBase(in);
+        Matrix ket = m.mul(ket0);
         // Then
-        Ket expKet = Ket.base(exp, 4);
-        assertThat(ket.values()[0], complexClose(expKet.values()[0], EPSILON));
-        assertThat(ket.values()[1], complexClose(expKet.values()[1], EPSILON));
-        assertThat(ket.values()[2], complexClose(expKet.values()[2], EPSILON));
-        assertThat(ket.values()[3], complexClose(expKet.values()[3], EPSILON));
-        assertThat(ket.values()[4], complexClose(expKet.values()[4], EPSILON));
-        assertThat(ket.values()[5], complexClose(expKet.values()[5], EPSILON));
-        assertThat(ket.values()[6], complexClose(expKet.values()[6], EPSILON));
-        assertThat(ket.values()[7], complexClose(expKet.values()[7], EPSILON));
-        assertThat(ket.values()[8], complexClose(expKet.values()[8], EPSILON));
-        assertThat(ket.values()[9], complexClose(expKet.values()[9], EPSILON));
-        assertThat(ket.values()[10], complexClose(expKet.values()[10], EPSILON));
-        assertThat(ket.values()[11], complexClose(expKet.values()[11], EPSILON));
-        assertThat(ket.values()[12], complexClose(expKet.values()[12], EPSILON));
-        assertThat(ket.values()[13], complexClose(expKet.values()[13], EPSILON));
-        assertThat(ket.values()[14], complexClose(expKet.values()[14], EPSILON));
-        assertThat(ket.values()[15], complexClose(expKet.values()[15], EPSILON));
+        Matrix expKet = Matrix.ketBase(exp).extendsRows(4);
+        assertThat(ket, matrixCloseTo(expKet, EPSILON));
     }
 
     @ParameterizedTest
@@ -218,42 +191,6 @@ class QuGateTest {
         assertArrayEquals(new int[]{e0, e1, e2, e3, e4}, oitMap);
     }
 
-    @ParameterizedTest(name = "[{index}] p=[{0} {1} {2}]")
-    @CsvSource({
-            // b[0]=a[0], b[1]=a[1], b[2]=a[2]
-            // in  = 000 001 010 011 100 101 110 111
-            // out = 000 001 010 011 100 101 110 111
-            "0,1,2, 0,1,2,3,4,5,6,7",
-
-            // b[1]=a[0], b[0]=a[1], b[2]=a[2]
-            // in  = 000 001 010 011 100 101 110 111
-            // out = 000 010 001 011 100 110 101 111
-            // iini = 0 1 2 3 4 5 6 7
-            // outi = 0 2 1 3 4 6 5 7
-            // outstate[s[i]]= instate[i]
-            // s=(0, 2, 1, 3, 4 5 6 7)
-            "1,0,2, 0,2,1,3,4,6,5,7",
-
-            // b[2]=a[0], b[1]=a[1], b[0]=a[2]
-            //  in 000 001 010 011 100 101 110 111
-            // out 000 100 010 110 001 101 011 111
-            "2,1,0, 0,4,2,6,1,5,3,7",
-
-            // b[1]=a[0], b[2]=a[1], b[0]=a[2]
-            //  in 000 001 010 011 100 101 110 111
-            // out 000 010 100 110 001 011 101 111
-            // iini = 0 1 2 3 4 5 6 7
-            // outi = 0 2 4 6 1 3 5 7
-            // outstate[s[i]]= instate[i]
-            "1,2,0, 0,2,4,6,1,3,5,7"
-    })
-    void computeStatePermutation3(int b0, int b1, int b2, int s0, int s1, int s2, int s3, int s4, int s5, int s6, int s7) {
-        // When
-        int[] states = QuGate.computeStatePermutation(b0, b1, b2);
-        // Then
-        assertArrayEquals(new int[]{s0, s1, s2, s3, s4, s5, s6, s7}, states);
-    }
-
     @ParameterizedTest
     @CsvSource({
             "0,1,2,3, 0,1,2,3",
@@ -282,20 +219,20 @@ class QuGateTest {
         int[] bits = new int[]{0, 1, 2};
         int[] states = {m0, m1, m2, m3, m4, m5, m6, m7};
         QuGate gate = QuGate.stateMap(bits, states);
-        Matrix m = gate.build(3);
+        Matrix m = gate.build();
 
         for (int i = 0; i < 8; i++) {
             // When
-            Ket k = Ket.base(i, 3).mul(m);
+            Matrix k = m.mul(Matrix.ketBase(i));
             // Then
-            assertThat("on state " + i, k.at(0), complexClose(states[i] == 0 ? 1 : 0, EPSILON));
-            assertThat("on state " + i, k.at(1), complexClose(states[i] == 1 ? 1 : 0, EPSILON));
-            assertThat("on state " + i, k.at(2), complexClose(states[i] == 2 ? 1 : 0, EPSILON));
-            assertThat("on state " + i, k.at(3), complexClose(states[i] == 3 ? 1 : 0, EPSILON));
-            assertThat("on state " + i, k.at(4), complexClose(states[i] == 4 ? 1 : 0, EPSILON));
-            assertThat("on state " + i, k.at(5), complexClose(states[i] == 5 ? 1 : 0, EPSILON));
-            assertThat("on state " + i, k.at(6), complexClose(states[i] == 6 ? 1 : 0, EPSILON));
-            assertThat("on state " + i, k.at(7), complexClose(states[i] == 7 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(0, 0), complexClose(states[i] == 0 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(1, 0), complexClose(states[i] == 1 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(2, 0), complexClose(states[i] == 2 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(3, 0), complexClose(states[i] == 3 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(4, 0), complexClose(states[i] == 4 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(5, 0), complexClose(states[i] == 5 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(6, 0), complexClose(states[i] == 6 ? 1 : 0, EPSILON));
+            assertThat("on state " + i, k.at(7, 0), complexClose(states[i] == 7 ? 1 : 0, EPSILON));
         }
     }
 
@@ -381,21 +318,13 @@ class QuGateTest {
     })
     void testMap3bits(int b0, int b1, int s, int exp) {
         int[] bitPerm = QuGate.computeMap(3, b0, b1);
-        int[] statePerm = QuGate.computeStatePermutation(bitPerm);
+        int[] statePerm = Matrix.computeStatePermutation(bitPerm);
         Matrix m = Matrix.permute(statePerm);
-        Ket ket = Ket.base(s, 3);
-        Ket res = ket.mul(m);
-        Ket expKet = Ket.base(exp, 3);
+        Matrix ket = Matrix.ketBase(s);
+        Matrix res = m.mul(ket);
+        Matrix expKet = Matrix.ketBase(exp).extendsRows(8);
 
         assertEquals(exp, statePerm[s]);
-
-        assertThat(res.at(0), complexClose(expKet.at(0), EPSILON));
-        assertThat(res.at(1), complexClose(expKet.at(1), EPSILON));
-        assertThat(res.at(2), complexClose(expKet.at(2), EPSILON));
-        assertThat(res.at(3), complexClose(expKet.at(3), EPSILON));
-        assertThat(res.at(4), complexClose(expKet.at(4), EPSILON));
-        assertThat(res.at(5), complexClose(expKet.at(5), EPSILON));
-        assertThat(res.at(6), complexClose(expKet.at(6), EPSILON));
-        assertThat(res.at(7), complexClose(expKet.at(7), EPSILON));
+        assertThat(res, matrixCloseTo(expKet, EPSILON));
     }
 }

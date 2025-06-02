@@ -5,16 +5,19 @@ import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.mmarini.qucomp.apis.*;
+import org.mmarini.MapStream;
+import org.mmarini.Tuple2;
+import org.mmarini.qucomp.compiler.Compiler;
+import org.mmarini.qucomp.compiler.Processor;
+import org.mmarini.qucomp.compiler.Syntax;
+import org.mmarini.qucomp.compiler.Tokenizer;
 import org.mmarini.qucomp.swing.Messages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
-
-import static java.lang.String.format;
+import java.util.Comparator;
 
 /**
  * Computes the quantum state
@@ -34,15 +37,12 @@ public class Compute {
         parser.addArgument("-v", "--version")
                 .action(Arguments.version())
                 .help("show current version");
-        parser.addArgument("gates")
-                .metavar("GATES")
-                .setDefault("qucomp.qg")
-                .help("specify gates configuration file");
-        parser.addArgument("inputs")
-                .metavar("INPUTS")
-                .type(java.lang.String.class)
-                .nargs(1)
-                .help("specify inputs ket expression");
+        parser.addArgument("-d", "--dump")
+                .action(Arguments.storeTrue())
+                .help("specify variable dump");
+        parser.addArgument("-f", "--file")
+                .setDefault("qucomp.qu")
+                .help("specify qu source file");
         return parser;
     }
 
@@ -64,18 +64,33 @@ public class Compute {
         ArgumentParser parser = createParser();
         try {
             Namespace args1 = parser.parseArgs(args);
-            File file = new File(args1.getString("gates"));
-            QuParser gateParser = QuParser.create(file);
-            List<QuGate> gates = gateParser.parse();
-            Matrix m = QuCircuitBuilder.build(gates);
-            List<String> inText = args1.get("inputs");
-            Ket inputs = Ket.fromText(inText.getFirst());
-            if (inputs.values().length != m.numCols()) {
-                throw new IllegalArgumentException(format("input ket expression state number %d must match the matrix gates size %d",
-                        inputs.values().length, m.numCols()));
+            File file = new File(args1.getString("file"));
+            Tokenizer tokenizer = Tokenizer.create(file).open();
+
+            Compiler compiler = Compiler.create();
+            Processor processor = new Processor();
+
+            Syntax.rule("<code-unit>")
+                    .parse(compiler.createParseContext(tokenizer));
+            Object results = compiler.pop().evaluate(processor);
+            if (results instanceof Object[] outs) {
+                for (Object out : outs) {
+                    if (out != null) {
+                        System.out.println(out);
+                        logger.atDebug().log("{}", out);
+                    }
+                }
             }
-            Ket result = inputs.mul(m);
-            logger.atInfo().log("output = {}", result.toString());
+            if (args1.getBoolean("dump")) {
+                MapStream.of(processor.variables())
+                        .tuples()
+                        .sorted(Comparator.comparing(Tuple2::getV1))
+                        .forEach(t -> {
+                            System.out.print(t._1);
+                            System.out.print(" = ");
+                            System.out.println(t._2);
+                        });
+            }
         } catch (ArgumentParserException e) {
             parser.handleError(e);
             System.exit(1);

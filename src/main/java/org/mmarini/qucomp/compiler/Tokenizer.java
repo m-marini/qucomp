@@ -31,9 +31,7 @@ package org.mmarini.qucomp.compiler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.StringReader;
+import java.io.*;
 
 import static java.util.Objects.requireNonNull;
 
@@ -46,7 +44,25 @@ public class Tokenizer {
      * @param text the text
      */
     public static Tokenizer create(String text) {
-        return new Tokenizer(new BufferedReader(new StringReader(text)));
+        return create(new StringReader(text));
+    }
+
+    /**
+     * Returns the tokenizer of a file
+     *
+     * @param file the file
+     */
+    public static Tokenizer create(File file) throws FileNotFoundException {
+        return create(new FileReader(file));
+    }
+
+    /**
+     * Returns the tokenizer of a file
+     *
+     * @param reader the reader
+     */
+    public static Tokenizer create(Reader reader) {
+        return new Tokenizer(new BufferedReader(reader));
     }
 
     public BufferedReader reader;

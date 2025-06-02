@@ -28,6 +28,8 @@
 
 package org.mmarini.qucomp.compiler;
 
+import org.mmarini.Tuple2;
+
 /**
  * Computes the result of operations
  * The values can be Integer, Complex, Bra, Ket, Object[]: Array of values
@@ -60,14 +62,6 @@ public interface ExecutionContext {
     Object clear(SourceContext context) throws QuExecException;
 
     /**
-     * Returns the conjugate
-     *
-     * @param context the source position of the operation
-     * @param arg     the argument
-     */
-    Object conj(SourceContext context, Object arg) throws QuExecException;
-
-    /**
      * Returns the cross-product of the operands (left x right)
      *
      * @param context the source position of the operation
@@ -75,6 +69,8 @@ public interface ExecutionContext {
      * @param right   right operand
      */
     Object cross(SourceContext context, Object left, Object right) throws QuExecException;
+
+    Object dagger(SourceContext context, Object evaluate) throws QuExecException;
 
     /**
      * Returns the division of two operands (left / right)
@@ -92,7 +88,7 @@ public interface ExecutionContext {
      * @param id      the function identifier
      * @param args    the arguments
      */
-    Object function(SourceContext context, String id, Object[] args) throws QuExecException;
+    Object function(SourceContext context, String id, Tuple2<Object, SourceContext>[] args) throws QuExecException;
 
     /**
      * Returns the ket of integer state

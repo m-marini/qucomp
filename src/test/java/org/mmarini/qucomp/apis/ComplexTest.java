@@ -37,7 +37,9 @@ import org.mmarini.ArgumentsGenerator;
 
 import java.util.stream.Stream;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mmarini.qucomp.Matchers.complexClose;
 
 class ComplexTest {
 
@@ -180,22 +182,22 @@ class ComplexTest {
 
     @ParameterizedTest
     @MethodSource("dataComplex1")
-    void module(float a, float b) {
+    void norm(float a, float b) {
         // Given
         Complex c = new Complex(a, b);
         // When
-        float m2 = c.module();
+        float m2 = c.norm();
         // Then
         assertEquals((float) Math.sqrt(a * a + b * b), m2);
     }
 
     @ParameterizedTest
     @MethodSource("dataComplex1")
-    void moduleSquare(float a, float b) {
+    void normSquare(float a, float b) {
         // Given
         Complex c = new Complex(a, b);
         // When
-        double m2 = c.moduleSquare();
+        double m2 = c.normSquare();
         // Then
         assertEquals(a * a + b * b, m2);
     }
@@ -275,6 +277,22 @@ class ComplexTest {
     void testToString(float a, float b, String txt) {
         Complex c = new Complex(a, b);
         assertEquals(txt, c.toString());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "0,0,0,0",
+            "4,0,2,0",
+            "0,8,2,2",
+            "0,-8,2,-2",
+            "8,6,3,1",
+            "8,-6,3,-1",
+            "-8,6,1,3",
+            "-8,-6,-1,3",
+    })
+    void testSqrt(float argReal, float argIm, float expReal, float expIm) {
+        Complex arg = new Complex(argReal, argIm);
+        assertThat(arg.sqrt(), complexClose(expReal, expIm, EPSILON));
     }
 
     @Test

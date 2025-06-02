@@ -37,6 +37,18 @@ public class QuSourceException extends QuException {
     private final SourceContext context;
 
     /**
+     * Create exception
+     *
+     * @param message the message
+     * @param context the source context
+     * @param cause   the cause
+     */
+    public QuSourceException(String message, SourceContext context, Throwable cause) {
+        super(message, cause);
+        this.context = context;
+    }
+
+    /**
      * Creates the exception
      *
      * @param message the message

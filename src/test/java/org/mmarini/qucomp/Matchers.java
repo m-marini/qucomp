@@ -32,9 +32,8 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.mmarini.qucomp.apis.Bra;
 import org.mmarini.qucomp.apis.Complex;
-import org.mmarini.qucomp.apis.Ket;
+import org.mmarini.qucomp.apis.Matrix;
 import org.mmarini.qucomp.compiler.CommandNode;
 import org.mmarini.qucomp.compiler.SyntaxRule;
 import org.mmarini.qucomp.compiler.Token;
@@ -45,42 +44,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.isA;
 
 public interface Matchers {
-
-    static Matcher<Bra> braCloseTo(Bra expected, float epsilon) {
-        requireNonNull(expected);
-        return new CustomMatcher<>(format("Bra close to %s within +- %f",
-                expected,
-                epsilon)) {
-            @Override
-            public void describeMismatch(Object item, Description description) {
-                if (item instanceof Bra bra) {
-                    description.appendText("bra ")
-                            .appendValue(bra.toString())
-                            .appendText(" differs from ")
-                            .appendValue(expected.toString())
-                            .appendText(" (more then ")
-                            .appendValue(epsilon)
-                            .appendText(")");
-                } else {
-                    super.describeMismatch(item, description);
-                }
-            }
-
-            @Override
-            public boolean matches(Object o) {
-                if (!(o instanceof Bra bra)) return false;
-                Complex[] v1 = bra.values();
-                Complex[] v2 = expected.values();
-                if (v1.length != v2.length) return false;
-                for (int i = 0; i < v1.length; i++) {
-                    if (!v1[i].isClose(v2[i], epsilon)) {
-                        return false;
-                    }
-                }
-                return true;
-            }
-        };
-    }
 
     static Matcher<Complex> complexClose(float expectedReal, float expectedIm, float epsilon) {
         return complexClose(new Complex(expectedReal, expectedIm), epsilon);
@@ -286,9 +249,10 @@ public interface Matchers {
         };
     }
 
-    static Matcher<CommandNode> isConjCommand(Matcher<CommandNode> arg) {
-        return isUnaryCommand(isA(CommandNode.Conj.class), arg);
+    static Matcher<CommandNode> isDaggerCommand(Matcher<CommandNode> arg) {
+        return isUnaryCommand(isA(CommandNode.Dagger.class), arg);
     }
+
 
     static Matcher<CommandNode> isCrossCommand(Matcher<CommandNode> left, Matcher<CommandNode> right) {
         return isBinaryCommand(isA(CommandNode.Cross.class), left, right);
@@ -326,7 +290,7 @@ public interface Matchers {
         return isBinaryCommand(isA(CommandNode.Mul.class), left, right);
     }
 
-    static Matcher<CommandNode> isNegateCommmand(Matcher<CommandNode> arg) {
+    static Matcher<CommandNode> isNegateCommand(Matcher<CommandNode> arg) {
         return isUnaryCommand(isA(CommandNode.Negate.class), arg);
     }
 
@@ -420,35 +384,64 @@ public interface Matchers {
         };
     }
 
-    static Matcher<Ket> ketCloseTo(Ket expected, float epsilon) {
+    static Matcher<Matrix> matrixCloseTo(Matrix expected, float epsilon) {
         requireNonNull(expected);
-        return new CustomMatcher<>(format("Ket close to %s within +- %f",
-                expected,
-                epsilon)) {
+        return new BaseMatcher<>() {
+
             @Override
             public void describeMismatch(Object item, Description description) {
-                if (item instanceof Bra bra) {
-                    description.appendText("ket ")
-                            .appendValue(bra.toString())
-                            .appendText(" differs from ")
-                            .appendValue(expected.toString())
-                            .appendText(" (more then ")
-                            .appendValue(epsilon)
-                            .appendText(")");
+                if (item instanceof Matrix m) {
+                    if (m.numRows() != expected.numRows()
+                            || m.numCols() != expected.numCols()) {
+                        description.appendText(" matrix ")
+                                .appendValue(m)
+                                .appendText(" size " + m.numRows() + "x" + m.numCols())
+                                .appendText(" differ from ")
+                                .appendText(expected.numRows() + "x" + expected.numCols());
+                    } else {
+                        int i;
+                        int j;
+                        for (i = 0; i < m.numRows(); i++) {
+                            for (j = 0; j < m.numCols(); j++) {
+                                Complex mCell = m.at(i, j);
+                                Complex expCell = expected.at(i, j);
+                                if (!mCell.isClose(expCell, epsilon)) {
+                                    description.appendText(" matrix\n" + m)
+                                            .appendText(" differs at [" + i + "," + j + "] ")
+                                            .appendValue(mCell)
+                                            .appendText(" from ")
+                                            .appendValue(expCell)
+                                            .appendText(" more then ")
+                                            .appendValue(epsilon);
+                                    return;
+                                }
+                            }
+                        }
+                    }
                 } else {
                     super.describeMismatch(item, description);
                 }
             }
 
             @Override
+            public void describeTo(Description description) {
+                description.appendText("Matrix close to ")
+                        .appendText("\n" + expected)
+                        .appendText(" within +- ")
+                        .appendValue(epsilon);
+            }
+
+            @Override
             public boolean matches(Object o) {
-                if (!(o instanceof Ket value)) return false;
-                Complex[] v1 = value.values();
-                Complex[] v2 = expected.values();
-                if (v1.length != v2.length) return false;
-                for (int i = 0; i < v1.length; i++) {
-                    if (!v1[i].isClose(v2[i], epsilon)) {
-                        return false;
+                if (!(o instanceof Matrix m)) return false;
+                if (m.numRows() != expected.numRows() || m.numCols() != expected.numCols()) {
+                    return false;
+                }
+                for (int i = 0; i < m.numRows(); i++) {
+                    for (int j = 0; j < m.numCols(); j++) {
+                        if (!m.at(i, j).isClose(expected.at(i, j), epsilon)) {
+                            return false;
+                        }
                     }
                 }
                 return true;

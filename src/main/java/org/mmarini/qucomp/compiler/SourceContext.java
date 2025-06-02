@@ -75,6 +75,15 @@ public record SourceContext(String token, String line, int lineNumber, int posit
     }
 
     /**
+     * Returns the parser exception
+     *
+     * @param ex the caugth Throwable
+     */
+    public QuExecException execException(Throwable ex) {
+        return new QuExecException(ex.getMessage(), this, ex);
+    }
+
+    /**
      * Return the full report message
      *
      * @param message the message

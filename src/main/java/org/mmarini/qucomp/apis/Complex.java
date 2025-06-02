@@ -81,17 +81,26 @@ public record Complex(float real, float im) {
      * @param other the other complex
      */
     public Complex div(Complex other) {
-        float mb2 = other.moduleSquare();
+        float mb2 = other.normSquare();
         float r = (real * other.real + im * other.im) / mb2;
         float i = (im * other.real - real * other.im) / mb2;
         return new Complex(r, i);
     }
 
     /**
+     * Returns the ratio of complex numbers (this / other)
+     *
+     * @param other the other complex
+     */
+    public Complex div(float other) {
+        return new Complex(real / other, im / other);
+    }
+
+    /**
      * Returns the inverse comples
      */
     public Complex inv() {
-        float m2 = moduleSquare();
+        float m2 = normSquare();
         return new Complex(real / m2, -im / m2);
     }
 
@@ -110,14 +119,14 @@ public record Complex(float real, float im) {
     /**
      * Returns the module
      */
-    public float module() {
-        return (float) Math.sqrt(moduleSquare());
+    public float norm() {
+        return (float) Math.sqrt(normSquare());
     }
 
     /**
      * Returns the module square
      */
-    public float moduleSquare() {
+    public float normSquare() {
         return real * real + im * im;
     }
 
@@ -146,6 +155,25 @@ public record Complex(float real, float im) {
      */
     public Complex neg() {
         return new Complex(-real, -im);
+    }
+
+    /**
+     * Returns the square root
+     */
+    public Complex sqrt() {
+        if (abs(normSquare()) == 0) {
+            return Complex.zero();
+        } else if (real >= 0) {
+            float reDelta = real + norm();
+            float re = (float) Math.sqrt(reDelta / 2);
+            float im = (float) (this.im / Math.sqrt(2 * reDelta));
+            return new Complex(re, im);
+        } else {
+            float reDelta = -real + norm();
+            float re = (float) (im / Math.sqrt(2 * reDelta));
+            float im = (float) Math.sqrt(reDelta / 2);
+            return new Complex(re, im);
+        }
     }
 
     /**

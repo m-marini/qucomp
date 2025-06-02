@@ -28,8 +28,9 @@
 
 package org.mmarini.qucomp.compiler;
 
+import org.mmarini.Tuple2;
 import org.mmarini.qucomp.apis.Complex;
-import org.mmarini.qucomp.apis.Ket;
+import org.mmarini.qucomp.apis.Matrix;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,8 +91,8 @@ public interface CommandNode {
      * @param token the token referencing the source location of command
      * @param arg   the command argument
      */
-    static Conj conj(Token token, CommandNode arg) {
-        return new Conj(token.context(), arg);
+    static Dagger dagger(Token token, CommandNode arg) {
+        return new Dagger(token.context(), arg);
     }
 
     /**
@@ -195,7 +196,7 @@ public interface CommandNode {
      * @param token the token referencing the source of command
      * @param value the value
      */
-    static Value value(Token token, Ket value) {
+    static Value value(Token token, Matrix value) {
         return new Value(token.context(), value);
     }
 
@@ -462,11 +463,11 @@ public interface CommandNode {
      * @param context the command source reference
      * @param arg     the integer argument
      */
-    record Conj(SourceContext context, CommandNode arg) implements UnaryNode {
+    record Dagger(SourceContext context, CommandNode arg) implements UnaryNode {
 
         @Override
         public Object evaluate(ExecutionContext context) throws QuExecException {
-            return context.conj(this.context, arg.evaluate(context));
+            return context.dagger(this.context, arg.evaluate(context));
         }
     }
 
@@ -484,7 +485,6 @@ public interface CommandNode {
         }
     }
 
-
     /**
      * Commands to call a function
      *
@@ -497,9 +497,10 @@ public interface CommandNode {
         @Override
         public Object evaluate(ExecutionContext context) throws QuExecException {
             List<CommandNode> commands = arg.commands();
-            Object[] args = new Object[commands.size()];
+            Tuple2<Object, SourceContext>[] args = new Tuple2[commands.size()];
             for (int i = 0; i < commands.size(); i++) {
-                args[i] = commands.get(i).evaluate(context);
+                CommandNode argCommand = commands.get(i);
+                args[i] = Tuple2.of(argCommand.evaluate(context), argCommand.context());
             }
             return context.function(this.context, id, args);
         }
