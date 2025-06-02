@@ -2,6 +2,11 @@ This project is a quantum computing emulation.
 
 The documentaion is in the [Wiki section](https://github.com/m-marini/qucomp/wiki).
 
+## Release 0.3.0
+
+- Qu language compiler
+- Simulation GUI
+
 ## Release 0.2.0
 
 - Load gates from gate parser
