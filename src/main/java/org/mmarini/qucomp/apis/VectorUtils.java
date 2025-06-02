@@ -29,6 +29,7 @@
 package org.mmarini.qucomp.apis;
 
 import java.util.Arrays;
+import java.util.function.UnaryOperator;
 
 import static java.lang.Math.max;
 import static java.lang.String.format;
@@ -54,15 +55,6 @@ public interface VectorUtils {
             states[i] = a[i].add(b[i]);
         }
         return states;
-    }
-
-    /**
-     * Returns the conjugated vector
-     *
-     * @param vector the vector
-     */
-    static Complex[] conj(Complex[] vector) {
-        return Arrays.stream(vector).map(Complex::conj).toArray(Complex[]::new);
     }
 
     /**
@@ -98,41 +90,25 @@ public interface VectorUtils {
         return cells;
     }
 
-    static Complex[] extend(Complex[] values, int size) {
-        if (values.length >= size) {
-            return values;
-        }
-        Complex[] result = new Complex[size];
-        Arrays.fill(result, Complex.zero());
-        System.arraycopy(values, 0, result, 0, values.length);
-        return result;
-    }
-
     /**
-     * Returns the scalar product
+     * Returns the values mapped by complex operatr
      *
-     * @param a the vector a
-     * @param b the vector b
+     * @param values values
+     * @param op     the operator
      */
-    static Complex mulScalar(Complex[] a, Complex[] b) {
-        if (a.length != b.length) {
-            throw new IllegalArgumentException(format("Expected %d states (%d)",
-                    a.length, b.length));
-        }
-        Complex[] result = new Complex[1];
-        partMul(result, 0, 1, 1, a, 0, a.length, b, 0, 1);
-        return result[0];
+    static Complex[] map(Complex[] values, UnaryOperator<Complex> op) {
+        return Arrays.stream(values).map(op).toArray(Complex[]::new);
     }
 
     /**
-     * Returns the ket scaled by complex factor
+     * Returns the ket scaled by real factor
      *
      * @param vector the vector
      * @param alpha  scale
      */
-    static Complex[] mulScalar(Complex[] vector, Complex alpha) {
+    static Complex[] divScalar(Complex[] vector, float alpha) {
         return Arrays.stream(vector)
-                .map(v -> v.mul(alpha))
+                .map(v -> v.div(alpha))
                 .toArray(Complex[]::new);
     }
 
@@ -142,19 +118,10 @@ public interface VectorUtils {
      * @param vector the vector
      * @param alpha  scale
      */
-    static Complex[] mulScalar(Complex[] vector, float alpha) {
+    static Complex[] divScalar(Complex[] vector, Complex alpha) {
         return Arrays.stream(vector)
-                .map(v -> v.mul(alpha))
+                .map(v -> v.div(alpha))
                 .toArray(Complex[]::new);
-    }
-
-    /**
-     * Returns the negated vector
-     *
-     * @param vector the vector
-     */
-    static Complex[] neg(Complex[] vector) {
-        return Arrays.stream(vector).map(Complex::neg).toArray(Complex[]::new);
     }
 
     /**

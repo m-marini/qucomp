@@ -32,6 +32,18 @@ package org.mmarini.qucomp.compiler;
  * Captures the exception during the execution of qu commands
  */
 public class QuExecException extends QuSourceException {
+
+    /**
+     * Creates the exception
+     *
+     * @param message the message
+     * @param context the source context
+     * @param cause   the cause
+     */
+    public QuExecException(String message, SourceContext context, Throwable cause) {
+        super(message, context, cause);
+    }
+
     /**
      * Creates the exception
      *

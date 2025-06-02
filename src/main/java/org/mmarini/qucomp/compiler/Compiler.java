@@ -30,7 +30,7 @@ package org.mmarini.qucomp.compiler;
 
 import org.mmarini.Consumer2Throws;
 import org.mmarini.qucomp.apis.Complex;
-import org.mmarini.qucomp.apis.Ket;
+import org.mmarini.qucomp.apis.Matrix;
 
 import java.io.IOException;
 import java.util.*;
@@ -59,9 +59,9 @@ public class Compiler implements CompilerContext {
                     }
                 })
                 .add("<im-state>", (context, token) ->
-                        context.push(CommandNode.value(token, Ket.i())))
+                        context.push(CommandNode.value(token, Matrix.i())))
                 .add("<plus-state>", (context, token) ->
-                        context.push(CommandNode.value(token, Ket.plus())))
+                        context.push(CommandNode.value(token, Matrix.plus())))
                 .add("<clear-stm>", (context, token) ->
                         context.push(new CommandNode.Clear(token.context())))
                 .add("<assign-var-identifier>", (context, token) ->
@@ -106,15 +106,15 @@ public class Compiler implements CompilerContext {
                 .add("<negate-exp>", (context, token) ->
                         context.push(CommandNode.negate(token, context.pop())))
                 .add("^", (context, token) ->
-                        context.push(CommandNode.conj(token, context.pop())))
+                        context.push(CommandNode.dagger(token, context.pop())))
                 .add("<minus-state>", (context, token) ->
-                        context.push(CommandNode.value(token, Ket.minus())))
+                        context.push(CommandNode.value(token, Matrix.minus())))
                 .add("<minus-im-state>", (context, token) ->
-                        context.push(CommandNode.value(token, Ket.minus_i())))
+                        context.push(CommandNode.value(token, Matrix.minus_i())))
                 .add("<int-state>", (context, token) ->
                         context.push(CommandNode.intToState(token, context.pop())))
                 .add("<bra>", (context, token) ->
-                        context.push(CommandNode.conj(token, context.pop())))
+                        context.push(CommandNode.dagger(token, context.pop())))
                 .add("<im-unit>", (context, token) ->
                         context.push(CommandNode.value(token, Complex.i())))
                 .add("pi", (context, token) ->
@@ -142,7 +142,7 @@ public class Compiler implements CompilerContext {
                             .orElse(0);
                     int actual = args.commands().size();
                     if (actual != required) {
-                        throw token.context().parseException("%s requires %d arguments: actual %d", id, required, actual);
+                        throw token.context().parseException("%s requires %d arguments: actual (%d)", id, required, actual);
                     }
                     context.push(CommandNode.function(token, token.token(), args));
                 })

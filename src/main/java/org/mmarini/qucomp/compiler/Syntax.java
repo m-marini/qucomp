@@ -46,9 +46,7 @@ public class Syntax {
             "i", // imaginary unit
             "e", // imaginary unit
             "pi", // imaginary unit
-            "x", // cross operator
-            // Gates
-            "I", "X", "Y", "Z", "H", "S", "T", "SWAP", "CNOT", "CCNOT",
+            "x", // cross-operator
             // Functions
             "exp",
             "pow",
@@ -210,6 +208,7 @@ public class Syntax {
         builder.id("clear");
         builder.id("let");
         builder.id("sqrt");
+        builder.id("ary");
         builder.id("i");
         builder.id("pi");
         builder.id("e");

@@ -69,7 +69,8 @@ public class QuCompGUI {
                 .version(Messages.getString("QuCompute.title"))
                 .description("Process quantum code.");
         parser.addArgument("-f", "--file")
-                .setDefault("qucomp.qu");
+                .setDefault("qucomp.qu")
+                .help("specify qu source file");
         parser.addArgument("-v", "--version")
                 .action(Arguments.version())
                 .help("show current version");
@@ -229,7 +230,7 @@ public class QuCompGUI {
         try {
             // Compile and execute
             Object[] values = (Object[]) compile(source()).evaluate(processor);
-            Object value = values[values.length - 1];
+            Object value = values.length > 0 ? values[values.length - 1] : null;
             if (value != null) {
                 errorPanel.setText(value.toString());
             }

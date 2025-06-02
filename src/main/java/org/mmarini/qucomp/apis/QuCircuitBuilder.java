@@ -1,5 +1,6 @@
 package org.mmarini.qucomp.apis;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -22,9 +23,8 @@ public interface QuCircuitBuilder {
      * @param gates the list of gate
      */
     static Matrix build(List<QuGate> gates) {
-        int n = numQuBits(gates);
         return gates.stream()
-                .map(g -> g.build(n))
+                .map(QuGate::build)
                 .reduce((a, b) -> b.mul(a))
                 .orElseThrow();
     }
@@ -45,7 +45,7 @@ public interface QuCircuitBuilder {
      */
     static int numQuBits(List<QuGate> gates) {
         return gates.stream().mapToInt(
-                        gate -> gate.maxIndices() + 1)
+                        gate -> Arrays.stream(gate.indices()).max().orElse(0) + 1)
                 .max()
                 .orElse(0);
     }

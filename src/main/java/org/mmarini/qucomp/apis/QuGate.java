@@ -1,8 +1,5 @@
 package org.mmarini.qucomp.apis;
 
-import java.util.Arrays;
-import java.util.stream.IntStream;
-
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -19,7 +16,12 @@ public interface QuGate {
      * @param c1   the control1 bit index
      */
     static QuGate ccnot(int data, int c0, int c1) {
-        return new QuGateImpl("ccnot", new int[]{data, c0, c1}, Matrix.ccnot());
+        return new QuGateImpl("ccnot", data, c0, c1) {
+            @Override
+            public Matrix build() {
+                return Matrix.ccnot(data, c0, c1);
+            }
+        };
     }
 
     /**
@@ -29,14 +31,19 @@ public interface QuGate {
      * @param control the control bit index
      */
     static QuGate cnot(int data, int control) {
-        return new QuGateImpl("cnot", new int[]{data, control}, Matrix.cnot());
+        return new QuGateImpl("cnot", data, control) {
+            @Override
+            public Matrix build() {
+                return Matrix.cnot(data, control);
+            }
+        };
     }
 
     /**
      * Returns the bit permutation from input to internal gate input
      *
      * @param numBits number of qubits
-     * @param portMap the bit mapping from internal gate input to input
+     * @param portMap the bits mapping from internal gate input to input
      */
     static int[] computeMap(int numBits, int... portMap) {
         int[] result = new int[numBits];
@@ -71,43 +78,17 @@ public interface QuGate {
     }
 
     /**
-     * Computes the state permutation
-     * <pre>
-     *     out[p[i]]=in[i]
-     * </pre>
-     *
-     * @param bitPermutation the bit permutation
-     */
-    static int[] computeStatePermutation(int... bitPermutation) {
-        return IntStream.range(0, 1 << bitPermutation.length)
-                .map(s -> {
-                    int s1 = 0;
-                    int mask = 1;
-                    for (int i = 0; i < bitPermutation.length; i++) {
-                        int b = s & mask;
-                        if (b != 0) {
-                            int sh = bitPermutation[i] - i;
-                            if (sh < 0) {
-                                b >>>= -sh;
-                            } else if (sh > 0) {
-                                b <<= sh;
-                            }
-                            s1 |= b;
-                        }
-                        mask <<= 1;
-                    }
-                    return s1;
-                })
-                .toArray();
-    }
-
-    /**
      * Returns the h gate (Hadamard) definition
      *
      * @param data the data bit index
      */
     static QuGate h(int data) {
-        return new QuGateImpl("h", new int[]{data}, Matrix.h());
+        return new QuGateImpl("h", data) {
+            @Override
+            public Matrix build() {
+                return Matrix.h(data);
+            }
+        };
     }
 
     /**
@@ -116,7 +97,12 @@ public interface QuGate {
      * @param qubit the data bit
      */
     static QuGate i(int qubit) {
-        return new QuGateImpl("i", new int[]{qubit}, Matrix.identity());
+        return new QuGateImpl("i", qubit) {
+            @Override
+            public Matrix build() {
+                return Matrix.identity(2 << qubit);
+            }
+        };
     }
 
     /**
@@ -138,7 +124,12 @@ public interface QuGate {
      * @param data the data bit index
      */
     static QuGate s(int data) {
-        return new QuGateImpl("s", new int[]{data}, Matrix.s());
+        return new QuGateImpl("s", data) {
+            @Override
+            public Matrix build() {
+                return Matrix.s(data);
+            }
+        };
     }
 
     /**
@@ -153,7 +144,12 @@ public interface QuGate {
             throw new IllegalArgumentException(format("the state mapping should have %d element (%d)",
                     numStates, mapping.length));
         }
-        return new QuGateImpl("map", qubits, Matrix.permute(mapping));
+        return new QuGateImpl("map", qubits) {
+            @Override
+            public Matrix build() {
+                return Matrix.permute(mapping);
+            }
+        };
     }
 
     /**
@@ -163,7 +159,12 @@ public interface QuGate {
      * @param data1 the data1 bit index
      */
     static QuGate swap(int data0, int data1) {
-        return new QuGateImpl("swap", new int[]{data0, data1}, Matrix.swap());
+        return new QuGateImpl("swap", data0, data1) {
+            @Override
+            public Matrix build() {
+                return Matrix.swap(data0, data1);
+            }
+        };
     }
 
     /**
@@ -172,7 +173,12 @@ public interface QuGate {
      * @param data the data bit index
      */
     static QuGate t(int data) {
-        return new QuGateImpl("t", new int[]{data}, Matrix.t());
+        return new QuGateImpl("t", data) {
+            @Override
+            public Matrix build() {
+                return Matrix.t(data);
+            }
+        };
     }
 
     /**
@@ -181,7 +187,12 @@ public interface QuGate {
      * @param data the data bit index
      */
     static QuGate x(int data) {
-        return new QuGateImpl("x", new int[]{data}, Matrix.x());
+        return new QuGateImpl("x", data) {
+            @Override
+            public Matrix build() {
+                return Matrix.x(data);
+            }
+        };
     }
 
     /**
@@ -190,7 +201,12 @@ public interface QuGate {
      * @param data the data bit index
      */
     static QuGate y(int data) {
-        return new QuGateImpl("y", new int[]{data}, Matrix.y());
+        return new QuGateImpl("y", data) {
+            @Override
+            public Matrix build() {
+                return Matrix.y(data);
+            }
+        };
     }
 
     /**
@@ -199,27 +215,23 @@ public interface QuGate {
      * @param data the data bit index
      */
     static QuGate z(int data) {
-        return new QuGateImpl("z", new int[]{data}, Matrix.z());
+        return new QuGateImpl("z", data) {
+            @Override
+            public Matrix build() {
+                return Matrix.z(data);
+            }
+        };
     }
 
     /**
      * Returns the state transformation matrix of the gate
-     *
-     * @param numBits the number of bits
      */
-    Matrix build(int numBits);
+    Matrix build();
 
     /**
      * Returns the indices of bits
      */
     int[] indices();
-
-    /**
-     * Returns the highest bit index of the gate
-     */
-    default int maxIndices() {
-        return Arrays.stream(indices()).max().orElse(-1);
-    }
 
     /**
      * Returns the type of gate

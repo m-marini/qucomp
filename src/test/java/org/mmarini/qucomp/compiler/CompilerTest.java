@@ -35,7 +35,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mmarini.qucomp.apis.Complex;
-import org.mmarini.qucomp.apis.Ket;
+import org.mmarini.qucomp.apis.Matrix;
 
 import java.io.IOException;
 import java.util.Deque;
@@ -53,19 +53,19 @@ class CompilerTest {
 
     public static Stream<Arguments> argsBra() {
         return Stream.of(
-                Arguments.of("<i|;", Ket.i()),
-                Arguments.of("<+|;", Ket.plus()),
-                Arguments.of("<-|;", Ket.minus()),
-                Arguments.of("<-i|;", Ket.minus_i())
+                Arguments.of("<i|;", Matrix.i()),
+                Arguments.of("<+|;", Matrix.plus()),
+                Arguments.of("<-|;", Matrix.minus()),
+                Arguments.of("<-i|;", Matrix.minus_i())
         );
     }
 
     public static Stream<Arguments> argsKet() {
         return Stream.of(
-                Arguments.of("|i>;", Ket.i()),
-                Arguments.of("|+>;", Ket.plus()),
-                Arguments.of("|->;", Ket.minus()),
-                Arguments.of("|-i>;", Ket.minus_i())
+                Arguments.of("|i>;", Matrix.i()),
+                Arguments.of("|+>;", Matrix.plus()),
+                Arguments.of("|->;", Matrix.minus()),
+                Arguments.of("|-i>;", Matrix.minus_i())
         );
     }
 
@@ -179,14 +179,14 @@ class CompilerTest {
 
     @ParameterizedTest
     @MethodSource("argsBra")
-    void testBra(String text, Ket exp) {
+    void testBra(String text, Matrix exp) {
         create(text);
         Deque<CommandNode> stack = compiler.stack();
         assertThat(stack, hasSize(1));
         CommandNode command = stack.getLast();
         assertThat(command, isCodeUnit(contains(
-                isConjCommand(
-                        isValueCommand(ketCloseTo(exp, EPSILON)))
+                isDaggerCommand(
+                        isValueCommand(matrixCloseTo(exp, EPSILON)))
         )));
     }
 
@@ -220,7 +220,7 @@ class CompilerTest {
         assertThat(stack, hasSize(1));
         CommandNode command = stack.getLast();
         assertThat(command, isCodeUnit(contains(
-                isConjCommand(
+                isDaggerCommand(
                         isValueCommand(1))
         )));
     }
@@ -335,7 +335,7 @@ class CompilerTest {
         assertThat(stack, hasSize(1));
         CommandNode command = stack.getLast();
         assertThat(command, isCodeUnit(contains(
-                isConjCommand(
+                isDaggerCommand(
                         isIntToKet(
                                 isValueCommand(exp))))
         ));
@@ -359,13 +359,13 @@ class CompilerTest {
 
     @ParameterizedTest
     @MethodSource("argsKet")
-    void testKet(String text, Ket exp) {
+    void testKet(String text, Matrix exp) {
         create(text);
         Deque<CommandNode> stack = compiler.stack();
         assertThat(stack, hasSize(1));
         CommandNode command = stack.getLast();
         assertThat(command, isCodeUnit(contains(
-                isValueCommand(ketCloseTo(exp, EPSILON))
+                isValueCommand(matrixCloseTo(exp, EPSILON))
         )));
     }
 
@@ -468,7 +468,7 @@ class CompilerTest {
         assertThat(stack, hasSize(1));
         CommandNode command = stack.getLast();
         assertThat(command, isCodeUnit(contains(
-                isNegateCommmand(
+                isNegateCommand(
                         isValueCommand(1)
                 )
         )));
@@ -490,10 +490,43 @@ class CompilerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "sqrt(), sqrt requires 1 arguments: actual 0 token(\"sqrt\")",
-            "'sqrt(1,2,3);', sqrt requires 1 arguments: actual 3 token(\"sqrt\")",
+            "sqrt(), sqrt requires 1 arguments: actual (0) token(\"sqrt\")",
+            "'sqrt(1,2,3);', sqrt requires 1 arguments: actual (3) token(\"sqrt\")",
+            "I(), I requires 1 arguments: actual (0) token(\"I\")",
+            "'I(1,2,3);', I requires 1 arguments: actual (3) token(\"I\")",
+            "H(), H requires 1 arguments: actual (0) token(\"H\")",
+            "'H(1,2,3);', H requires 1 arguments: actual (3) token(\"H\")",
+            "S(), S requires 1 arguments: actual (0) token(\"S\")",
+            "'S(1,2,3);', S requires 1 arguments: actual (3) token(\"S\")",
+            "T(), T requires 1 arguments: actual (0) token(\"T\")",
+            "'T(1,2,3);', T requires 1 arguments: actual (3) token(\"T\")",
+            "X(), X requires 1 arguments: actual (0) token(\"X\")",
+            "'X(1,2,3);', X requires 1 arguments: actual (3) token(\"X\")",
+            "Y(), Y requires 1 arguments: actual (0) token(\"Y\")",
+            "'Y(1,2,3);', Y requires 1 arguments: actual (3) token(\"Y\")",
+            "Z(), Z requires 1 arguments: actual (0) token(\"Z\")",
+            "'Z(1,2,3);', Z requires 1 arguments: actual (3) token(\"Z\")",
+            "ary(), ary requires 2 arguments: actual (0) token(\"ary\")",
+            "'ary(1);', ary requires 2 arguments: actual (1) token(\"ary\")",
+            "'ary(1,2,3);', ary requires 2 arguments: actual (3) token(\"ary\")",
+            "sim(), sim requires 2 arguments: actual (0) token(\"sim\")",
+            "'sim(1);', sim requires 2 arguments: actual (1) token(\"sim\")",
+            "'sim(1,2,3);', sim requires 2 arguments: actual (3) token(\"sim\")",
+            "eps(), eps requires 2 arguments: actual (0) token(\"eps\")",
+            "'eps(1);', eps requires 2 arguments: actual (1) token(\"eps\")",
+            "'eps(1,2,3);', eps requires 2 arguments: actual (3) token(\"eps\")",
+            "SWAP(), SWAP requires 2 arguments: actual (0) token(\"SWAP\")",
+            "'SWAP(1);', SWAP requires 2 arguments: actual (1) token(\"SWAP\")",
+            "'SWAP(1,2,3);', SWAP requires 2 arguments: actual (3) token(\"SWAP\")",
+            "CNOT(), CNOT requires 2 arguments: actual (0) token(\"CNOT\")",
+            "'CNOT(1);', CNOT requires 2 arguments: actual (1) token(\"CNOT\")",
+            "'CNOT(1,2,3);', CNOT requires 2 arguments: actual (3) token(\"CNOT\")",
+            "CCNOT(), CCNOT requires 3 arguments: actual (0) token(\"CCNOT\")",
+            "'CCNOT(1);', CCNOT requires 3 arguments: actual (1) token(\"CCNOT\")",
+            "'CCNOT(1,2);', CCNOT requires 3 arguments: actual (2) token(\"CCNOT\")",
+            "'CCNOT(1,2,3,4);', CCNOT requires 3 arguments: actual (4) token(\"CCNOT\")",
     })
-    void testSqrtError(String text, String msg) {
+    void testError(String text, String msg) {
         QuParseException ex = assertThrows(QuParseException.class, () -> create1(text));
         assertEquals(msg, ex.getMessage());
     }

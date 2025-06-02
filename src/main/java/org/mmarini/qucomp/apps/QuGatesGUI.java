@@ -33,7 +33,10 @@ import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.mmarini.qucomp.apis.*;
+import org.mmarini.qucomp.apis.Matrix;
+import org.mmarini.qucomp.apis.QuCircuitBuilder;
+import org.mmarini.qucomp.apis.QuGate;
+import org.mmarini.qucomp.apis.QuParser;
 import org.mmarini.qucomp.swing.GatesPanel;
 import org.mmarini.qucomp.swing.KetEditor;
 import org.mmarini.qucomp.swing.KetPanel;
@@ -111,7 +114,7 @@ public class QuGatesGUI {
     private final JSplitPane inGateOutSplitPanel;
     private final JSplitPane gateOutSplitPanel;
     private final Namespace args;
-    private Ket input;
+    private Matrix input;
     private Matrix matrix;
 
     /**
@@ -140,11 +143,11 @@ public class QuGatesGUI {
      */
     private void compute() {
         if (matrix != null && input != null) {
-            Ket currentInput = this.input;
+            Matrix currentInput = this.input;
             Matrix currentMatrix = this.matrix;
             computation().scheduleDirect(() -> {
                 try {
-                    outputPanel.setKet(currentInput.mul(currentMatrix));
+                    outputPanel.setKet(currentMatrix.mul(currentInput));
                     frame.validate();
                     frame.repaint();
                 } catch (Exception e) {
@@ -255,7 +258,7 @@ public class QuGatesGUI {
     /**
      * @param ket the ket
      */
-    private void onInputChanged(Ket ket) {
+    private void onInputChanged(Matrix ket) {
         inputPanel.setKet(ket);
         this.input = ket;
         compute();

@@ -29,17 +29,15 @@
 package org.mmarini.qucomp.compiler;
 
 import org.mmarini.Function2Throws;
-import org.mmarini.qucomp.apis.Bra;
+import org.mmarini.Tuple2;
 import org.mmarini.qucomp.apis.Complex;
-import org.mmarini.qucomp.apis.Ket;
+import org.mmarini.qucomp.apis.Matrix;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static java.lang.Math.abs;
 
 /**
  * Implements the execution context handling the variable dictionary
@@ -50,9 +48,151 @@ public class Processor implements ExecutionContext {
      * The implemented function definitions
      */
     public static final Map<String, FunctionDef> FUNCTION_BY_ID = Stream.of(
-            new FunctionDef("sqrt", 1, Processor::sqrt)).collect(Collectors.toMap(
-            FunctionDef::id, f -> f
-    ));
+            new FunctionDef("sqrt", 1, Processor::sqrt),
+            new FunctionDef("ary", 2, Processor::ary),
+            new FunctionDef("sim", 2, Processor::sim),
+            new FunctionDef("eps", 2, Processor::eps),
+            new FunctionDef("I", 1, Processor::identityGate),
+            new FunctionDef("H", 1, Processor::h),
+            new FunctionDef("X", 1, Processor::x),
+            new FunctionDef("Y", 1, Processor::y),
+            new FunctionDef("Z", 1, Processor::z),
+            new FunctionDef("S", 1, Processor::s),
+            new FunctionDef("T", 1, Processor::t),
+            new FunctionDef("SWAP", 2, Processor::swap),
+            new FunctionDef("CNOT", 2, Processor::cnot),
+            new FunctionDef("CCNOT", 3, Processor::ccnot)
+    ).collect(Collectors.toMap(FunctionDef::id, f -> f));
+
+    /**
+     * Returns the matrix of CCNOT gate
+     *
+     * @param context the source context
+     * @param args    the arguments
+     */
+    private static Object ccnot(SourceContext context, Tuple2<Object, SourceContext>[] args) throws QuExecException {
+        Tuple2<Object, SourceContext> dataArg = args[0];
+        Tuple2<Object, SourceContext> control0Arg = args[1];
+        Tuple2<Object, SourceContext> control1Arg = args[2];
+        int data = switch (dataArg._1) {
+            case null -> throw dataArg._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw dataArg._2.execException("Argument should be an integer: actual (%s)", dataArg._1);
+        };
+        int control0 = switch (control0Arg._1) {
+            case null -> throw control0Arg._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw control0Arg._2.execException("Argument should be an integer: actual (%s)", control0Arg._1);
+        };
+        int control1 = switch (control1Arg._1) {
+            case null -> throw control1Arg._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw control1Arg._2.execException("Argument should be an integer: actual (%s)", control1Arg._1);
+        };
+        return Matrix.ccnot(data, control0, control1);
+    }
+
+    /**
+     * Returns the matrix of CNOT gate
+     *
+     * @param context the source context
+     * @param args    the arguments
+     */
+    private static Object cnot(SourceContext context, Tuple2<Object, SourceContext>[] args) throws QuExecException {
+        Tuple2<Object, SourceContext> left = args[0];
+        Tuple2<Object, SourceContext> right = args[1];
+        int data = switch (left._1) {
+            case null -> throw left._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw left._2.execException("Argument should be an integer: actual (%s)", left._1);
+        };
+        int control = switch (right._1) {
+            case null -> throw right._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw right._2.execException("Argument should be an integer: actual (%s)", right._1);
+        };
+        return Matrix.cnot(data, control);
+    }
+
+    /**
+     * Returns the matrix with all zero elements except the element at(i,j)
+     *
+     * @param context the source context
+     * @param args    the arguments
+     */
+    private static Object swap(SourceContext context, Tuple2<Object, SourceContext>[] args) throws QuExecException {
+        Tuple2<Object, SourceContext> left = args[0];
+        Tuple2<Object, SourceContext> right = args[1];
+        int b0 = switch (left._1) {
+            case null -> throw left._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw left._2.execException("Argument should be an integer: actual (%s)", left._1);
+        };
+        int b1 = switch (right._1) {
+            case null -> throw right._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw right._2.execException("Argument should be an integer: actual (%s)", right._1);
+        };
+        return Matrix.swap(b0, b1);
+    }
+
+    /**
+     * Returns the matrix with all zero elements except the element at(i,j)
+     *
+     * @param context the source context
+     * @param args    the arguments
+     */
+    private static Object ary(SourceContext context, Tuple2<Object, SourceContext>[] args) throws QuExecException {
+        Tuple2<Object, SourceContext> left = args[0];
+        Tuple2<Object, SourceContext> right = args[1];
+        int row = switch (left._1) {
+            case null -> throw left._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw left._2.execException("Argument should be an integer: actual (%s)", left._1);
+        };
+        int col = switch (right._1) {
+            case null -> throw right._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw right._2.execException("Argument should be an integer: actual (%s)", right._1);
+        };
+        return Matrix.ary(row, col);
+    }
+
+    /**
+     * Returns the antisymmetric matrix for the element at(i,j)
+     *
+     * @param context the source context
+     * @param args    the arguments
+     */
+    private static Object eps(SourceContext context, Tuple2<Object, SourceContext>[] args) throws QuExecException {
+        Tuple2<Object, SourceContext> left = args[0];
+        Tuple2<Object, SourceContext> right = args[1];
+        int row = switch (left._1) {
+            case null -> throw left._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw left._2.execException("Argument should be an integer: actual (%s)", left._1);
+        };
+        int col = switch (right._1) {
+            case null -> throw right._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw right._2.execException("Argument should be an integer: actual (%s)", right._1);
+        };
+        return Matrix.eps(row, col);
+    }
+
+    /**
+     * Returns the matrix of H gate for the given qu-bit
+     *
+     * @param context the source context
+     * @param objects the argument
+     */
+    private static Object h(SourceContext context, Tuple2<Object, SourceContext>[] objects) throws QuExecException {
+        Tuple2<Object, SourceContext> arg = objects[0];
+        return switch (arg._1) {
+            case Integer n -> Matrix.h(n);
+            default -> throw arg._2.execException("Argument should be an integer: actual (%s)", arg._1.toString());
+        };
+    }
 
     /**
      * Return the sum of the two operands
@@ -65,8 +205,7 @@ public class Processor implements ExecutionContext {
         return switch (right) {
             case Integer value -> left + value;
             case Complex value -> Complex.create(left).add(value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
+            case Matrix value -> throw context.execException("Unexpected right argument (%s)", value);
             default -> throw context.execException("Invalid right operand %s", right);
         };
     }
@@ -82,8 +221,7 @@ public class Processor implements ExecutionContext {
         return switch (right) {
             case Integer value -> left.add(value);
             case Complex value -> left.add(value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
+            case Matrix value -> throw context.execException("Unexpected right argument (%s)", value);
             default -> throw context.execException("Invalid right operand (%s)", right);
         };
     }
@@ -91,35 +229,15 @@ public class Processor implements ExecutionContext {
     /**
      * Return the sum of the two operands
      *
-     * @param context the command
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object add(SourceContext context, Ket left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> throw context.execException("Unexpected right argument integer (%s)", value);
-            case Complex value -> throw context.execException("Unexpected right argument complex (%s)", value);
-            case Ket value -> left.extend(value.values().length)
-                    .add(value.extend(left.values().length));
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
-            default -> throw context.execException("Unexpected right argument %s", right);
-        };
-    }
-
-    /**
-     * Return the sum of the two operands
-     *
      * @param context the source context
      * @param left    the left operand
      * @param right   the right operand
      */
-    private static Object add(SourceContext context, Bra left, Object right) throws QuExecException {
+    private static Object add(SourceContext context, Matrix left, Object right) throws QuExecException {
         return switch (right) {
             case Integer value -> throw context.execException("Unexpected right argument integer (%s)", value);
             case Complex value -> throw context.execException("Unexpected right argument complex (%s)", value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> left.extend(value.values().length)
-                    .add(value.extend(left.values().length));
+            case Matrix value -> left.add(value);
             default -> throw context.execException("Invalid right operand %s", right);
         };
     }
@@ -131,29 +249,11 @@ public class Processor implements ExecutionContext {
      * @param left    the left operand
      * @param right   the right operand
      */
-    private static Object cross(SourceContext context, Ket left, Object right) throws QuExecException {
+    private static Object cross(SourceContext context, Matrix left, Object right) throws QuExecException {
         return switch (right) {
             case Integer ignored -> throw context.execException("Unexpected right argument integer (%s)", right);
             case Complex ignored -> throw context.execException("Unexpected right argument complex (%s)", right);
-            case Ket value -> left.cross(value);
-            case Bra ignored -> throw context.execException("Unexpected right argument bra (%s)", right);
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the cross product of the two operands
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object cross(SourceContext context, Bra left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer ignored -> throw context.execException("Unexpected right argument integer (%s)", right);
-            case Complex ignored -> throw context.execException("Unexpected right argument complex (%s)", right);
-            case Bra value -> left.cross(value);
-            case Ket ignored -> throw context.execException("Unexpected right argument ket (%s)", right);
+            case Matrix value -> left.cross(value);
             default -> throw context.execException("Invalid right operand %s", right);
         };
     }
@@ -165,34 +265,11 @@ public class Processor implements ExecutionContext {
      * @param left    the left operand
      * @param right   the right operand
      */
-    private static Object divide(SourceContext context, Bra left, Object right) throws QuExecException {
+    private static Object divide(SourceContext context, Matrix left, Object right) throws QuExecException {
         return switch (right) {
-            case Integer value -> left.mul(1f / value);
-            case Complex value -> left.mul(value.inv());
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> {
-                left = left.extend(value.values().length);
-                value = value.extend(left.values().length);
-                Ket ket = value.conj();
-                yield left.mul(ket).mul(value.mul(ket).inv());
-            }
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the division of the two operands left / right
-     *
-     * @param context the source context
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object divide(SourceContext context, Ket left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> left.mul(1f / value);
-            case Complex value -> left.mul(value.inv());
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
+            case Integer value -> left.div(value);
+            case Complex value -> left.div(value);
+            case Matrix value -> throw context.execException("Unexpected right argument (%s)", value);
             default -> throw context.execException("Invalid right operand %s", right);
         };
     }
@@ -210,14 +287,7 @@ public class Processor implements ExecutionContext {
                     ? left / value
                     : Complex.create(left).div(Complex.create(value));
             case Complex value -> Complex.create(left).div(value);
-            case Ket value -> {
-                Bra bra = value.conj();
-                yield bra.mul(bra.mul(value).inv().mul(left));
-            }
-            case Bra value -> {
-                Ket ket = value.conj();
-                yield ket.mul(value.mul(ket).inv().mul(left));
-            }
+            case Matrix value -> throw context.execException("Unexpected right argument (%s)", value);
             default -> throw context.execException("Invalid right operand %s", right);
         };
     }
@@ -233,15 +303,36 @@ public class Processor implements ExecutionContext {
         return switch (right) {
             case Integer value -> left.div(Complex.create(value));
             case Complex value -> left.div(value);
-            case Ket value -> {
-                Bra bra = value.conj();
-                yield bra.mul(bra.mul(value).inv().mul(left));
-            }
-            case Bra value -> {
-                Ket ket = value.conj();
-                yield ket.mul(value.mul(ket).inv().mul(left));
-            }
+            case Matrix value -> throw context.execException("Unexpected right argument (%s)", value);
             default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Returns the matrix of identity gate for the given qu-bit
+     *
+     * @param context the source context
+     * @param objects the argument
+     */
+    private static Object identityGate(SourceContext context, Tuple2<Object, SourceContext>[] objects) throws QuExecException {
+        Tuple2<Object, SourceContext> arg = objects[0];
+        return switch (arg._1) {
+            case Integer n -> Matrix.identity(1 << (n + 1));
+            default -> throw arg._2.execException("Argument should be an integer: actual (%s)", arg._1.toString());
+        };
+    }
+
+    /**
+     * Returns the matrix of S gate for the given qu-bit
+     *
+     * @param context the source context
+     * @param objects the argument
+     */
+    private static Object s(SourceContext context, Tuple2<Object, SourceContext>[] objects) throws QuExecException {
+        Tuple2<Object, SourceContext> arg = objects[0];
+        return switch (arg._1) {
+            case Integer n -> Matrix.s(n);
+            default -> throw arg._2.execException("Argument should be an integer: actual (%s)", arg._1.toString());
         };
     }
 
@@ -256,27 +347,8 @@ public class Processor implements ExecutionContext {
         return switch (right) {
             case Integer value -> left * value;
             case Complex value -> value.mul(left);
-            case Ket value -> value.mul(left);
-            case Bra value -> value.mul(left);
+            case Matrix value -> value.mul(left);
             default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the product of the two operands left / right
-     *
-     * @param context the command
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object multiply(SourceContext context, Bra left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> left.mul(value);
-            case Complex value -> left.mul(value);
-            case Ket value -> left.extend(value.values().length)
-                    .mul(value.extend(left.values().length));
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
-            default -> throw context.execException("Invalid right operand (%s)", right);
         };
     }
 
@@ -287,12 +359,15 @@ public class Processor implements ExecutionContext {
      * @param left    the left operand
      * @param right   the right operand
      */
-    private static Object multiply(SourceContext context, Ket left, Object right) throws QuExecException {
+    private static Object multiply(SourceContext context, Matrix left, Object right) throws QuExecException {
         return switch (right) {
             case Integer value -> left.mul(value);
             case Complex value -> left.mul(value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
+            case Matrix value -> {
+                Matrix result = left.mul(value);
+                yield (result.numCols() > 1 || result.numRows() > 1)
+                        ? result : result.at(0);
+            }
             default -> throw context.execException("Invalid right operand (%s)", right);
         };
     }
@@ -308,10 +383,31 @@ public class Processor implements ExecutionContext {
         return switch (right) {
             case Integer value -> left.mul(value);
             case Complex value -> value.mul(left);
-            case Ket value -> value.mul(left);
-            case Bra value -> value.mul(left);
+            case Matrix value -> value.mul(left);
             default -> throw context.execException("Invalid right operand %s", right);
         };
+    }
+
+    /**
+     * Returns the matrix with all zero elements except the element at(i,j)
+     *
+     * @param context the source context
+     * @param args    the arguments
+     */
+    private static Object sim(SourceContext context, Tuple2<Object, SourceContext>[] args) throws QuExecException {
+        Tuple2<Object, SourceContext> left = args[0];
+        Tuple2<Object, SourceContext> right = args[1];
+        int row = switch (left._1) {
+            case null -> throw left._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw left._2.execException("Argument should be an integer: actual (%s)", left._1);
+        };
+        int col = switch (right._1) {
+            case null -> throw right._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw right._2.execException("Argument should be an integer: actual (%s)", right._1);
+        };
+        return Matrix.sim(row, col);
     }
 
     /**
@@ -320,27 +416,14 @@ public class Processor implements ExecutionContext {
      * @param context the source context
      * @param args    the arguments
      */
-    private static Object sqrt(SourceContext context, Object... args) throws QuExecException {
-        Object value = args[0];
-        return switch (value) {
-            case null -> throw context.execException("Missing argument value");
+    private static Object sqrt(SourceContext context, Tuple2<Object, SourceContext>[] args) throws QuExecException {
+        Tuple2<Object, SourceContext> arg = args[0];
+        return switch (arg._1) {
+            case null -> throw arg._2.execException("Missing argument value");
             case Integer val -> Complex.create((float) Math.sqrt(val));
-            case Complex val when abs(val.module()) == 0 -> Complex.zero();
-            case Complex val when val.real() >= 0 -> {
-                float reDelta = val.real() + val.module();
-                float re = (float) Math.sqrt(reDelta / 2);
-                float im = (float) (val.im() / Math.sqrt(2 * reDelta));
-                yield new Complex(re, im);
-            }
-            case Complex val -> {
-                float reDelta = -val.real() + val.module();
-                float re = (float) (val.im() / Math.sqrt(2 * reDelta));
-                float im = (float) Math.sqrt(reDelta / 2);
-                yield new Complex(re, im);
-            }
-            case Bra val -> throw context.execException("Unexpected argument bra (%s)", val);
-            case Ket val -> throw context.execException("Unexpected argument ket (%s)", val);
-            default -> throw context.execException("Unexpected argument (%s)", value);
+            case Complex val -> val.sqrt();
+            case Matrix val -> throw arg._2.execException("Unexpected matrix argument (%s)", val);
+            default -> throw arg._2.execException("Unexpected argument (%s)", arg._1);
         };
     }
 
@@ -351,13 +434,11 @@ public class Processor implements ExecutionContext {
      * @param left    the left operand
      * @param right   the right operand
      */
-    private static Object sub(SourceContext context, Bra left, Object right) throws QuExecException {
+    private static Object sub(SourceContext context, Matrix left, Object right) throws QuExecException {
         return switch (right) {
             case Integer value -> throw context.execException("Unexpected right argument int (%s)", value);
             case Complex value -> throw context.execException("Unexpected right argument complex (%s)", value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> left.extend(value.values().length)
-                    .sub(value.extend(left.values().length));
+            case Matrix value -> left.sub(value);
             default -> throw context.execException("Invalid right operand %s", right);
         };
     }
@@ -373,26 +454,7 @@ public class Processor implements ExecutionContext {
         return switch (right) {
             case Integer value -> left.sub(value);
             case Complex value -> left.sub(value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
-            default -> throw context.execException("Invalid right operand %s", right);
-        };
-    }
-
-    /**
-     * Return the difference of the two operands left - right
-     *
-     * @param context the command
-     * @param left    the left operand
-     * @param right   the right operand
-     */
-    private static Object sub(SourceContext context, Ket left, Object right) throws QuExecException {
-        return switch (right) {
-            case Integer value -> throw context.execException("Unexpected right argument int (%s)", value);
-            case Complex value -> throw context.execException("Unexpected right argument complex (%s)", value);
-            case Ket value -> left.extend(value.values().length)
-                    .sub(value.extend(left.values().length));
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
+            case Matrix value -> throw context.execException("Unexpected right argument (%s)", value);
             default -> throw context.execException("Invalid right operand %s", right);
         };
     }
@@ -408,9 +470,64 @@ public class Processor implements ExecutionContext {
         return switch (right) {
             case Integer value -> left - value;
             case Complex value -> Complex.create(left).sub(value);
-            case Ket value -> throw context.execException("Unexpected right argument ket (%s)", value);
-            case Bra value -> throw context.execException("Unexpected right argument bra (%s)", value);
+            case Matrix value -> throw context.execException("Unexpected right argument (%s)", value);
             default -> throw context.execException("Invalid right operand %s", right);
+        };
+    }
+
+    /**
+     * Returns the matrix of T gate for the given qu-bit
+     *
+     * @param context the source context
+     * @param objects the argument
+     */
+    private static Object t(SourceContext context, Tuple2<Object, SourceContext>[] objects) throws QuExecException {
+        Tuple2<Object, SourceContext> arg = objects[0];
+        return switch (arg._1) {
+            case Integer n -> Matrix.t(n);
+            default -> throw arg._2.execException("Argument should be an integer: actual (%s)", arg._1.toString());
+        };
+    }
+
+    /**
+     * Returns the matrix of X gate for the given qu-bit
+     *
+     * @param context the source context
+     * @param objects the argument
+     */
+    private static Object x(SourceContext context, Tuple2<Object, SourceContext>[] objects) throws QuExecException {
+        Tuple2<Object, SourceContext> arg = objects[0];
+        return switch (arg._1) {
+            case Integer n -> Matrix.x(n);
+            default -> throw arg._2.execException("Argument should be an integer: actual (%s)", arg._1.toString());
+        };
+    }
+
+    /**
+     * Returns the matrix of Y gate for the given qu-bit
+     *
+     * @param context the source context
+     * @param objects the argument
+     */
+    private static Object y(SourceContext context, Tuple2<Object, SourceContext>[] objects) throws QuExecException {
+        Tuple2<Object, SourceContext> arg = objects[0];
+        return switch (arg._1) {
+            case Integer n -> Matrix.y(n);
+            default -> throw arg._2.execException("Argument should be an integer: actual (%s)", arg._1.toString());
+        };
+    }
+
+    /**
+     * Returns the matrix of Z gate for the given qu-bit
+     *
+     * @param context the source context
+     * @param objects the argument
+     */
+    private static Object z(SourceContext context, Tuple2<Object, SourceContext>[] objects) throws QuExecException {
+        Tuple2<Object, SourceContext> arg = objects[0];
+        return switch (arg._1) {
+            case Integer n -> Matrix.z(n);
+            default -> throw arg._2.execException("Argument should be an integer: actual (%s)", arg._1.toString());
         };
     }
 
@@ -418,7 +535,6 @@ public class Processor implements ExecutionContext {
 
     /**
      * Creates the processor
-     *
      */
     public Processor() {
         this.variables = new HashMap<>();
@@ -426,13 +542,16 @@ public class Processor implements ExecutionContext {
 
     @Override
     public Object add(SourceContext context, Object left, Object right) throws QuExecException {
-        return switch (left) {
-            case Integer value -> add(context, (int) value, right);
-            case Complex value -> add(context, value, right);
-            case Ket value -> add(context, value, right);
-            case Bra value -> add(context, value, right);
-            default -> throw context.execException("Invalid left operand %s", left);
-        };
+        try {
+            return switch (left) {
+                case Integer value -> add(context, (int) value, right);
+                case Complex value -> add(context, value, right);
+                case Matrix value -> add(context, value, right);
+                default -> throw context.execException("Invalid left operand %s", left);
+            };
+        } catch (IllegalArgumentException ex) {
+            throw context.execException(ex);
+        }
     }
 
     @Override
@@ -451,25 +570,27 @@ public class Processor implements ExecutionContext {
     }
 
     @Override
-    public Object conj(SourceContext context, Object arg) throws QuExecException {
+    public Object cross(SourceContext context, Object left, Object right) throws QuExecException {
+        try {
+            return switch (left) {
+                case Integer ignored -> throw context.execException("Unexpected left argument integer (%s)", left);
+                case Complex ignored -> throw context.execException("Unexpected left argument complex (%s)", left);
+                case Matrix leftVal -> cross(context, leftVal, right);
+                default -> throw context.execException("Invalid left operand %s", left);
+            };
+        } catch (IllegalArgumentException ex) {
+            throw context.execException(ex);
+        }
+    }
+
+    @Override
+    public Object dagger(SourceContext context, Object arg) throws QuExecException {
         return switch (arg) {
             case null -> throw context.execException("Missing value");
             case Integer val -> val;
             case Complex val -> val.conj();
-            case Ket val -> val.conj();
-            case Bra val -> val.conj();
+            case Matrix val -> val.dagger();
             default -> throw context.execException("Unexpected value: " + arg);
-        };
-    }
-
-    @Override
-    public Object cross(SourceContext context, Object left, Object right) throws QuExecException {
-        return switch (left) {
-            case Integer ignored -> throw context.execException("Unexpected left argument integer (%s)", left);
-            case Complex ignored -> throw context.execException("Unexpected left argument complex (%s)", left);
-            case Ket leftVal -> cross(context, leftVal, right);
-            case Bra leftVal -> cross(context, leftVal, right);
-            default -> throw context.execException("Invalid left operand %s", left);
         };
     }
 
@@ -478,41 +599,47 @@ public class Processor implements ExecutionContext {
         return switch (left) {
             case Integer value -> divide(context, value, right);
             case Complex value -> divide(context, value, right);
-            case Ket value -> divide(context, value, right);
-            case Bra value -> divide(context, value, right);
+            case Matrix value -> divide(context, value, right);
             default -> throw context.execException("Invalid left operand %s", left);
         };
     }
 
     @Override
-    public Object function(SourceContext context, String id, Object[] args) throws QuExecException {
-        Function2Throws<SourceContext, Object[], ? super Object, QuExecException> func = Optional.ofNullable(FUNCTION_BY_ID.get(id))
+    public Object function(SourceContext context, String id, Tuple2<Object, SourceContext>[] args) throws QuExecException {
+        Function2Throws<SourceContext, Tuple2<Object, SourceContext>[], ? super Object, QuExecException> func = Optional.ofNullable(FUNCTION_BY_ID.get(id))
                 .map(FunctionDef::function)
                 .orElse(null);
         if (func == null) {
             throw context.execException("Unknown function " + id);
         }
-        return func.apply(context, args);
+        try {
+            return func.apply(context, args);
+        } catch (IllegalArgumentException ex) {
+            throw context.execException(ex);
+        }
     }
 
     @Override
     public Object intToKet(SourceContext context, Object state) throws QuExecException {
         return switch (state) {
             case null -> throw context.execException("Missing value");
-            case Integer st -> Ket.base(st);
+            case Integer st -> Matrix.ketBase(st);
             default -> throw context.execException("Expected integer value: (" + state + ")");
         };
     }
 
     @Override
     public Object mul(SourceContext context, Object left, Object right) throws QuExecException {
-        return switch (left) {
-            case Integer value -> multiply(context, value, right);
-            case Complex value -> multiply(context, value, right);
-            case Ket value -> multiply(context, value, right);
-            case Bra value -> multiply(context, value, right);
-            default -> throw context.execException("Invalid left operand %s", left);
-        };
+        try {
+            return switch (left) {
+                case Integer value -> multiply(context, value, right);
+                case Complex value -> multiply(context, value, right);
+                case Matrix value -> multiply(context, value, right);
+                default -> throw context.execException("Invalid left operand %s", left);
+            };
+        } catch (IllegalArgumentException ex) {
+            throw context.execException(ex.getMessage());
+        }
     }
 
     @Override
@@ -521,8 +648,7 @@ public class Processor implements ExecutionContext {
             case null -> context.execException("Missing value");
             case Integer val -> -val;
             case Complex val -> val.neg();
-            case Ket val -> val.neg();
-            case Bra val -> val.neg();
+            case Matrix val -> val.neg();
             default -> throw context.execException("Unexpected value: " + arg);
         };
     }
@@ -541,13 +667,16 @@ public class Processor implements ExecutionContext {
 
     @Override
     public Object sub(SourceContext context, Object left, Object right) throws QuExecException {
-        return switch (left) {
-            case Integer value -> sub(context, (int) value, right);
-            case Complex value -> sub(context, value, right);
-            case Ket value -> sub(context, value, right);
-            case Bra value -> sub(context, value, right);
-            default -> throw context.execException("Invalid left operand %s", left);
-        };
+        try {
+            return switch (left) {
+                case Integer value -> sub(context, (int) value, right);
+                case Complex value -> sub(context, value, right);
+                case Matrix value -> sub(context, value, right);
+                default -> throw context.execException("Invalid left operand %s", left);
+            };
+        } catch (IllegalArgumentException ex) {
+            throw context.execException(ex);
+        }
     }
 
     /**
@@ -565,7 +694,7 @@ public class Processor implements ExecutionContext {
      * @param function the function
      */
     public record FunctionDef(String id, int numArgs,
-                              Function2Throws<SourceContext, Object[], ? super Object, QuExecException> function) {
+                              Function2Throws<SourceContext, Tuple2<Object, SourceContext>[], ? super Object, QuExecException> function) {
 
     }
 

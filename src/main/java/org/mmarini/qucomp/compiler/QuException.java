@@ -36,6 +36,16 @@ import java.io.IOException;
 public class QuException extends IOException {
 
     /**
+     * Creates the expection
+     *
+     * @param message the message
+     * @param cause   the cause
+     */
+    public QuException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    /**
      * Creates the qu exception
      *
      * @param message the message error

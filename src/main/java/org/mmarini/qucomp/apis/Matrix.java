@@ -31,17 +31,16 @@ package org.mmarini.qucomp.apis;
 import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.mmarini.ParallelProcess;
-import org.mmarini.Tuple2;
 
 import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static java.lang.Math.min;
-import static java.lang.Math.sqrt;
+import static java.lang.Math.*;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static org.mmarini.qucomp.apis.VectorUtils.numBitsByState;
 import static org.mmarini.qucomp.apis.VectorUtils.partMul;
 
 /**
@@ -49,74 +48,154 @@ import static org.mmarini.qucomp.apis.VectorUtils.partMul;
  */
 public class Matrix {
 
-    public static final Matrix IDENTITY = permute(0, 1);
-    public static final Matrix CCNOT = permute(0, 1, 2, 3, 4, 5, 7, 6);
-    public static final Matrix SWAP = permute(0, 2, 1, 3);
-    public static final Matrix CNOT = permute(0, 1, 3, 2);
-    public static final Matrix X = permute(1, 0);
-
-    public static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
-    public static final Matrix S = create(2, 2,
+    private static final long ORDER_BY_CORE_THRESHOLD = 64 * 64 * 64 * 64 / 12;
+    private static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
+    private static final Matrix I_KET = ket(Complex.create(HALF_SQRT2), Complex.i(HALF_SQRT2));
+    private static final Matrix MINUS_I_KET = ket(Complex.create(HALF_SQRT2), Complex.i(-HALF_SQRT2));
+    private static final Matrix PLUS_KET = ket(HALF_SQRT2, HALF_SQRT2);
+    private static final Matrix MINUS_KET = ket(HALF_SQRT2, -HALF_SQRT2);
+    private static final Matrix CNOT_GATE = permute(0, 1, 3, 2);
+    private static final Matrix CCNOT_GATE = permute(0, 1, 2, 3, 4, 5, 7, 6);
+    private static final Matrix H_GATE = create(2, 2,
+            HALF_SQRT2, HALF_SQRT2,
+            HALF_SQRT2, -HALF_SQRT2);
+    private static final Matrix S_GATE = create(2, 2,
             Complex.one(), Complex.zero(),
             Complex.zero(), Complex.i());
-    public static final Matrix Y = create(2, 2,
-            Complex.zero(), Complex.i(-1),
-            Complex.i(), Complex.zero());
-    public static final Matrix Z = create(2, 2,
-            Complex.one(), Complex.zero(),
-            Complex.zero(), Complex.create(-1));
-    public static final Matrix H = create(2, 2,
-            Complex.one(), Complex.one(),
-            Complex.one(), Complex.create(-1)).mul(HALF_SQRT2);
-    public static final Matrix T = create(2, 2,
+    private static final Matrix T_GATE = create(2, 2,
             Complex.one(), Complex.zero(),
             Complex.zero(), new Complex(HALF_SQRT2, HALF_SQRT2));
-    private static final long ORDER_BY_CORE_THRESHOLD = 64 * 64 * 64 * 64 / 12;
+    private static final Matrix X_GATE = create(2, 2,
+            0, 1,
+            1, 0);
+    private static final Matrix Y_GATE = create(2, 2,
+            Complex.zero(), Complex.i(-1),
+            Complex.i(), Complex.zero());
+    private static final Matrix Z_GATE = create(2, 2,
+            1, 0,
+            0, -1);
 
     /**
-     * Returns Toffoli operator
-     * <pre>
-     *      CCNOT |0> = |0>
-     *      CCNOT |1> = |1>
-     *      CCNOT |2> = |2>
-     *      CCNOT |3> = |3>
-     *      CCNOT |4> = |4>
-     *      CCNOT |5> = |5>
-     *      CCNOT |6> = |7>
-     *      CCNOT |7> = |6>
-     * </pre>
-     */
-    public static Matrix ccnot() {
-        return CCNOT;
-    }
-
-    /**
-     * Returns the cnot operator
-     * <pre>
-     *      CNOT |0> = |0>
-     *      CNOT |1> = |1>
-     *      CNOT |2> = |3>
-     *      CNOT |3> = |2>
-     * </pre>
-     */
-    public static Matrix cnot() {
-        return CNOT;
-    }
-
-    /**
-     * Returns the matrix from cell generator
+     * Returns the matrix with all zero elements except the element at(row, col)
      *
-     * @param numRows the number of rows
-     * @param numCols the number of cols
-     * @param f       the cell generator by index
+     * @param row the row index
+     * @param col the column index
      */
-    public static Matrix create(int numRows, int numCols, Function<int[], Complex> f) {
-        Complex[] cells = new Complex[numRows * numCols];
-        indexStream(numRows, numCols).forEach(indices -> {
-            Complex cell = f.apply(indices);
-            cells[unsafeIndex(numCols, indices)] = cell;
-        });
-        return new Matrix(numRows, numCols, cells);
+    public static Matrix ary(int row, int col) {
+        int rows = 1 << numBitsByState(row);
+        int cols = 1 << numBitsByState(col);
+        Complex[] cells = new Complex[rows * cols];
+        Arrays.fill(cells, Complex.zero());
+        cells[unsafeIndex(cols, row, col)] = Complex.one();
+        return new Matrix(rows, cols, cells);
+    }
+
+    /**
+     * Returns the matrix of ccnot gate (Toffoli) applied to the given bits
+     *
+     * @param data     the data bit
+     * @param control0 the first control bit
+     * @param control1 the second control bit
+     */
+    public static Matrix ccnot(int data, int control0, int control1) {
+        return createGate(CCNOT_GATE, data, control0, control1);
+    }
+
+    /**
+     * Returns the matrix of cnot gate applied to the given bits
+     *
+     * @param data    the data bit
+     * @param control the control bit
+     */
+    public static Matrix cnot(int data, int control) {
+        return createGate(CNOT_GATE, data, control);
+    }
+
+    /**
+     * Returns the bit permutation from input to internal gate input.
+     * <p>
+     * The input bits map is the values of internal gate bits for each input gate input (internal[i]<-bitMap[i])
+     * E.g.
+     * <pre>
+     *     [2, 0] = internals[0] <- input[2],
+     *              internals[1] <- input[0]
+     * </pre>
+     * </p>
+     * <p>
+     * The results is the map of the values of input gate bits for each internal gate input (internal[i]->bitMap[i])
+     * E.g. the result of [2, 1] is
+     * <pre>
+     *     [2, 1, 0] = internals[0] -> input[2],
+     *                 internals[1] -> input[1],
+     *                 internals[2] -> input[0]
+     * </pre>
+     * </p>
+     *
+     * @param bitMap the bits map
+     */
+    static int[] computeBitsPermutation(int... bitMap) {
+        validateBitMap(bitMap);
+        int numBits = max(bitMap.length, Arrays.stream(bitMap).max().orElse(0) + 1);
+        int[] result = new int[numBits];
+        int m = bitMap.length;
+        boolean[] gateMapped = new boolean[numBits];
+        boolean[] inMapped = new boolean[numBits];
+        // Map gate input
+        for (int i = 0; i < m; i++) {
+            result[bitMap[i]] = i;
+            gateMapped[bitMap[i]] = inMapped[i] = true;
+        }
+        // Mapped unchanged
+        for (int i = m; i < numBits; i++) {
+            if (!gateMapped[i]) {
+                gateMapped[i] = inMapped[i] = true;
+                result[i] = i;
+            }
+        }
+        // Map remaining
+        int free = 0;
+        for (int i = m; i < numBits; i++) {
+            if (!inMapped[i]) {
+                while (gateMapped[free]) {
+                    free++;
+                }
+                result[free] = i;
+                gateMapped[free] = inMapped[i] = true;
+            }
+
+        }
+        return result;
+    }
+
+    /**
+     * Returns the state permutation given the input bit permutation
+     * <pre>
+     *     out[p[i]]=in[i]
+     * </pre>
+     *
+     * @param bitPermutation the bit permutations in[i] = the bit index of the resulting bit for the i-th input bit
+     */
+    static int[] computeStatePermutation(int... bitPermutation) {
+        return IntStream.range(0, 1 << bitPermutation.length)
+                .map(s -> {
+                    int s1 = 0;
+                    int mask = 1;
+                    for (int i = 0; i < bitPermutation.length; i++) {
+                        int b = s & mask;
+                        if (b != 0) {
+                            int sh = bitPermutation[i] - i;
+                            if (sh < 0) {
+                                b >>>= -sh;
+                            } else if (sh > 0) {
+                                b <<= sh;
+                            }
+                            s1 |= b;
+                        }
+                        mask <<= 1;
+                    }
+                    return s1;
+                })
+                .toArray();
     }
 
     /**
@@ -149,10 +228,68 @@ public class Matrix {
     }
 
     /**
-     * Returns the H operator (Hadamard)
+     * Returns the matrix from cell generator
+     *
+     * @param numRows the number of rows
+     * @param numCols the number of cols
+     * @param f       the cell generator by index
      */
-    public static Matrix h() {
-        return H;
+    public static Matrix create(int numRows, int numCols, Function<int[], Complex> f) {
+        Complex[] cells = new Complex[numRows * numCols];
+        indexStream(numRows, numCols).forEach(indices -> {
+            Complex cell = f.apply(indices);
+            cells[unsafeIndex(numCols, indices[0], indices[1])] = cell;
+        });
+        return new Matrix(numRows, numCols, cells);
+    }
+
+    /**
+     * Returns the matrix of cnot gate applied to the given bits
+     *
+     * @param baseGate the base gate matrix
+     * @param bitMap   the bit map
+     */
+    private static Matrix createGate(Matrix baseGate, int... bitMap) {
+        int[] statePermuteIn = computeStatePermutation(computeBitsPermutation(bitMap));
+        int[] statePermuteOut = inversePermutation(statePermuteIn);
+        return permute(statePermuteOut).mul(baseGate).mul(permute(statePermuteIn));
+    }
+
+
+    /**
+     * Returns the antisymmetric matrix with the (row, col) element equal (-1)^(row+col) if row < col
+     *
+     * @param row row index
+     * @param col columns index
+     */
+    public static Matrix eps(int row, int col) {
+        int size = 1 << numBitsByState(max(row, col));
+        Complex[] cells = new Complex[size * size];
+        Arrays.fill(cells, Complex.zero());
+        if (row != col) {
+            float val = (row + col) % 2 == 0
+                    ? 1 : -1;
+            val = row < col ? val : -val;
+            cells[unsafeIndex(size, row, col)] = Complex.create(val);
+            cells[unsafeIndex(size, col, row)] = Complex.create(-val);
+        }
+        return new Matrix(size, size, cells);
+    }
+
+    /**
+     * Returns the matrix of H (Hadamard) gate applied to i-th bit
+     *
+     * @param index the bit index
+     */
+    public static Matrix h(int index) {
+        return createGate(H_GATE, index);
+    }
+
+    /**
+     * Returns the |i> ket
+     */
+    public static Matrix i() {
+        return I_KET;
     }
 
     /**
@@ -166,13 +303,6 @@ public class Matrix {
     }
 
     /**
-     * Returns the identity matrix
-     */
-    public static Matrix identity() {
-        return IDENTITY;
-    }
-
-    /**
      * Returns the stream of indices
      */
     static Stream<int[]> indexStream(int numRows, int numCols) {
@@ -182,6 +312,68 @@ public class Matrix {
                         IntStream.range(0, numCols)
                                 .mapToObj(j -> new int[]{i, j})
                 );
+    }
+
+    /**
+     * Returns the inverse permutation
+     *
+     * @param s the permutation
+     */
+    static int[] inversePermutation(int[] s) {
+        int[] reverse = new int[s.length];
+        for (int i = 0; i < s.length; i++) {
+            reverse[s[i]] = i;
+        }
+        return reverse;
+    }
+
+    /**
+     * Returns the ket
+     *
+     * @param values the state values
+     */
+    public static Matrix ket(Complex... values) {
+        return new Matrix(values.length, 1, values);
+    }
+
+    /**
+     * Returns the ket
+     *
+     * @param values the state values
+     */
+    public static Matrix ket(float... values) {
+        Complex[] cells = new Complex[values.length];
+        for (int i = 0; i < cells.length; i++) {
+            cells[i] = Complex.create(values[i]);
+        }
+        return ket(cells);
+    }
+
+    /**
+     * Returns the ket base of the given state
+     *
+     * @param state the state
+     */
+    public static Matrix ketBase(int state) {
+        int n = 1 << numBitsByState(state);
+        Complex[] cells = new Complex[n];
+        Arrays.fill(cells, Complex.zero());
+        cells[state] = Complex.one();
+        return new Matrix(n, 1, cells);
+    }
+
+    /**
+     * Returns |->
+     */
+    public static Matrix minus() {
+        return MINUS_KET;
+    }
+
+    /**
+     * Return |-i>
+     */
+    public static Matrix minus_i() {
+        return MINUS_I_KET;
     }
 
     /**
@@ -230,54 +422,137 @@ public class Matrix {
     }
 
     /**
-     * Returns the s matrix
+     * Returns |+>
      */
-    public static Matrix s() {
-        return S;
+    public static Matrix plus() {
+        return PLUS_KET;
     }
 
     /**
-     * Returns the swap matrix
+     * Returns the symmetric matrix with the (row, col) element equal one
+     *
+     * @param row row index
+     * @param col columns index
      */
-    public static Matrix swap() {
-        return SWAP;
-    }
-
-    /**
-     * Returns the T operator
-     */
-    public static Matrix t() {
-        return T;
+    public static Matrix sim(int row, int col) {
+        int size = 1 << numBitsByState(max(row, col));
+        Complex[] cells = new Complex[size * size];
+        Arrays.fill(cells, Complex.zero());
+        cells[unsafeIndex(size, row, col)] = Complex.one();
+        cells[unsafeIndex(size, col, row)] = Complex.one();
+        return new Matrix(size, size, cells);
     }
 
     /**
      * Returns the index of element
      *
-     * @param stride  the stride
-     * @param indices the indices
+     * @param stride the stride
+     * @param row    the row index
+     * @param col    the column index
      */
-    static int unsafeIndex(int stride, int... indices) {
-        return indices[0] * stride + indices[1];
+    static int unsafeIndex(int stride, int row, int col) {
+        return row * stride + col;
     }
 
     /**
-     * Returns the X operator (Not)
+     * Returns the matrix of S gate applied to i-th bit
+     *
+     * @param index the bit index
      */
-    public static Matrix x() {
-        return X;
+    public static Matrix s(int index) {
+        return createGate(S_GATE, index);
     }
 
     /**
-     * Returns the Y operator
+     * Returns the matrix that transforms the states by swapping two bits
+     *
+     * @param b0 the first bit index
+     * @param b1 the second bit index
      */
-    public static Matrix y() {
-        return Y;
+    public static Matrix swap(int b0, int b1) {
+        int nBits = max(max(b0, b1), 1) + 1;
+        int[] bitPerm = IntStream.range(0, nBits).toArray();
+        bitPerm[b0] = b1;
+        bitPerm[b1] = b0;
+        int[] statePerm = computeStatePermutation(bitPerm);
+        statePerm = inversePermutation(statePerm);
+        return permute(statePerm);
     }
 
-    public static Matrix z() {
-        return Z;
+    /**
+     * Returns the matrix of T gate applied to i-th bit
+     *
+     * @param index the bit index
+     */
+    public static Matrix t(int index) {
+        return createGate(T_GATE, index);
     }
 
+    /**
+     * Returns the vector product of two matrices
+     * left[i, k] * right[j, l]
+     *
+     * @param right the right matrices
+     */
+    public Matrix cross(Matrix right) {
+        int rows = numRows * right.numRows;
+        int cols = numCols * right.numCols;
+        Complex[] cells = new Complex[rows * cols];
+        int idx = 0;
+        for (int i = 0; i < numRows; i++) {
+            for (int j = 0; j < right.numRows; j++) {
+                for (int k = 0; k < numCols; k++) {
+                    for (int l = 0; l < right.numCols; l++) {
+                        cells[idx] = at(i, k).mul(right.at(j, l));
+                        idx++;
+                    }
+                }
+            }
+        }
+        return new Matrix(rows, cols, cells);
+    }
+
+    /**
+     * Checks for the valid bit map with different values each other
+     *
+     * @param bitMap the bit map
+     */
+    private static void validateBitMap(int... bitMap) {
+        for (int i = 0; i < bitMap.length; i++) {
+            for (int j = i + 1; j < bitMap.length; j++) {
+                if (bitMap[i] == bitMap[j]) {
+                    throw new IllegalArgumentException(format("Expected all different indices %s", Arrays.toString(bitMap)));
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns the matrix of x (not) gate applied to i-th bit
+     *
+     * @param index the bit index
+     */
+    public static Matrix x(int index) {
+        return createGate(X_GATE, index);
+    }
+
+    /**
+     * Returns the matrix of Y gate applied to i-th bit
+     *
+     * @param index the bit index
+     */
+    public static Matrix y(int index) {
+        return createGate(Y_GATE, index);
+    }
+
+    /**
+     * Returns the matrix of Z gate applied to i-th bit
+     *
+     * @param index the bit index
+     */
+    public static Matrix z(int index) {
+        return createGate(Z_GATE, index);
+    }
     private final int numRows;
     private final int numCols;
     private final Complex[] cells;
@@ -301,25 +576,31 @@ public class Matrix {
      * @param other the other matrix
      */
     public Matrix add(Matrix other) {
-        if (!hasShape(other.numRows, other.numCols)) {
-            throw new IllegalArgumentException(format("shapes must be congruent %dx%d + %dx%d",
-                    numRows, numCols, other.numRows, other.numCols
-            ));
-        }
-        return create(numRows, numCols, indices -> {
-            Complex a = at(indices);
-            Complex b = other.at(indices);
-            return a.add(b);
-        });
+        int n = max(numRows, other.numRows);
+        int m = max(numCols, other.numCols);
+        Matrix left = extends0(n, m);
+        Matrix right = other.extends0(n, m);
+        Complex[] cells = VectorUtils.add(left.cells, right.cells);
+        return new Matrix(n, m, cells);
     }
 
     /**
      * Returns the element at index
      *
-     * @param indices the indices
+     * @param row the row index
+     * @param col the column index
      */
-    public Complex at(int... indices) {
-        return cells[index(indices)];
+    public Complex at(int row, int col) {
+        return cells[index(row, col)];
+    }
+
+    /**
+     * Returns the element at index (only for ket or bra)
+     *
+     * @param index index
+     */
+    public Complex at(int index) {
+        return cells[index(index)];
     }
 
     /**
@@ -337,62 +618,157 @@ public class Matrix {
     }
 
     /**
-     * Returns the vector product of two matrices
+     * Returns the probability of bit i-th to be |1>
      *
-     * @param other the other matrices
+     * @param index the bit index
      */
-    public Matrix cross(Matrix other) {
-        int n = numRows;
-        int m = other.numRows;
-        if (n != numCols || m != other.numCols) {
-            throw new IllegalArgumentException(format("matrices must be square matrix (%dx%d) x (%d, %d)",
-                    n, numCols, m, other.numCols));
+    public float prob(int index) {
+        int mask = 1 << index;
+        double prob = 0;
+        for (int i = 0; i < numRows; i++) {
+            if ((i & mask) != 0) {
+                prob += at(i).normSquare();
+            }
         }
-        int nm = n * m;
-        Complex[] cells = new Complex[nm * nm];
-        indexStream(n, numCols)
-                .flatMap(ik ->
-                        indexStream(m, other.numCols).map(jl -> Tuple2.of(ik, jl))
-                ).forEach(t -> {
-                    int[] ik = t._1;
-                    int[] jl = t._2;
-                    int i = ik[0];
-                    int k = ik[1];
-                    int j = jl[0];
-                    int l = jl[1];
-                    // Computes the result indices
-                    int r = i * m + j;
-                    int q = k * m + l;
-                    Complex cell = at(ik).mul(other.at(jl));
-                    int idx = unsafeIndex(nm, r, q);
-                    cells[idx] = cell;
-                });
-        return new Matrix(nm, nm, cells);
+        return (float) prob;
     }
 
     /**
-     * Returns true if the arrays has the same size
+     * Returns the conjugate transpose matrix
      */
-    boolean hasShape(int numRows, int numCols) {
-        return numRows == this.numRows && numCols == this.numCols;
+    public Matrix dagger() {
+        return conj().transpose();
+    }
+
+    /**
+     * Returns the division by divisor
+     *
+     * @param value the divisor
+     */
+    public Matrix div(float value) {
+        Complex[] cells = VectorUtils.divScalar(this.cells, value);
+        return new Matrix(numRows, numCols, cells);
+    }
+
+    /**
+     * Returns the division by divisor
+     *
+     * @param value the divisor
+     */
+    public Matrix div(Complex value) {
+        Complex[] cells = VectorUtils.divScalar(this.cells, value);
+        return new Matrix(numRows, numCols, cells);
+    }
+
+    /**
+     * Returns the extended matrix by appending zero filled cell
+     *
+     * @param numRows the number of resulting rows
+     * @param numCols the number of resulting columns
+     */
+    public Matrix extends0(int numRows, int numCols) {
+        return extendsCols(numCols)
+                .extendsRows(numRows);
+    }
+
+    /**
+     * Returns the extended matrix by appending zero filled cols
+     *
+     * @param numCols the number resulting of rows
+     */
+    public Matrix extendsCols(int numCols) {
+        if (this.numCols >= numCols) {
+            return this;
+        }
+        Complex[] cells = new Complex[numRows * numCols];
+
+        for (int i = 0; i < numRows; i++) {
+            System.arraycopy(this.cells, i * this.numCols, cells, i * numCols, this.numCols);
+            Arrays.fill(cells, i * numCols + this.numCols, i * numCols + numCols, Complex.zero());
+        }
+        return new Matrix(numRows, numCols, cells);
+    }
+
+    /**
+     * Returns the extended matrix by cross-product of square matrices
+     *
+     * @param n the size of the resulting matrix
+     */
+    public Matrix extendsCrossSquare(int n) {
+        if (numCols == 1) {
+            // Extend ket
+            return extendsRows(n);
+        }
+        if (numRows == 1) {
+            // Extend Bra
+            return extendsCols(n);
+        }
+        if (numCols != numRows) {
+            throw new IllegalArgumentException(format("Expected square matrix (%dx%d)", numRows, numCols));
+        }
+        if (n == numRows) {
+            return this;
+        }
+        if ((n % numRows) > 0) {
+            throw new IllegalArgumentException(format("Expected size multiple of %dx%d (%dx%d)", numRows, numRows, n, n));
+        }
+        int q = n / numRows;
+        return identity(q).cross(this);
+    }
+
+    /**
+     * Returns the extended matrix by appending zer filled rows
+     *
+     * @param numRows the number resulting of rows
+     */
+    public Matrix extendsRows(int numRows) {
+        if (this.numRows >= numRows) {
+            return this;
+        }
+        Complex[] cells = new Complex[numRows * numCols];
+        System.arraycopy(this.cells, 0, cells, 0, this.cells.length);
+        Arrays.fill(cells, this.cells.length, cells.length, Complex.zero());
+        return new Matrix(numRows, numCols, cells);
     }
 
     /**
      * Returns the index of element
      *
-     * @param indices the indices
+     * @param row the row index
+     * @param col the column index
      */
-    public int index(int... indices) {
-        if (indices.length != 2) {
+    public int index(int row, int col) {
+        if (row < 0 || row >= numRows || col < 0 || col >= numCols) {
             throw new IllegalArgumentException(format(
-                    "indices must be 2 (%d)", indices.length));
+                    "index must have range (0-%d) x (0-%d) [%d, %d]",
+                    numRows, numCols, row, col));
         }
-        if (indices[0] < 0 || indices[0] >= numRows || indices[1] < 0 || indices[1] >= numCols) {
+        return unsafeIndex(numCols, row, col);
+    }
+
+    /**
+     * Returns the index of element
+     *
+     * @param index the index
+     */
+    public int index(int index) {
+        if (numCols == 1) {
+            if (index < 0 || index >= numRows) {
+                throw new IllegalArgumentException(format(
+                        "index must have range (0-%d) [%d]",
+                        numRows, index));
+            }
+        } else if (numRows == 1) {
+            if (index < 0 || index >= numCols) {
+                throw new IllegalArgumentException(format(
+                        "index must have range (0-%d) [%d]",
+                        numCols, index));
+            }
+        } else {
             throw new IllegalArgumentException(format(
-                    "index must have range (0-%d)x(0%d) (%dx %d)",
-                    numRows, numCols, indices[0], indices[1]));
+                    "Expected 2 indices [%d]", index));
         }
-        return unsafeIndex(numCols, indices);
+        return index;
     }
 
     /**
@@ -405,22 +781,19 @@ public class Matrix {
     }
 
     /**
-     * Returns the matrix multiplication (this x other)
+     * Returns the matrix multiplication (this x right) with extensions
      *
-     * @param other the other matrix
+     * @param right the right matrix
      */
-    public Matrix mul(Matrix other) {
-        // Validates shapes
-        if (numCols != other.numRows) {
-            throw new IllegalArgumentException(format("Invalid product operands shapes %dx%d by %dx%d",
-                    numRows, numCols,
-                    other.numRows, other.numCols));
+    public Matrix mul(Matrix right) {
+        // Check for extensions
+        Matrix left = this;
+        if (left.numCols > right.numRows) {
+            right = right.extendsCrossSquare(left.numCols);
+        } else if (left.numCols < right.numRows) {
+            left = left.extendsCrossSquare(right.numRows);
         }
-        long order = (long) numRows * numCols * numCols * other.numCols;
-        int cores = Runtime.getRuntime().availableProcessors();
-        return (order / cores) > ORDER_BY_CORE_THRESHOLD
-                ? mulConc(other)
-                : mulSeq(other);
+        return left.safeMul(right);
     }
 
     /**
@@ -512,25 +885,95 @@ public class Matrix {
     }
 
     /**
+     * Returns the matrix multiplication (this x right)
+     *
+     * @param right the right matrix
+     */
+    private Matrix safeMul(Matrix right) {
+        // Validates shapes
+        if (numCols != right.numRows) {
+            // Check for extensions
+            throw new IllegalArgumentException(format("Invalid product operands shapes %dx%d by %dx%d",
+                    numRows, numCols,
+                    right.numRows, right.numCols));
+        }
+        long order = (long) numRows * numCols * numCols * right.numCols;
+        int cores = Runtime.getRuntime().availableProcessors();
+        return (order / cores) > ORDER_BY_CORE_THRESHOLD
+                ? mulConc(right)
+                : mulSeq(right);
+    }
+
+    /**
      * Returns the difference matrix (this - other)
      *
      * @param other the other matrix
      */
     public Matrix sub(Matrix other) {
-        if (!hasShape(other.numRows, other.numCols)) {
-            throw new IllegalArgumentException(format("shapes must be congruent %dx%d + %dx%d",
-                    numRows, numCols, other.numRows, other.numCols
-            ));
+        int n = max(numRows, other.numRows);
+        int m = max(numCols, other.numCols);
+        Matrix left = extends0(n, m);
+        Matrix right = other.extends0(n, m);
+        Complex[] cells = VectorUtils.sub(left.cells, right.cells);
+        return new Matrix(n, m, cells);
+    }
+
+    /**
+     * Returns the bra string
+     */
+    private String toBraString() {
+        StringBuilder builder = new StringBuilder();
+        boolean isZero = true;
+        for (int i = 0; i < cells.length; i++) {
+            if (cells[i].norm() != 0) {
+                if (!isZero) {
+                    builder.append(" + ");
+                }
+                isZero = false;
+                builder.append("(");
+                builder.append(cells[i]);
+                builder.append(") <");
+                builder.append(i);
+                builder.append("|");
+            }
         }
-        return create(numRows, numCols, indices -> {
-            Complex a = at(indices);
-            Complex b = other.at(indices);
-            return a.sub(b);
-        });
+        return isZero ? "(0.0) <" + (cells.length - 1) + "|" : builder.toString();
+    }
+
+    /**
+     * Returns the ket string
+     */
+    private String toKetString() {
+        StringBuilder builder = new StringBuilder();
+        boolean isZero = true;
+        for (int i = 0; i < cells.length; i++) {
+            if (cells[i].norm() != 0) {
+                if (!isZero) {
+                    builder.append(" + ");
+                }
+                isZero = false;
+                builder.append("(");
+                builder.append(cells[i]);
+                builder.append(") |");
+                builder.append(i);
+                builder.append(">");
+            }
+        }
+        return isZero ? "(0.0) |" + (cells.length - 1) + ">" : builder.toString();
     }
 
     @Override
     public String toString() {
+        if (numCols == 1) {
+            if (numRows == 1) {
+                // Scalar value
+                return String.valueOf(cells[0]);
+            } else {
+                return toKetString();
+            }
+        } else if (numRows == 1) {
+            return toBraString();
+        }
         StringBuilder builder = new StringBuilder();
         String[] cols = Arrays.stream(cells).map(Complex::toString).toArray(String[]::new);
         int[] colSize = IntStream.range(0, numCols)

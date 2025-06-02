@@ -30,7 +30,7 @@ package org.mmarini.qucomp.swing;
 
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.processors.PublishProcessor;
-import org.mmarini.qucomp.apis.Ket;
+import org.mmarini.qucomp.apis.Matrix;
 import org.mmarini.swing.GridLayoutHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import static org.mmarini.qucomp.swing.Messages.format;
@@ -47,9 +46,17 @@ import static org.mmarini.qucomp.swing.Messages.format;
  * Handle the UI for ket editing
  */
 public class KetEditor extends JPanel {
-    public static final String[] QUBIT_VALUES = {"|0>", "|1>", "|+>", "|->", "|i>", "|-i>"};
+    private static final String[] QUBIT_VALUES = {"|0>", "|1>", "|+>", "|->", "|i>", "|-i>"};
+    private static final Matrix[] KET_VALUES = {
+            Matrix.ketBase(0),
+            Matrix.ketBase(1),
+            Matrix.plus(),
+            Matrix.minus(),
+            Matrix.i(),
+            Matrix.minus_i()
+    };
     private static final Logger logger = LoggerFactory.getLogger(KetEditor.class);
-    private final PublishProcessor<Ket> kets;
+    private final PublishProcessor<Matrix> kets;
     private final List<JComboBox<String>> quBits;
     private int numQuBits;
 
@@ -101,13 +108,9 @@ public class KetEditor extends JPanel {
     /**
      * Returns the optional of ket
      */
-    public Optional<Ket> getOptionalKet() {
+    public Optional<Matrix> getOptionalKet() {
         return quBits.stream()
-                .map(combo ->
-                        Ket.fromText(
-                                Objects.requireNonNull(
-                                        combo.getSelectedItem()).toString()
-                        ))
+                .map(combo -> KET_VALUES[combo.getSelectedIndex()])
                 .reduce((a, b) ->
                         b.cross(a)
                 );
@@ -116,7 +119,7 @@ public class KetEditor extends JPanel {
     /**
      * Returns the flow of ket
      */
-    public Flowable<Ket> readKet() {
+    public Flowable<Matrix> readKet() {
         return kets;
     }
 
