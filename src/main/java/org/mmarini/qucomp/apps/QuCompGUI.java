@@ -35,7 +35,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.mmarini.qucomp.compiler.*;
 import org.mmarini.qucomp.swing.Messages;
-import org.mmarini.swing.GridLayoutHelper;
+import org.mmarini.qucomp.swing.VariablePanel;
 import org.mmarini.swing.SwingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,6 +108,8 @@ public class QuCompGUI {
     private final Compiler compiler;
     private final SyntaxRule syntax;
     private final Processor processor;
+    private final VariablePanel varPanel;
+    private final JSplitPane execPanel;
 
     /**
      * Creates the application
@@ -126,6 +128,8 @@ public class QuCompGUI {
         this.syntax = Syntax.rule("<code-unit>");
         this.compiler = Compiler.create();
         this.processor = new Processor();
+        this.varPanel = new VariablePanel();
+        this.execPanel=new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 
         createContent();
         createFlow();
@@ -155,9 +159,21 @@ public class QuCompGUI {
         frame.setResizable(true);
         frame.setSize(1024, 700);
 
-        new GridLayoutHelper<>(frame.getContentPane()).modify("insets,2 center fill vw,1 hw,1")
-                .modify("at,0,0").add(new JScrollPane(codeEditor))
-                .modify("at,0,1 vw,0").add(errorPanel);
+        // Creates the execution panel
+        execPanel.setTopComponent(new JScrollPane(codeEditor));
+        execPanel.setBottomComponent(new JScrollPane(errorPanel));
+        execPanel.setDividerLocation(0.75);
+        execPanel.setResizeWeight(1);
+        execPanel.setContinuousLayout(true);
+        execPanel.setOneTouchExpandable(true);
+
+        // Create the main tab panel
+        JTabbedPane tabPanel = new JTabbedPane();
+        tabPanel.add(Messages.getString("QuCompGui.execPanel.title"), execPanel);
+        tabPanel.add(Messages.getString("QuCompGui.varPanel.title"), varPanel);
+
+        frame.getContentPane().setLayout(new BorderLayout());
+        frame.getContentPane().add(tabPanel, BorderLayout.CENTER);
     }
 
     /**
@@ -207,6 +223,7 @@ public class QuCompGUI {
      * Handle the frame open
      */
     private void onFrameOpen() {
+        execPanel.setDividerLocation(0.75);
     }
 
     /**
@@ -234,6 +251,7 @@ public class QuCompGUI {
             if (value != null) {
                 errorPanel.setText(value.toString());
             }
+            varPanel.setVariable(processor.variables());
         } catch (QuSourceException e) {
             SourceContext ctx = e.context();
             String[] msg = ctx.fullReportMessage(e.getMessage());
