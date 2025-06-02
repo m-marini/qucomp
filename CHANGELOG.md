@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Issue [#24](https://github.com/m-marini/qucomp/issues/24): Add qu language compiler
+- Issue [#26](https://github.com/m-marini/qucomp/issues/26): Add matrix qu language
 - Issue [#28](https://github.com/m-marini/qucomp/issues/28): Add parameter list
 
 ## [0.2.0] 2025-05-15
