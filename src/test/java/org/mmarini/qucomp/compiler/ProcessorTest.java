@@ -44,6 +44,7 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mmarini.qucomp.Matchers.complexClose;
 import static org.mmarini.qucomp.Matchers.matrixCloseTo;
+import static org.mmarini.qucomp.apis.MatrixTest.*;
 
 class ProcessorTest {
     public static final float EPSILON = 1e-5f;
@@ -167,7 +168,19 @@ class ProcessorTest {
                 Arguments.of("eps(2,3);", Matrix.eps(2, 3)),
                 Arguments.of("CNOT(1,2);", Matrix.cnot(1, 2)),
                 Arguments.of("CCNOT(1,2,3);", Matrix.ccnot(1, 2, 3)),
-                Arguments.of("SWAP(0,1);", Matrix.swap(0, 1))
+                Arguments.of("SWAP(0,1);", Matrix.swap(0, 1)),
+                Arguments.of("qubit0(0,1);", QUBIT0_01),
+                Arguments.of("qubit0(0,2);", QUBIT0_02),
+                Arguments.of("qubit0(1,2);", QUBIT0_12),
+                Arguments.of("qubit0(0,3);", QUBIT0_03),
+                Arguments.of("qubit0(1,3);", QUBIT0_13),
+                Arguments.of("qubit0(2,3);", QUBIT0_23),
+                Arguments.of("qubit1(0,1);", QUBIT1_01),
+                Arguments.of("qubit1(0,2);", QUBIT1_02),
+                Arguments.of("qubit1(1,2);", QUBIT1_12),
+                Arguments.of("qubit1(0,3);", QUBIT1_03),
+                Arguments.of("qubit1(1,3);", QUBIT1_13),
+                Arguments.of("qubit1(2,3);", QUBIT1_23)
         );
     }
 
@@ -335,15 +348,19 @@ class ProcessorTest {
             "'eps(i,1);', Argument should be an integer: actual (i) token(\"i\")",
             "'SWAP(1,i);', Argument should be an integer: actual (i) token(\"i\")",
             "'SWAP(i,1);', Argument should be an integer: actual (i) token(\"i\")",
-            "'CNOT(1,i);', Argument should be an integer: actual (i) token(\"i\")",
-            "'CNOT(i,1);', Argument should be an integer: actual (i) token(\"i\")",
+            "'CNOT(1,i);', Control qubit should be an integer: actual (i) token(\"i\")",
+            "'CNOT(i,1);', Data qubit should be an integer: actual (i) token(\"i\")",
             "'CNOT(0,0);', 'Expected all different indices [0, 0] token(\"CNOT\")'",
-            "'CCNOT(1,i,1);', Argument should be an integer: actual (i) token(\"i\")",
-            "'CCNOT(i,1,1);', Argument should be an integer: actual (i) token(\"i\")",
-            "'CCNOT(1,1,i);', Argument should be an integer: actual (i) token(\"i\")",
+            "'CCNOT(1,i,1);', Control0 qubit should be an integer: actual (i) token(\"i\")",
+            "'CCNOT(i,1,1);', Data qubit should be an integer: actual (i) token(\"i\")",
+            "'CCNOT(1,1,i);', Control1 qubit should be an integer: actual (i) token(\"i\")",
             "'CCNOT(0,0,1);', 'Expected all different indices [0, 0, 1] token(\"CCNOT\")'",
             "'CCNOT(0,1,0);', 'Expected all different indices [0, 1, 0] token(\"CCNOT\")'",
             "'CCNOT(1,0,0);', 'Expected all different indices [1, 0, 0] token(\"CCNOT\")'",
+            "'qubit0(1,i);', Number of qubits should be an integer: actual (i) token(\"i\")",
+            "'qubit0(i,1);', Qubit index should be an integer: actual (i) token(\"i\")",
+            "'qubit1(1,i);', Number of qubits should be an integer: actual (i) token(\"i\")",
+            "'qubit1(i,1);', Qubit index should be an integer: actual (i) token(\"i\")",
     })
     void testError(String text, String msg) {
         QuException ex = assertThrows(QuException.class, () -> execute(text));

@@ -253,7 +253,7 @@ public class KetPanel extends JPanel {
         int n = numBits(ket.numRows());
         this.bitProbabilities = new double[n];
         for (int i = 0; i < n; i++) {
-            bitProbabilities[i] = ket.prob(i);
+            bitProbabilities[i] = ket.dagger().mul(Matrix.qubit1(i, n).mul(ket)).at(0, 0).norm();
         }
         stateModel.fireTableChanged(new TableModelEvent(stateModel));
         bitModel.fireTableChanged(new TableModelEvent(stateModel));
