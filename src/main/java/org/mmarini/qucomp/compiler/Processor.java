@@ -63,7 +63,8 @@ public class Processor implements ExecutionContext {
             new FunctionDef("CNOT", 2, Processor::cnot),
             new FunctionDef("CCNOT", 3, Processor::ccnot),
             new FunctionDef("qubit0", 2, Processor::qubit0),
-            new FunctionDef("qubit1", 2, Processor::qubit1)
+            new FunctionDef("qubit1", 2, Processor::qubit1),
+            new FunctionDef("normalise", 1, Processor::normalise)
     ).collect(Collectors.toMap(FunctionDef::id, f -> f));
 
     /**
@@ -471,6 +472,23 @@ public class Processor implements ExecutionContext {
             case Integer val -> Complex.create(val).sqrt();
             case Complex val -> val.sqrt();
             case Matrix val -> throw arg._2.execException("Unexpected matrix argument (%s)", val);
+            default -> throw arg._2.execException("Unexpected argument (%s)", arg._1);
+        };
+    }
+
+    /**
+     * Return the normalized value
+     *
+     * @param context the source context
+     * @param args    the arguments
+     */
+    private static Object normalise(SourceContext context, Tuple2<Object, SourceContext>[] args) throws QuExecException {
+        Tuple2<Object, SourceContext> arg = args[0];
+        return switch (arg._1) {
+            case null -> throw arg._2.execException("Missing argument value");
+            case Integer ignored -> 1;
+            case Complex ignored -> Complex.one();
+            case Matrix val -> val.normalise();
             default -> throw arg._2.execException("Unexpected argument (%s)", arg._1);
         };
     }

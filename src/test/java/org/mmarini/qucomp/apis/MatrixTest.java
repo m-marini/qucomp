@@ -1341,6 +1341,14 @@ public class MatrixTest {
                 0, 0, 0, -1), EPSILON));
     }
 
+    @Test
+    void testNormalise() {
+        Matrix ket = Matrix.create(4, 1, 1, 2, 3, 4);
+        float norm = (float) sqrt(1 + 4 + 9 + 16);
+        Matrix exp = Matrix.create(4, 1, 1 / norm, 2 / norm, 3 / norm, 4 / norm);
+        assertThat(ket.normalise(), matrixCloseTo(exp, EPSILON));
+    }
+
     @ParameterizedTest
     @CsvSource({
             // p=(0 1 2 3)

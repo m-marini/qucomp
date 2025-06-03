@@ -48,6 +48,9 @@ import static org.mmarini.qucomp.apis.MatrixTest.*;
 
 class ProcessorTest {
     public static final float EPSILON = 1e-5f;
+    private static final Matrix NORM02 = Matrix.create(4, 1,
+            0.5f, 0.5f, 0.5f, 0.5f
+    );
 
     public static Stream<Arguments> testMatrixArgs() {
         return Stream.of(
@@ -180,7 +183,8 @@ class ProcessorTest {
                 Arguments.of("qubit1(1,2);", QUBIT1_12),
                 Arguments.of("qubit1(0,3);", QUBIT1_03),
                 Arguments.of("qubit1(1,3);", QUBIT1_13),
-                Arguments.of("qubit1(2,3);", QUBIT1_23)
+                Arguments.of("qubit1(2,3);", QUBIT1_23),
+                Arguments.of("normalise(|0>+|1>+|2>+|3>);", NORM02)
         );
     }
 
@@ -265,6 +269,7 @@ class ProcessorTest {
             "1 / i;, 0, -1",
             "i / 2;, 0, 0.5",
             "i / i;, 1, 0",
+            "normalise(i);, 1, 0",
     })
     void testComplex(String text, float re, float im) {
         Complex expected = new Complex(re, im);
@@ -386,7 +391,8 @@ class ProcessorTest {
             "2 * 3 * 4;, 24",
 
             "4 / 2;, 2",
-            "90 / 3;, 30"
+            "90 / 3;, 30",
+            "normalise(10);, 1",
     })
     void testInt(String text, int expected) {
         Object[] result = assertDoesNotThrow(() -> execute(text));
