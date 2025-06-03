@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.function.UnaryOperator;
 
 import static java.lang.Math.max;
+import static java.lang.Math.sqrt;
 import static java.lang.String.format;
 
 /**
@@ -125,16 +126,24 @@ public interface VectorUtils {
     }
 
     /**
+     * Returns the normalized cells
+     *
+     * @param cells the cells
+     */
+    static Complex[] normalize(Complex[] cells) {
+        float norm = (float) sqrt(Arrays.stream(cells)
+                .mapToDouble(Complex::normSquare)
+                .sum());
+        return Arrays.stream(cells).map(c -> c.div(norm)).toArray(Complex[]::new);
+    }
+
+    /**
      * Returns the number of bits from number of states
      *
      * @param numStates number of states
      */
     static int numBits(int numStates) {
-        int n = 0;
-        while ((numStates >>= 1) != 0) {
-            n++;
-        }
-        return n;
+        return numBitsByState(numStates - 1);
     }
 
     /**

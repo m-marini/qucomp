@@ -1030,4 +1030,11 @@ public class Matrix {
         return create(numCols, numRows, indices ->
                 at(indices[1], indices[0]));
     }
+
+    /**
+     * Returns the normalised matrix
+     */
+    public Matrix normalise() {
+        return new Matrix(numRows, numCols, VectorUtils.normalize(cells));
+    }
 }
