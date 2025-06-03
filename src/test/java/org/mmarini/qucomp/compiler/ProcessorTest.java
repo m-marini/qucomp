@@ -231,6 +231,7 @@ class ProcessorTest {
             "sqrt(4.);, 2,0",
             "sqrt(0.);, 0,0",
             "sqrt(-4.);, 0,2",
+            "sqrt(-4);, 0,2",
             "sqrt(8. * i);, 2,2",
             "sqrt(-8. * i);, 2,-2",
             "sqrt(8. +6* i);, 3,1",
