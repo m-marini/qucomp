@@ -420,7 +420,7 @@ public class Processor implements ExecutionContext {
         Tuple2<Object, SourceContext> arg = args[0];
         return switch (arg._1) {
             case null -> throw arg._2.execException("Missing argument value");
-            case Integer val -> Complex.create((float) Math.sqrt(val));
+            case Integer val -> Complex.create(val).sqrt();
             case Complex val -> val.sqrt();
             case Matrix val -> throw arg._2.execException("Unexpected matrix argument (%s)", val);
             default -> throw arg._2.execException("Unexpected argument (%s)", arg._1);
