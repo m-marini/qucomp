@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mmarini.qucomp.Matchers.complexClose;
 import static org.mmarini.qucomp.Matchers.matrixCloseTo;
 
-class MatrixTest {
+public class MatrixTest {
     public static final float EPSILON = 1e-6F;
     public static final Matrix MX = Matrix.create(2, 2,
             0, 1,
@@ -67,6 +67,94 @@ class MatrixTest {
             0, 1, 0, 0,
             0, 0, -1, 0,
             0, 0, 0, -1
+    );
+    public static final Matrix QUBIT0_01 = Matrix.create(2, 2,
+            1, 0,
+            0, 0);
+    public static final Matrix QUBIT0_02 = Matrix.create(4, 4,
+            1, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 0);
+    public static final Matrix QUBIT0_12 = Matrix.create(4, 4,
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0
+    );
+    public static final Matrix QUBIT0_03 = Matrix.create(8, 8,
+            1, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 1, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 0,
+            0, 0, 0, 0, 0, 0, 0, 0
+    );
+    public static final Matrix QUBIT0_13 = Matrix.create(8, 8,
+            1, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 1, 0, 0, 0,
+            0, 0, 0, 0, 0, 1, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0
+    );
+    public static final Matrix QUBIT0_23 = Matrix.create(8, 8,
+            1, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0
+    );
+    public static final Matrix QUBIT1_01 = Matrix.create(2, 2,
+            0, 0,
+            0, 1);
+    public static final Matrix QUBIT1_02 = Matrix.create(4, 4,
+            0, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 1);
+    public static final Matrix QUBIT1_12 = Matrix.create(4, 4,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1
+    );
+    public static final Matrix QUBIT1_03 = Matrix.create(8, 8,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 1, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 1
+    );
+    public static final Matrix QUBIT1_13 = Matrix.create(8, 8,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 0,
+            0, 0, 0, 0, 0, 0, 0, 1
+    );
+    public static final Matrix QUBIT1_23 = Matrix.create(8, 8,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 1, 0, 0, 0,
+            0, 0, 0, 0, 0, 1, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 0,
+            0, 0, 0, 0, 0, 0, 0, 1
     );
     static final Matrix S0 = Matrix.create(2, 2,
             Complex.one(), Complex.zero(),
@@ -578,6 +666,28 @@ class MatrixTest {
         );
     }
 
+    public static Stream<Arguments> testQubit0Args() {
+        return Stream.of(
+                Arguments.of(0, 1, QUBIT0_01),
+                Arguments.of(0, 2, QUBIT0_02),
+                Arguments.of(1, 2, QUBIT0_12),
+                Arguments.of(0, 3, QUBIT0_03),
+                Arguments.of(1, 3, QUBIT0_13),
+                Arguments.of(2, 3, QUBIT0_23)
+        );
+    }
+
+    public static Stream<Arguments> testQubit1Args() {
+        return Stream.of(
+                Arguments.of(0, 1, QUBIT1_01),
+                Arguments.of(0, 2, QUBIT1_02),
+                Arguments.of(1, 2, QUBIT1_12),
+                Arguments.of(0, 3, QUBIT1_03),
+                Arguments.of(1, 3, QUBIT1_13),
+                Arguments.of(2, 3, QUBIT1_23)
+        );
+    }
+
     public static Stream<Arguments> testSArgs() {
         return Stream.of(
                 Arguments.of(0, S0),
@@ -833,6 +943,15 @@ class MatrixTest {
     }
 
     @Test
+    void testAry() {
+        Matrix result = Matrix.ary(1, 2);
+        assertThat(result, matrixCloseTo(Matrix.create(2, 4,
+                0, 0, 0, 0,
+                0, 0, 1, 0
+        ), EPSILON));
+    }
+
+    @Test
     void testAtBra() {
         Matrix m = Matrix.create(1, 4,
                 0, 1, 2, 3
@@ -913,29 +1032,6 @@ class MatrixTest {
         int[] result = Matrix.computeBitsPermutation(in);
         // Then
         assertArrayEquals(exp, result);
-    }
-
-    @Test
-    void testAry() {
-        Matrix result = Matrix.ary(1, 2);
-        assertThat(result, matrixCloseTo(Matrix.create(2, 4,
-                0, 0, 0, 0,
-                0, 0, 1, 0
-        ), EPSILON));
-    }
-
-    @ParameterizedTest
-    @MethodSource("testEpsArgs")
-    void testEps(int i, int j, Matrix exp) {
-        Matrix result = Matrix.eps(i, j);
-        assertThat(result, matrixCloseTo(exp, EPSILON));
-    }
-
-    @ParameterizedTest
-    @MethodSource("testSimArgs")
-    void testSim(int i, int j, Matrix exp) {
-        Matrix result = Matrix.sim(i, j);
-        assertThat(result, matrixCloseTo(exp, EPSILON));
     }
 
     @ParameterizedTest(name = "[{index}] sigma({0}, {1}, {2}])")
@@ -1043,6 +1139,13 @@ class MatrixTest {
                 0, 0, 0.5f, 0,
                 0, 0, 0, 0.5f
         ), EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testEpsArgs")
+    void testEps(int i, int j, Matrix exp) {
+        Matrix result = Matrix.eps(i, j);
+        assertThat(result, matrixCloseTo(exp, EPSILON));
     }
 
     @Test
@@ -1322,10 +1425,29 @@ class MatrixTest {
     }
 
     @ParameterizedTest
+    @MethodSource("testQubit0Args")
+    void testQubit0(int index, int size, Matrix expected) {
+        assertThat(Matrix.qubit0(index, size), matrixCloseTo(expected, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testQubit1Args")
+    void testQubit1(int index, int size, Matrix expected) {
+        assertThat(Matrix.qubit1(index, size), matrixCloseTo(expected, EPSILON));
+    }
+
+    @ParameterizedTest
     @MethodSource("testSArgs")
     void testS(int index, Matrix exp) {
         Matrix m = Matrix.s(index);
         assertThat(m, matrixCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testSimArgs")
+    void testSim(int i, int j, Matrix exp) {
+        Matrix result = Matrix.sim(i, j);
+        assertThat(result, matrixCloseTo(exp, EPSILON));
     }
 
     @ParameterizedTest

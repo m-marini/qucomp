@@ -61,7 +61,9 @@ public class Processor implements ExecutionContext {
             new FunctionDef("T", 1, Processor::t),
             new FunctionDef("SWAP", 2, Processor::swap),
             new FunctionDef("CNOT", 2, Processor::cnot),
-            new FunctionDef("CCNOT", 3, Processor::ccnot)
+            new FunctionDef("CCNOT", 3, Processor::ccnot),
+            new FunctionDef("qubit0", 2, Processor::qubit0),
+            new FunctionDef("qubit1", 2, Processor::qubit1)
     ).collect(Collectors.toMap(FunctionDef::id, f -> f));
 
     /**
@@ -77,17 +79,19 @@ public class Processor implements ExecutionContext {
         int data = switch (dataArg._1) {
             case null -> throw dataArg._2.execException("Missing argument value");
             case Integer c -> c;
-            default -> throw dataArg._2.execException("Argument should be an integer: actual (%s)", dataArg._1);
+            default -> throw dataArg._2.execException("Data qubit should be an integer: actual (%s)", dataArg._1);
         };
         int control0 = switch (control0Arg._1) {
             case null -> throw control0Arg._2.execException("Missing argument value");
             case Integer c -> c;
-            default -> throw control0Arg._2.execException("Argument should be an integer: actual (%s)", control0Arg._1);
+            default ->
+                    throw control0Arg._2.execException("Control0 qubit should be an integer: actual (%s)", control0Arg._1);
         };
         int control1 = switch (control1Arg._1) {
             case null -> throw control1Arg._2.execException("Missing argument value");
             case Integer c -> c;
-            default -> throw control1Arg._2.execException("Argument should be an integer: actual (%s)", control1Arg._1);
+            default ->
+                    throw control1Arg._2.execException("Control1 qubit should be an integer: actual (%s)", control1Arg._1);
         };
         return Matrix.ccnot(data, control0, control1);
     }
@@ -104,12 +108,12 @@ public class Processor implements ExecutionContext {
         int data = switch (left._1) {
             case null -> throw left._2.execException("Missing argument value");
             case Integer c -> c;
-            default -> throw left._2.execException("Argument should be an integer: actual (%s)", left._1);
+            default -> throw left._2.execException("Data qubit should be an integer: actual (%s)", left._1);
         };
         int control = switch (right._1) {
             case null -> throw right._2.execException("Missing argument value");
             case Integer c -> c;
-            default -> throw right._2.execException("Argument should be an integer: actual (%s)", right._1);
+            default -> throw right._2.execException("Control qubit should be an integer: actual (%s)", right._1);
         };
         return Matrix.cnot(data, control);
     }
@@ -134,6 +138,50 @@ public class Processor implements ExecutionContext {
             default -> throw right._2.execException("Argument should be an integer: actual (%s)", right._1);
         };
         return Matrix.swap(b0, b1);
+    }
+
+    /**
+     * Returns the matrix for 0-value qubit projection
+     *
+     * @param context the source context
+     * @param args    the arguments
+     */
+    private static Object qubit0(SourceContext context, Tuple2<Object, SourceContext>[] args) throws QuExecException {
+        Tuple2<Object, SourceContext> left = args[0];
+        Tuple2<Object, SourceContext> right = args[1];
+        int index = switch (left._1) {
+            case null -> throw left._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw left._2.execException("Qubit index should be an integer: actual (%s)", left._1);
+        };
+        int size = switch (right._1) {
+            case null -> throw right._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw right._2.execException("Number of qubits should be an integer: actual (%s)", right._1);
+        };
+        return Matrix.qubit0(index, size);
+    }
+
+    /**
+     * Returns the matrix for 0-value qubit projection
+     *
+     * @param context the source context
+     * @param args    the arguments
+     */
+    private static Object qubit1(SourceContext context, Tuple2<Object, SourceContext>[] args) throws QuExecException {
+        Tuple2<Object, SourceContext> left = args[0];
+        Tuple2<Object, SourceContext> right = args[1];
+        int index = switch (left._1) {
+            case null -> throw left._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw left._2.execException("Qubit index should be an integer: actual (%s)", left._1);
+        };
+        int size = switch (right._1) {
+            case null -> throw right._2.execException("Missing argument value");
+            case Integer c -> c;
+            default -> throw right._2.execException("Number of qubits should be an integer: actual (%s)", right._1);
+        };
+        return Matrix.qubit1(index, size);
     }
 
     /**

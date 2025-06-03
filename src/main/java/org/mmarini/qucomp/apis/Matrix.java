@@ -429,6 +429,46 @@ public class Matrix {
     }
 
     /**
+     * Returns the qubit 0 value projection matrix
+     *
+     * @param index     the qubit index
+     * @param numQubits the number of qubits
+     */
+    public static Matrix qubit0(int index, int numQubits) {
+        int nBits = max(index + 1, numQubits);
+        int nStates = 1 << nBits;
+        int mask = 1 << index;
+        Complex[] cells = new Complex[nStates * nStates];
+        Arrays.fill(cells, Complex.zero());
+        for (int i = 0; i < nStates; i++) {
+            if ((i & mask) == 0) {
+                cells[unsafeIndex(nStates, i, i)] = Complex.one();
+            }
+        }
+        return new Matrix(nStates, nStates, cells);
+    }
+
+    /**
+     * Returns the qubit 0 value projection matrix
+     *
+     * @param index     the qubit index
+     * @param numQubits the number of qubits
+     */
+    public static Matrix qubit1(int index, int numQubits) {
+        int nBits = max(index + 1, numQubits);
+        int nStates = 1 << nBits;
+        int mask = 1 << index;
+        Complex[] cells = new Complex[nStates * nStates];
+        Arrays.fill(cells, Complex.zero());
+        for (int i = 0; i < nStates; i++) {
+            if ((i & mask) != 0) {
+                cells[unsafeIndex(nStates, i, i)] = Complex.one();
+            }
+        }
+        return new Matrix(nStates, nStates, cells);
+    }
+
+    /**
      * Returns the symmetric matrix with the (row, col) element equal one
      *
      * @param row row index
@@ -615,22 +655,6 @@ public class Matrix {
      */
     public Matrix conj() {
         return new Matrix(numRows, numCols, Arrays.stream(cells).map(Complex::conj).toArray(Complex[]::new));
-    }
-
-    /**
-     * Returns the probability of bit i-th to be |1>
-     *
-     * @param index the bit index
-     */
-    public float prob(int index) {
-        int mask = 1 << index;
-        double prob = 0;
-        for (int i = 0; i < numRows; i++) {
-            if ((i & mask) != 0) {
-                prob += at(i).normSquare();
-            }
-        }
-        return (float) prob;
     }
 
     /**
