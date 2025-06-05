@@ -13,7 +13,7 @@ import static org.mmarini.qucomp.Matchers.complexClose;
 
 class VectorUtilsTest {
 
-    public static final float EPSILON = 1e-6F;
+    public static final double EPSILON = 1e-6F;
 
     @Test
     void cross() {

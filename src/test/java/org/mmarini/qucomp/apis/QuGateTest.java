@@ -13,7 +13,7 @@ import static org.mmarini.qucomp.Matchers.matrixCloseTo;
 
 class QuGateTest {
 
-    public static final float EPSILON = 1e-6F;
+    public static final double EPSILON = 1e-6F;
     private static final Logger logger = LoggerFactory.getLogger(QuGateTest.class);
 
     @ParameterizedTest

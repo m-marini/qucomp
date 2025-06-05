@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Issue [#35](https://github.com/m-marini/qucomp/issues/35): Add qubit projections
 - Issue [#37](https://github.com/m-marini/qucomp/issues/37): Add normalization function
 
+### Changed
+
+- Issue [#39](https://github.com/m-marini/qucomp/issues/39): Asynchronous execution in GUI and double precision
+
+
 ### Fixed
 
 - Issue [#33](https://github.com/m-marini/qucomp/issues/33): Wrong sqrt of negative integer

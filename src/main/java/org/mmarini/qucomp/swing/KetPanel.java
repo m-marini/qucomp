@@ -56,8 +56,8 @@ public class KetPanel extends JPanel {
      * @param value the value
      */
     private static String complexString(Complex value) {
-        float real = value.real();
-        float im = value.im();
+        double real = value.real();
+        double im = value.im();
         if (real == 0) {
             if (im == 0) {
                 return "0";

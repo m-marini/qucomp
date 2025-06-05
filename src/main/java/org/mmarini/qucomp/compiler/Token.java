@@ -160,7 +160,7 @@ public interface Token {
         /**
          * Returns the value
          */
-        public float value() {
+        public double value() {
             return Float.parseFloat(token());
         }
     }
