@@ -45,11 +45,11 @@ import static org.hamcrest.Matchers.isA;
 
 public interface Matchers {
 
-    static Matcher<Complex> complexClose(float expectedReal, float expectedIm, float epsilon) {
+    static Matcher<Complex> complexClose(double expectedReal, double expectedIm, double epsilon) {
         return complexClose(new Complex(expectedReal, expectedIm), epsilon);
     }
 
-    static Matcher<Complex> complexClose(Complex expected, float epsilon) {
+    static Matcher<Complex> complexClose(Complex expected, double epsilon) {
         requireNonNull(expected);
         return new CustomMatcher<>(format("Complex close to %s within +- %f",
                 expected,
@@ -77,7 +77,7 @@ public interface Matchers {
         };
     }
 
-    static Matcher<Complex> complexClose(float expected, float epsilon) {
+    static Matcher<Complex> complexClose(double expected, double epsilon) {
         return complexClose(Complex.create(expected), epsilon);
     }
 
@@ -353,11 +353,11 @@ public interface Matchers {
         return isValueCommand(equalTo(expected));
     }
 
-    static Matcher<CommandNode> isValueCommand(Complex expected, float epsilon) {
+    static Matcher<CommandNode> isValueCommand(Complex expected, double epsilon) {
         return isValueCommand(complexClose(expected, epsilon));
     }
 
-    static Matcher<CommandNode> isValueCommand(float re, float im, float epsilon) {
+    static Matcher<CommandNode> isValueCommand(double re, double im, double epsilon) {
         return isValueCommand(complexClose(re, im, epsilon));
     }
 
@@ -384,7 +384,7 @@ public interface Matchers {
         };
     }
 
-    static Matcher<Matrix> matrixCloseTo(Matrix expected, float epsilon) {
+    static Matcher<Matrix> matrixCloseTo(Matrix expected, double epsilon) {
         requireNonNull(expected);
         return new BaseMatcher<>() {
 
@@ -473,11 +473,11 @@ public interface Matchers {
         };
     }
 
-    static Matcher<Token> realToken(float expValue) {
+    static Matcher<Token> realToken(double expValue) {
         return realToken(equalTo(expValue));
     }
 
-    static Matcher<Token> realToken(Matcher<Float> expValue) {
+    static Matcher<Token> realToken(Matcher<Double> expValue) {
         requireNonNull(expValue);
         return new CustomMatcher<>(format("RealToken(%s)",
                 expValue)) {

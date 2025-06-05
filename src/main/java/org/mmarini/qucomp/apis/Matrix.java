@@ -49,7 +49,7 @@ import static org.mmarini.qucomp.apis.VectorUtils.partMul;
 public class Matrix {
 
     private static final long ORDER_BY_CORE_THRESHOLD = 64 * 64 * 64 * 64 / 12;
-    private static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
+    private static final double HALF_SQRT2 = sqrt(2) / 2;
     private static final Matrix I_KET = ket(Complex.create(HALF_SQRT2), Complex.i(HALF_SQRT2));
     private static final Matrix MINUS_I_KET = ket(Complex.create(HALF_SQRT2), Complex.i(-HALF_SQRT2));
     private static final Matrix PLUS_KET = ket(HALF_SQRT2, HALF_SQRT2);
@@ -223,7 +223,7 @@ public class Matrix {
      * @param numCols the number of cols
      * @param values  cell values
      */
-    public static Matrix create(int numRows, int numCols, float... values) {
+    public static Matrix create(int numRows, int numCols, double... values) {
         return create(numRows, numCols, VectorUtils.create(values));
     }
 
@@ -267,7 +267,7 @@ public class Matrix {
         Complex[] cells = new Complex[size * size];
         Arrays.fill(cells, Complex.zero());
         if (row != col) {
-            float val = (row + col) % 2 == 0
+            double val = (row + col) % 2 == 0
                     ? 1 : -1;
             val = row < col ? val : -val;
             cells[unsafeIndex(size, row, col)] = Complex.create(val);
@@ -341,7 +341,7 @@ public class Matrix {
      *
      * @param values the state values
      */
-    public static Matrix ket(float... values) {
+    public static Matrix ket(double... values) {
         Complex[] cells = new Complex[values.length];
         for (int i = 0; i < cells.length; i++) {
             cells[i] = Complex.create(values[i]);
@@ -669,7 +669,7 @@ public class Matrix {
      *
      * @param value the divisor
      */
-    public Matrix div(float value) {
+    public Matrix div(double value) {
         Complex[] cells = VectorUtils.divScalar(this.cells, value);
         return new Matrix(numRows, numCols, cells);
     }
@@ -800,7 +800,7 @@ public class Matrix {
      *
      * @param scale the scale
      */
-    public Matrix mul(float scale) {
+    public Matrix mul(double scale) {
         return new Matrix(numRows, numCols, Arrays.stream(cells).map(c -> c.mul(scale)).toArray(Complex[]::new));
     }
 
@@ -1035,6 +1035,6 @@ public class Matrix {
      * Returns the normalised matrix
      */
     public Matrix normalise() {
-        return new Matrix(numRows, numCols, VectorUtils.normalize(cells));
+        return new Matrix(numRows, numCols, VectorUtils.normalise(cells));
     }
 }

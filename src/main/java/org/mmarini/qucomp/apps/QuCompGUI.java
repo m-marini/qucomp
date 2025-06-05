@@ -28,6 +28,8 @@
 
 package org.mmarini.qucomp.apps;
 
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -243,13 +245,21 @@ public class QuCompGUI {
         }
     }
 
-    private void onRun(ActionEvent actionEvent) {
+    /**
+     * Executes the code
+     *
+     * @param source the source code
+     */
+    void execute(String source) {
         try {
+            errorPanel.setText("Running code ...");
             // Compile and execute
-            Object[] values = (Object[]) compile(source()).evaluate(processor);
+            Object[] values = (Object[]) compile(source).evaluate(processor);
             Object value = values.length > 0 ? values[values.length - 1] : null;
             if (value != null) {
                 errorPanel.setText(value.toString());
+            } else {
+                errorPanel.setText("No result");
             }
             varPanel.setVariable(processor.variables());
         } catch (QuSourceException e) {
@@ -263,8 +273,25 @@ public class QuCompGUI {
             codeEditor.setCaretPosition(startOfLineOffset + ctx.position());
         } catch (Throwable e) {
             throw new RuntimeException(e);
+        } finally {
+            runMenu.setEnabled(true);
+            codeEditor.setEnabled(true);
         }
+    }
 
+    /**
+     * Handles run event
+     *
+     * @param actionEvent the event
+     */
+    private void onRun(ActionEvent actionEvent) {
+        runMenu.setEnabled(false);
+        codeEditor.setEnabled(false);
+        String text = source();
+        Completable.fromAction(() ->
+                        execute(text))
+                .subscribeOn(Schedulers.io())
+                .subscribe();
     }
 
     private void open(File code) {

@@ -12,7 +12,7 @@ import static org.mmarini.qucomp.apis.QuGate.x;
 
 class QuStateBuilderTest {
 
-    public static final float EPSILON = 1e-6F;
+    public static final double EPSILON = 1e-6;
 
     @ParameterizedTest
     @CsvSource({

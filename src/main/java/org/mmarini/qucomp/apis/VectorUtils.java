@@ -63,7 +63,7 @@ public interface VectorUtils {
      *
      * @param values the real values
      */
-    static Complex[] create(float... values) {
+    static Complex[] create(double... values) {
         Complex[] cells = new Complex[values.length];
         for (int i = 0; i < values.length; i++) {
             cells[i] = Complex.create(values[i]);
@@ -92,25 +92,25 @@ public interface VectorUtils {
     }
 
     /**
-     * Returns the values mapped by complex operatr
+     * Returns the ket scaled by real factor
+     *
+     * @param vector the vector
+     * @param alpha  scale
+     */
+    static Complex[] divScalar(Complex[] vector, double alpha) {
+        return Arrays.stream(vector)
+                .map(v -> v.div(alpha))
+                .toArray(Complex[]::new);
+    }
+
+    /**
+     * Returns the values mapped by complex operator
      *
      * @param values values
      * @param op     the operator
      */
     static Complex[] map(Complex[] values, UnaryOperator<Complex> op) {
         return Arrays.stream(values).map(op).toArray(Complex[]::new);
-    }
-
-    /**
-     * Returns the ket scaled by real factor
-     *
-     * @param vector the vector
-     * @param alpha  scale
-     */
-    static Complex[] divScalar(Complex[] vector, float alpha) {
-        return Arrays.stream(vector)
-                .map(v -> v.div(alpha))
-                .toArray(Complex[]::new);
     }
 
     /**
@@ -126,12 +126,12 @@ public interface VectorUtils {
     }
 
     /**
-     * Returns the normalized cells
+     * Returns the normalised cells
      *
      * @param cells the cells
      */
-    static Complex[] normalize(Complex[] cells) {
-        float norm = (float) sqrt(Arrays.stream(cells)
+    static Complex[] normalise(Complex[] cells) {
+        double norm = sqrt(Arrays.stream(cells)
                 .mapToDouble(Complex::normSquare)
                 .sum());
         return Arrays.stream(cells).map(c -> c.div(norm)).toArray(Complex[]::new);
@@ -171,7 +171,7 @@ public interface VectorUtils {
      * @param aStride the left source matrix stride (number of columns)
      * @param b       the right source matrix
      * @param bOffset the right source matrix offset
-     * @param bStride the right source matrix stride (number of colums)
+     * @param bStride the right source matrix stride (number of columns)
      */
     static Complex[] partMul(Complex[] d, int dOffset, int numRow, int numCols,
                              Complex[] a, int aOffset, int aStride,

@@ -19,7 +19,7 @@ import static org.mmarini.qucomp.Matchers.complexClose;
 import static org.mmarini.qucomp.Matchers.matrixCloseTo;
 
 public class MatrixTest {
-    public static final float EPSILON = 1e-6F;
+    public static final double EPSILON = 1e-6F;
     public static final Matrix MX = Matrix.create(2, 2,
             0, 1,
             1, 0);
@@ -166,7 +166,7 @@ public class MatrixTest {
             Complex.zero(), Complex.zero(), Complex.i(), Complex.zero(),
             Complex.zero(), Complex.zero(), Complex.zero(), Complex.i()
     );
-    static final float HALF_SQRT2 = (float) (sqrt(2) / 2);
+    static final double HALF_SQRT2 = sqrt(2) / 2;
     static final Matrix T0 = Matrix.create(2, 2,
             Complex.one(), Complex.zero(),
             Complex.zero(), new Complex(HALF_SQRT2, HALF_SQRT2)
@@ -1129,7 +1129,7 @@ public class MatrixTest {
     }
 
     @Test
-    void testDivFloat() {
+    void testDivDouble() {
         Matrix m0 = Matrix.identity(4);
         Matrix m1 = m0.div(2);
 
@@ -1235,7 +1235,7 @@ public class MatrixTest {
     }
 
     @Test
-    void testKetFloat() {
+    void testKetDouble() {
         assertThat(Matrix.ket(0, 1), matrixCloseTo(Matrix.create(2, 1, Complex.zero(), Complex.one()), EPSILON));
     }
 
@@ -1305,7 +1305,7 @@ public class MatrixTest {
     }
 
     @Test
-    void testMulFloat() {
+    void testMulDouble() {
         Matrix m0 = Matrix.identity(4);
         Matrix m1 = m0.mul(2);
         assertThat(m1, matrixCloseTo(Matrix.create(4, 4,
@@ -1344,7 +1344,7 @@ public class MatrixTest {
     @Test
     void testNormalise() {
         Matrix ket = Matrix.create(4, 1, 1, 2, 3, 4);
-        float norm = (float) sqrt(1 + 4 + 9 + 16);
+        double norm = sqrt(1 + 4 + 9 + 16);
         Matrix exp = Matrix.create(4, 1, 1 / norm, 2 / norm, 3 / norm, 4 / norm);
         assertThat(ket.normalise(), matrixCloseTo(exp, EPSILON));
     }

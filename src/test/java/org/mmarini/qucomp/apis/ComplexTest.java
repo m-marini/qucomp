@@ -44,9 +44,9 @@ import static org.mmarini.qucomp.Matchers.complexClose;
 class ComplexTest {
 
     public static final long SEED = 1234L;
-    public static final float EPSILON = 1e-3f;
-    public static final float EPSILON_MIN = 0.999e-3f;
-    public static final float EPSILON_MAX = 1.001e-3f;
+    public static final double EPSILON = 1e-3f;
+    public static final double EPSILON_MIN = 0.999e-3f;
+    public static final double EPSILON_MAX = 1.001e-3f;
 
     public static Stream<Arguments> dataComplex1() {
         return ArgumentsGenerator.createStream(SEED,
@@ -66,7 +66,7 @@ class ComplexTest {
 
     @ParameterizedTest
     @MethodSource("dataComplex2")
-    void add(float a, float ai, float b, float bi) {
+    void add(double a, double ai, double b, double bi) {
         // Given
         Complex ac = new Complex(a, ai);
         Complex bc = new Complex(b, bi);
@@ -83,7 +83,7 @@ class ComplexTest {
 
     @ParameterizedTest
     @MethodSource("dataComplex1")
-    void conj(float a, float b) {
+    void conj(double a, double b) {
         // Given
         Complex c = new Complex(a, b);
         // When
@@ -102,7 +102,7 @@ class ComplexTest {
 
     @ParameterizedTest
     @MethodSource("dataComplex2")
-    void div(float a, float ai, float b, float bi) {
+    void div(double a, double ai, double b, double bi) {
         // Given
         Complex ac = new Complex(a, ai);
         Complex bc = new Complex(b, bi);
@@ -110,8 +110,8 @@ class ComplexTest {
         Complex ab = ac.div(bc);
         Complex ba = bc.div(ac);
         // Then
-        float ma2 = a * a + ai * ai;
-        float mb2 = b * b + bi * bi;
+        double ma2 = a * a + ai * ai;
+        double mb2 = b * b + bi * bi;
         assertEquals((a * b + ai * bi) / mb2, ab.real());
         assertEquals((-a * bi + ai * b) / mb2, ab.im());
         assertEquals((a * b + ai * bi) / ma2, ba.real());
@@ -134,7 +134,7 @@ class ComplexTest {
 
     @ParameterizedTest
     @MethodSource("dataComplex1")
-    void i1(double a, float b) {
+    void i1(double a, double b) {
         Complex c = Complex.i(b);
         assertEquals(0D, c.real());
         assertEquals(b, c.im());
@@ -142,14 +142,14 @@ class ComplexTest {
 
     @ParameterizedTest
     @MethodSource("dataComplex1")
-    void im(float a, float b) {
+    void im(double a, double b) {
         Complex c = new Complex(a, b);
         assertEquals(b, c.im());
     }
 
     @ParameterizedTest
     @MethodSource("dataComplex1")
-    void inv(float a, float b) {
+    void inv(double a, double b) {
         // Given
         Complex c = new Complex(a, b);
         // When
@@ -161,7 +161,7 @@ class ComplexTest {
 
     @ParameterizedTest
     @MethodSource("dataComplex1")
-    void isClose(float a, float b) {
+    void isClose(double a, double b) {
         // Given
         Complex ac = new Complex(a, b);
         Complex eqPlus = new Complex(a + EPSILON_MIN, b + EPSILON_MIN);
@@ -181,30 +181,8 @@ class ComplexTest {
     }
 
     @ParameterizedTest
-    @MethodSource("dataComplex1")
-    void norm(float a, float b) {
-        // Given
-        Complex c = new Complex(a, b);
-        // When
-        float m2 = c.norm();
-        // Then
-        assertEquals((float) Math.sqrt(a * a + b * b), m2);
-    }
-
-    @ParameterizedTest
-    @MethodSource("dataComplex1")
-    void normSquare(float a, float b) {
-        // Given
-        Complex c = new Complex(a, b);
-        // When
-        double m2 = c.normSquare();
-        // Then
-        assertEquals(a * a + b * b, m2);
-    }
-
-    @ParameterizedTest
     @MethodSource("dataComplex2")
-    void mul(float a, float ai, float b, float bi) {
+    void mul(double a, double ai, double b, double bi) {
         // Given
         Complex ac = new Complex(a, ai);
         Complex bc = new Complex(b, bi);
@@ -219,7 +197,7 @@ class ComplexTest {
 
     @ParameterizedTest
     @MethodSource("dataComplex1")
-    void neg(float a, float b) {
+    void neg(double a, double b) {
         // Given
         Complex c = new Complex(a, b);
         // When
@@ -227,6 +205,28 @@ class ComplexTest {
         // Then
         assertEquals(-a, inv.real());
         assertEquals(-b, inv.im());
+    }
+
+    @ParameterizedTest
+    @MethodSource("dataComplex1")
+    void norm(double a, double b) {
+        // Given
+        Complex c = new Complex(a, b);
+        // When
+        double m2 = c.norm();
+        // Then
+        assertEquals(Math.sqrt(a * a + b * b), m2);
+    }
+
+    @ParameterizedTest
+    @MethodSource("dataComplex1")
+    void normSquare(double a, double b) {
+        // Given
+        Complex c = new Complex(a, b);
+        // When
+        double m2 = c.normSquare();
+        // Then
+        assertEquals(a * a + b * b, m2);
     }
 
     @Test
@@ -238,14 +238,14 @@ class ComplexTest {
 
     @ParameterizedTest
     @MethodSource("dataComplex1")
-    void real(float a, float b) {
+    void real(double a, double b) {
         Complex c = new Complex(a, b);
         assertEquals(a, c.real());
     }
 
     @ParameterizedTest
     @MethodSource("dataComplex2")
-    void sub(float a, float ai, float b, float bi) {
+    void sub(double a, double ai, double b, double bi) {
         // Given
         Complex ac = new Complex(a, ai);
         Complex bc = new Complex(b, bi);
@@ -264,6 +264,22 @@ class ComplexTest {
 
     @ParameterizedTest
     @CsvSource({
+            "0,0,0,0",
+            "4,0,2,0",
+            "0,8,2,2",
+            "0,-8,2,-2",
+            "8,6,3,1",
+            "8,-6,3,-1",
+            "-8,6,1,3",
+            "-8,-6,-1,3",
+    })
+    void testSqrt(double argReal, double argIm, double expReal, double expIm) {
+        Complex arg = new Complex(argReal, argIm);
+        assertThat(arg.sqrt(), complexClose(expReal, expIm, EPSILON));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
             "0,0, 0.0",
             "1.2345,0, 1.2345",
             "-1.2345,0, -1.2345",
@@ -274,25 +290,9 @@ class ComplexTest {
             "1.2345, 6.789,1.2345 +6.789 i",
             "1.2345, -6.789,1.2345 -6.789 i"
     })
-    void testToString(float a, float b, String txt) {
+    void testToString(double a, double b, String txt) {
         Complex c = new Complex(a, b);
         assertEquals(txt, c.toString());
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "0,0,0,0",
-            "4,0,2,0",
-            "0,8,2,2",
-            "0,-8,2,-2",
-            "8,6,3,1",
-            "8,-6,3,-1",
-            "-8,6,1,3",
-            "-8,-6,-1,3",
-    })
-    void testSqrt(float argReal, float argIm, float expReal, float expIm) {
-        Complex arg = new Complex(argReal, argIm);
-        assertThat(arg.sqrt(), complexClose(expReal, expIm, EPSILON));
     }
 
     @Test

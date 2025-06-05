@@ -118,9 +118,9 @@ public class Compiler implements CompilerContext {
                 .add("<im-unit>", (context, token) ->
                         context.push(CommandNode.value(token, Complex.i())))
                 .add("pi", (context, token) ->
-                        context.push(CommandNode.value(token, Complex.create((float) Math.PI))))
+                        context.push(CommandNode.value(token, Complex.create(Math.PI))))
                 .add("e", (context, token) ->
-                        context.push(CommandNode.value(token, Complex.create((float) Math.E))))
+                        context.push(CommandNode.value(token, Complex.create(Math.E))))
                 .add("<function-id>", (context, token) ->
                         context.push(CommandNode.commandList(token)))
                 .add("<arg>", (context, token) -> {

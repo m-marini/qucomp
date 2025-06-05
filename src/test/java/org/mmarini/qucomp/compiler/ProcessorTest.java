@@ -47,7 +47,7 @@ import static org.mmarini.qucomp.Matchers.matrixCloseTo;
 import static org.mmarini.qucomp.apis.MatrixTest.*;
 
 class ProcessorTest {
-    public static final float EPSILON = 1e-5f;
+    public static final double EPSILON = 1e-5f;
     private static final Matrix NORM02 = Matrix.create(4, 1,
             0.5f, 0.5f, 0.5f, 0.5f
     );
@@ -271,7 +271,7 @@ class ProcessorTest {
             "i / i;, 1, 0",
             "normalise(i);, 1, 0",
     })
-    void testComplex(String text, float re, float im) {
+    void testComplex(String text, double re, double im) {
         Complex expected = new Complex(re, im);
         Object[] result = assertDoesNotThrow(() -> execute(text));
         assertThat((Complex) result[0], complexClose(expected, EPSILON));

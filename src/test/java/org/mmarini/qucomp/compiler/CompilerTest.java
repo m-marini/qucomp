@@ -49,7 +49,7 @@ import static org.mmarini.qucomp.Matchers.*;
 class CompilerTest {
 
 
-    public static final float EPSILON = 1e-3f;
+    public static final double EPSILON = 1e-3f;
 
     public static Stream<Arguments> argsBra() {
         return Stream.of(
@@ -232,7 +232,7 @@ class CompilerTest {
             "pi;, 3.1415927,0",
             "e;, 2.7182817,0"
     })
-    void testCreateComplex(String text, float expReal, float expIm) {
+    void testCreateComplex(String text, double expReal, double expIm) {
         create(text);
         Deque<CommandNode> stack = compiler.stack();
         assertThat(stack, hasSize(1));

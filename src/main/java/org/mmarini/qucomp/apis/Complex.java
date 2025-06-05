@@ -8,7 +8,7 @@ import static java.lang.Math.abs;
  * @param real the x coordinate
  * @param im   the y coordinate
  */
-public record Complex(float real, float im) {
+public record Complex(double real, double im) {
     public static Complex ZERO = new Complex(0, 0);
     public static Complex ONE = new Complex(1, 0);
     public static Complex I = new Complex(0, 1);
@@ -18,7 +18,7 @@ public record Complex(float real, float im) {
      *
      * @param real the real part
      */
-    public static Complex create(float real) {
+    public static Complex create(double real) {
         return new Complex(real, 0);
     }
 
@@ -32,7 +32,7 @@ public record Complex(float real, float im) {
     /**
      * Returns i complex (0 + im i)
      */
-    public static Complex i(float im) {
+    public static Complex i(double im) {
         return new Complex(0, im);
     }
 
@@ -64,7 +64,7 @@ public record Complex(float real, float im) {
      *
      * @param alpha the scala
      */
-    public Complex add(float alpha) {
+    public Complex add(double alpha) {
         return new Complex(real + alpha, im);
     }
 
@@ -81,9 +81,9 @@ public record Complex(float real, float im) {
      * @param other the other complex
      */
     public Complex div(Complex other) {
-        float mb2 = other.normSquare();
-        float r = (real * other.real + im * other.im) / mb2;
-        float i = (im * other.real - real * other.im) / mb2;
+        double mb2 = other.normSquare();
+        double r = (real * other.real + im * other.im) / mb2;
+        double i = (im * other.real - real * other.im) / mb2;
         return new Complex(r, i);
     }
 
@@ -92,42 +92,28 @@ public record Complex(float real, float im) {
      *
      * @param other the other complex
      */
-    public Complex div(float other) {
+    public Complex div(double other) {
         return new Complex(real / other, im / other);
     }
 
     /**
-     * Returns the inverse comples
+     * Returns the inverse complex
      */
     public Complex inv() {
-        float m2 = normSquare();
+        double m2 = normSquare();
         return new Complex(real / m2, -im / m2);
     }
 
     /**
-     * Returns true if complex is close to other complex with epsilon range
+     * Returns true if complex is close to another complex with epsilon range
      *
      * @param other   the other complex
      * @param epsilon the range
      */
-    public boolean isClose(Complex other, float epsilon) {
-        float dr = abs(real - other.real);
-        float di = abs(im - other.im);
+    public boolean isClose(Complex other, double epsilon) {
+        double dr = abs(real - other.real);
+        double di = abs(im - other.im);
         return dr <= epsilon && di <= epsilon;
-    }
-
-    /**
-     * Returns the module
-     */
-    public float norm() {
-        return (float) Math.sqrt(normSquare());
-    }
-
-    /**
-     * Returns the module square
-     */
-    public float normSquare() {
-        return real * real + im * im;
     }
 
     /**
@@ -136,8 +122,8 @@ public record Complex(float real, float im) {
      * @param other the other product
      */
     public Complex mul(Complex other) {
-        float r = real * other.real - im * other.im;
-        float i = real * other.im + im * other.real;
+        double r = real * other.real - im * other.im;
+        double i = real * other.im + im * other.real;
         return new Complex(r, i);
     }
 
@@ -146,8 +132,22 @@ public record Complex(float real, float im) {
      *
      * @param alpha the scala
      */
-    public Complex mul(float alpha) {
+    public Complex mul(double alpha) {
         return new Complex(real * alpha, im * alpha);
+    }
+
+    /**
+     * Returns the module
+     */
+    public double norm() {
+        return Math.sqrt(normSquare());
+    }
+
+    /**
+     * Returns the module square
+     */
+    public double normSquare() {
+        return real * real + im * im;
     }
 
     /**
@@ -164,14 +164,14 @@ public record Complex(float real, float im) {
         if (abs(normSquare()) == 0) {
             return Complex.zero();
         } else if (real >= 0) {
-            float reDelta = real + norm();
-            float re = (float) Math.sqrt(reDelta / 2);
-            float im = (float) (this.im / Math.sqrt(2 * reDelta));
+            double reDelta = real + norm();
+            double re = Math.sqrt(reDelta / 2);
+            double im = this.im / Math.sqrt(2 * reDelta);
             return new Complex(re, im);
         } else {
-            float reDelta = -real + norm();
-            float re = (float) (im / Math.sqrt(2 * reDelta));
-            float im = (float) Math.sqrt(reDelta / 2);
+            double reDelta = -real + norm();
+            double re = im / Math.sqrt(2 * reDelta);
+            double im = Math.sqrt(reDelta / 2);
             return new Complex(re, im);
         }
     }
@@ -181,7 +181,7 @@ public record Complex(float real, float im) {
      *
      * @param alpha the scala
      */
-    public Complex sub(float alpha) {
+    public Complex sub(double alpha) {
         return new Complex(real - alpha, im);
     }
 
@@ -197,7 +197,7 @@ public record Complex(float real, float im) {
     @Override
     public String toString() {
         if (im == 0) {
-            return Float.toString(real);
+            return Double.toString(real);
         }
         if (real == 0) {
             if (im == 1) {
