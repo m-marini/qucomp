@@ -35,6 +35,8 @@ import org.mmarini.qucomp.apis.Matrix;
 import java.io.IOException;
 import java.util.*;
 
+import static org.mmarini.qucomp.compiler.CommandNode.assign;
+
 /**
  * Generates the tree code from parser matching rules
  */
@@ -46,14 +48,18 @@ public class Compiler implements CompilerContext {
         Compiler gen = new Compiler();
         gen.add("<int-literal>", (context, token) -> {
                     if (token instanceof Token.IntegerToken tok) {
-                        context.push(new CommandNode.Value(token.context(), tok.value()));
+                        context.push(
+                                new CommandNode.ValueCommand(token.context(),
+                                        new Value.IntValue(token.context(), tok.value())));
                     } else {
                         throw token.context().parseException("Integer toke expected %s", token);
                     }
                 })
                 .add("<real-literal>", (context, token) -> {
                     if (token instanceof Token.RealToken tok) {
-                        context.push(new CommandNode.Value(token.context(), Complex.create(tok.value())));
+                        context.push(new CommandNode.ValueCommand(token.context(),
+                                new Value.ComplexValue(token.context(),
+                                        Complex.create(tok.value()))));
                     } else {
                         throw token.context().parseException("Real token expected %s", token);
                     }
@@ -65,11 +71,11 @@ public class Compiler implements CompilerContext {
                 .add("<clear-stm>", (context, token) ->
                         context.push(new CommandNode.Clear(token.context())))
                 .add("<assign-var-identifier>", (context, token) ->
-                        context.push(CommandNode.value(token)))
+                        context.push(assign(token, token.token())))
                 .add("<assign-stm>", (context, token) -> {
                     CommandNode value = context.pop();
-                    CommandNode.Value id = context.pop();
-                    context.push(CommandNode.assign(token, id.value().toString(), value));
+                    CommandNode.Assign assign = context.pop();
+                    context.push(assign.arg(value));
                 })
                 .add("<code-unit-head>", (context, token) ->
                         context.push(CommandNode.commandList(token)))
@@ -92,6 +98,11 @@ public class Compiler implements CompilerContext {
                     CommandNode right = context.pop();
                     CommandNode left = context.pop();
                     context.push(CommandNode.mul(token, left, right));
+                })
+                .add("<multiply0-tail>", (context, token) -> {
+                    CommandNode right = context.pop();
+                    CommandNode left = context.pop();
+                    context.push(CommandNode.mul0(token, left, right));
                 })
                 .add("<divide-tail>", (context, token) -> {
                     CommandNode right = context.pop();

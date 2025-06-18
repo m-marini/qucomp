@@ -597,6 +597,88 @@ public class MatrixTest {
         );
     }
 
+    public static Stream<Arguments> testMul0MatrixArgs() {
+        Matrix m1 = Matrix.create(2, 3,
+                IntStream.range(0, 6).mapToObj(Complex::create).toArray(Complex[]::new));
+        Matrix m2 = Matrix.create(3, 2,
+                IntStream.range(0, 6).mapToObj(Complex::create).toArray(Complex[]::new));
+        /*
+        | 0 1 2 |   | 0 1 |   | 10 13 |
+        | 3 4 5 | x | 2 3 | = | 28 40 |
+                    | 4 5 |
+         */
+        Matrix m12 = Matrix.create(2, 2,
+                10, 13,
+                28, 40);
+                /*
+        | 0 1 |   | 0 1 2 |   |  3  4  5 |
+        | 2 3 | x | 3 4 5 | = |  9 14 19 |
+        | 4 5 |               | 15 24 33 |
+         */
+        Matrix m21 = Matrix.create(3, 3,
+                3, 4, 5,
+                9, 14, 19,
+                15, 24, 33);
+        Matrix m44 = Matrix.create(4, 4,
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1);
+        Matrix m22 = Matrix.create(2, 2,
+                0, 1,
+                1, 0);
+        Matrix ket02 = Matrix.create(2, 1, 1, 0);
+        Matrix ket04 = Matrix.create(4, 1, 1, 0, 0, 0);
+        Matrix ket12 = Matrix.create(2, 1, 0, 1);
+        Matrix bra02 = Matrix.create(1, 2, 1, 0);
+        Matrix bra12 = Matrix.create(1, 2, 0, 1);
+        Matrix bra04 = Matrix.create(1, 4, 1, 0, 0, 0);
+        Matrix proj = Matrix.create(2, 4,
+                1, 1, 0, 0,
+                0, 0, 1, 1);
+
+        Matrix m22_1 = Matrix.create(2, 2,
+                1, 2,
+                2, 3);
+
+        Matrix m44_1 = Matrix.create(4, 4,
+                1, 2, 3, 4,
+                2, 3, 4, 5,
+                3, 4, 5, 6,
+                4, 5, 6, 7);
+
+        /*
+        | 1 2 | . | 1 2 3 4 | = | 1 2 0 0 | . | 1 2 3 4 | = |  5  8 11 14 |
+        | 2 3 |   | 2 3 4 5 |   | 2 3 0 0 |   | 2 3 4 5 |   |  8 13 18 23 |
+                  | 3 4 5 6 |                 | 3 4 5 6 |
+                  | 4 5 6 7 |                 | 4 5 6 7 |
+         */
+        Matrix m24 = Matrix.create(2, 4,
+                5, 8, 11, 14,
+                8, 13, 18, 23);
+
+        /*
+        | 1 2 3 4 | . | 1 2 | = | 1 2 3 4 | . | 1 2 | = |  5  8|
+        | 2 3 4 5 |   | 2 3 |   | 2 3 4 5 |   | 2 3 |   |  8 13|
+        | 3 4 5 6 |             | 3 4 5 6 |   | 0 0 |   | 11 18|
+        | 4 5 6 7 |             | 4 5 6 7 |   | 0 0 |   | 14 23|
+         */
+        Matrix m42 = m24.transpose();
+
+
+        return Stream.of(
+                Arguments.of(m1, m2, m12),
+                Arguments.of(m2, m1, m21),
+                Arguments.of(m22_1, m44_1, m24),
+                Arguments.of(m44_1, m22_1, m42),
+                Arguments.of(m22, ket02, ket12),
+                Arguments.of(bra02, m22, bra12),
+                Arguments.of(m44, ket02, ket04),
+                Arguments.of(bra02, m44, bra04),
+                Arguments.of(proj, Matrix.ket(1, 2, 3, 4), Matrix.ket(3, 7))
+        );
+    }
+
     public static Stream<Arguments> testMulMatrixArgs() {
         Matrix m1 = Matrix.create(2, 3,
                 IntStream.range(0, 6).mapToObj(Complex::create).toArray(Complex[]::new));
@@ -637,9 +719,41 @@ public class MatrixTest {
                 1, 1, 0, 0,
                 0, 0, 1, 1);
 
+        Matrix m22_1 = Matrix.create(2, 2,
+                1, 2,
+                2, 3);
+
+        Matrix m44_1 = Matrix.create(4, 4,
+                1, 2, 3, 4,
+                2, 3, 4, 5,
+                3, 4, 5, 6,
+                4, 5, 6, 7);
+
+        /*
+        | 1 2 | x | 1 2 3 4 | = | 1 2 0 0 | x | 1 2 3 4 | = |  5  8 11 14 |
+        | 2 3 |   | 2 3 4 5 |   | 2 3 0 0 |   | 2 3 4 5 |   |  8 13 18 23 |
+                  | 3 4 5 6 |   | 0 0 1 2 |   | 3 4 5 6 |   | 11 14 17 20 |
+                  | 4 5 6 7 |   | 0 0 2 3 |   | 4 5 6 7 |   | 18 23 28 33 |
+         */
+        Matrix m44_2 = Matrix.create(4, 4,
+                5, 8, 11, 14,
+                8, 13, 18, 23,
+                11, 14, 17, 20,
+                18, 23, 28, 33);
+
+        /*
+        | 1 2 3 4 | x | 1 2 | = | 1 2 3 4 | x | 1 2 0 0 | = |  5  8 11 18 |
+        | 2 3 4 5 |   | 2 3 |   | 2 3 4 5 |   | 2 3 0 0 |   |  8 13 14 23 |
+        | 3 4 5 6 |             | 3 4 5 6 |   | 0 0 1 2 |   | 11 18 17 28 |
+        | 4 5 6 7 |             | 4 5 6 7 |   | 0 0 2 3 |   | 14 23 20 33 |
+         */
+        Matrix m44_3 = m44_2.transpose();
+
         return Stream.of(
                 Arguments.of(m1, m2, m12),
                 Arguments.of(m2, m1, m21),
+                Arguments.of(m22_1, m44_1, m44_2),
+                Arguments.of(m44_1, m22_1, m44_3),
                 Arguments.of(m22, ket02, ket12),
                 Arguments.of(bra02, m22, bra12),
                 Arguments.of(m44, ket02, ket04),
@@ -1320,6 +1434,13 @@ public class MatrixTest {
     @MethodSource("testMulMatrixArgs")
     void testMulMatrix(Matrix left, Matrix right, Matrix exp) {
         Matrix result = left.mul(right);
+        assertThat(result, matrixCloseTo(exp, EPSILON));
+    }
+
+    @ParameterizedTest
+    @MethodSource("testMul0MatrixArgs")
+    void testMul0Matrix(Matrix left, Matrix right, Matrix exp) {
+        Matrix result = left.mul0(right);
         assertThat(result, matrixCloseTo(exp, EPSILON));
     }
 

@@ -202,9 +202,9 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "let ,Missing <assign-var-identifier> token(\"\")",
-            "let a ,Missing = token(\"\")",
-            "let a = ,Missing <exp-opt> token(\"\")",
+            "let ,Missing <assign-var-identifier>",
+            "let a ,Missing =",
+            "let a = ,Missing <exp-opt>",
     })
     void testAssignError(String text, String expMsg) {
         QuParseException ex = assertThrows(QuParseException.class, () ->
@@ -230,9 +230,9 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "<$|,Missing <exp-opt> token(\"$\")",
-            "<,Missing <exp-opt> token(\"\")",
-            "<0,Missing | token(\"\")",
+            "<$|,Missing <exp-opt>",
+            "<,Missing <exp-opt>",
+            "<0,Missing |",
     })
     void testBraError(String text, String expMsg) {
         QuException ex = assertThrows(QuException.class, () ->
@@ -255,8 +255,8 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "clear,Missing ( token(\"\")",
-            "clear (,Missing ) token(\"\")",
+            "clear,Missing (",
+            "clear (,Missing )",
     })
     void testClearError(String text, String expMsg) {
         QuParseException ex = assertThrows(QuParseException.class, () ->
@@ -368,7 +368,7 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "1,Missing ; token(\"\")",
+            "1,Missing ;",
     })
     void testExpStmError(String text, String expMsg) {
         QuParseException ex = assertThrows(QuParseException.class, () ->
@@ -465,10 +465,10 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "sqrt,Missing ( token(\"\")",
-            "sqrt( ,Missing ) token(\"\")",
-            "sqrt(1,Missing ) token(\"\")",
-            "'sqrt(1,' ,Missing <exp-opt> token(\"\")",
+            "sqrt,Missing (",
+            "sqrt( ,Missing )",
+            "sqrt(1,Missing )",
+            "'sqrt(1,' ,Missing <exp-opt>",
     })
     void testFunctionError(String text, String expMsg) {
         QuParseException ex = assertThrows(QuParseException.class, () ->
@@ -514,9 +514,9 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "|/>,Missing <exp-opt> token(\"/\")",
-            "|,Missing <exp-opt> token(\"\")",
-            "|0,Missing > token(\"\")",
+            "|/>,Missing <exp-opt>",
+            "|,Missing <exp-opt>",
+            "|0,Missing >",
     })
     void testKetError(String text, String expMsg) {
         QuException ex = assertThrows(QuException.class, () ->
@@ -576,6 +576,33 @@ class SyntaxTest {
         ));
     }
 
+
+    @Test
+    void testMulMul0() {
+        boolean result = assertDoesNotThrow(() -> parse("1 . 2", "<multiply-exp>"));
+        assertTrue(result);
+        assertThat(parseContext.currentToken(), isA(Token.EOFToken.class));
+        assertThat(rules, contains(
+                tupleOf(intToken(1), rule("<int-literal>")),
+                tupleOf(intToken(1), rule("<primary-exp>")),
+                tupleOf(intToken(1), rule("<conj>")),
+                tupleOf(intToken(1), rule("<unary-exp>")), // 4
+
+                tupleOf(intToken(1), rule("<cross-exp>")),
+                tupleOf(opToken("."), rule(".")),
+                tupleOf(intToken(2), rule("<int-literal>")),
+                tupleOf(intToken(2), rule("<primary-exp>")),
+
+                tupleOf(intToken(2), rule("<conj>")),
+                tupleOf(intToken(2), rule("<unary-exp>")),
+                tupleOf(intToken(2), rule("<cross-exp>")), // 12
+                tupleOf(opToken("."), rule("<multiply0-tail>")),
+
+                tupleOf(opToken("."), rule("<mul-tail-opt>")),
+                tupleOf(intToken(1), rule("<multiply-exp>"))
+        ));
+    }
+
     @Test
     void testMulMulDiv() {
         boolean result = assertDoesNotThrow(() -> parse("1 * 2 / 3", "<multiply-exp>"));
@@ -625,8 +652,8 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "(,Missing <exp-opt> token(\"\")",
-            "(1,Missing ) token(\"\")",
+            "(,Missing <exp-opt>",
+            "(1,Missing )",
     })
     void testPrimaryExpError(String text, String expMsg) {
         QuParseException ex = assertThrows(QuParseException.class, () ->
@@ -659,8 +686,8 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            "(,Missing <exp-opt> token(\"\")",
-            "(1,Missing ) token(\"\")",
+            "(,Missing <exp-opt>",
+            "(1,Missing )",
     })
     void testPriorityExpError(String text, String expMsg) {
         QuParseException ex = assertThrows(QuParseException.class, () ->
@@ -770,8 +797,8 @@ class SyntaxTest {
 
     @ParameterizedTest
     @CsvSource({
-            ">,Missing <exp-opt> token(\">\")",
-            "'',Missing <exp-opt> token(\"\")",
+            ">,Missing <exp-opt>",
+            "'',Missing <exp-opt>",
     })
     void testStateLiteralError(String text, String expMsg) {
         QuException ex = assertThrows(QuException.class, () ->

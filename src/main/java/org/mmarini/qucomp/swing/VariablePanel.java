@@ -28,6 +28,7 @@
 
 package org.mmarini.qucomp.swing;
 
+import org.mmarini.qucomp.compiler.Value;
 import org.mmarini.swing.GridLayoutHelper;
 
 import javax.swing.*;
@@ -35,6 +36,7 @@ import javax.swing.event.ListSelectionEvent;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -44,7 +46,7 @@ public class VariablePanel extends JPanel {
     private final JList<String> varList;
     private final JTextArea details;
     private final JSplitPane splitPanel;
-    private Map<String, Object> variables;
+    private Map<String, Value> variables;
     private boolean init;
 
     /**
@@ -110,8 +112,12 @@ public class VariablePanel extends JPanel {
     private void onSelection(ListSelectionEvent listSelectionEvent) {
         if (!listSelectionEvent.getValueIsAdjusting()) {
             String id = varList.getSelectedValue();
-            Object value = variables.get(id);
-            details.setText(value != null ? value.toString() : "");
+            Value value = variables.get(id);
+            String text = value != null
+                    ? Arrays.stream(value.source().fullReportMessage("")).reduce((a, b) -> a + "\n" + b).orElse("")
+                    + "\n" + value
+                    : "";
+            details.setText(text);
         }
     }
 
@@ -120,7 +126,7 @@ public class VariablePanel extends JPanel {
      *
      * @param variables the map of variables
      */
-    public void setVariable(Map<String, Object> variables) {
+    public void setVariables(Map<String, Value> variables) {
         this.variables = variables;
         String selected = varList.getSelectedValue();
         String[] values = variables.keySet().stream().sorted().toArray(String[]::new);

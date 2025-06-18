@@ -821,6 +821,22 @@ public class Matrix {
     }
 
     /**
+     * Returns the matrix multiplication (this x right) with extensions
+     *
+     * @param right the right matrix
+     */
+    public Matrix mul0(Matrix right) {
+        // Check for extensions
+        Matrix left = this;
+        if (left.numCols > right.numRows) {
+            right = right.extendsRows(left.numCols);
+        } else if (left.numCols < right.numRows) {
+            left = left.extendsCols(right.numRows);
+        }
+        return left.safeMul(right);
+    }
+
+    /**
      * Returns the scaled matrix
      *
      * @param scale the scale

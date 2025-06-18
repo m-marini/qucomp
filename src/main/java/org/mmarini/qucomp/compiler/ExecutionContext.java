@@ -28,11 +28,8 @@
 
 package org.mmarini.qucomp.compiler;
 
-import org.mmarini.Tuple2;
-
 /**
  * Computes the result of operations
- * The values can be Integer, Complex, Bra, Ket, Object[]: Array of values
  */
 public interface ExecutionContext {
     /**
@@ -42,7 +39,7 @@ public interface ExecutionContext {
      * @param left    the left operand
      * @param right   the right operand
      */
-    Object add(SourceContext context, Object left, Object right) throws QuExecException;
+    Value add(SourceContext context, Value left, Value right) throws QuExecException;
 
     /**
      * Assigns the value to a variable
@@ -51,7 +48,7 @@ public interface ExecutionContext {
      * @param id      the variable identifier
      * @param value   the value
      */
-    Object assign(SourceContext context, String id, Object value) throws QuExecException;
+    Value assign(SourceContext context, String id, Value value) throws QuExecException;
 
     /**
      * Clears all the variables
@@ -59,7 +56,7 @@ public interface ExecutionContext {
      * @param context the source position of the operation
      * @return null
      */
-    Object clear(SourceContext context) throws QuExecException;
+    Value clear(SourceContext context) throws QuExecException;
 
     /**
      * Returns the cross-product of the operands (left x right)
@@ -68,9 +65,9 @@ public interface ExecutionContext {
      * @param left    left operand
      * @param right   right operand
      */
-    Object cross(SourceContext context, Object left, Object right) throws QuExecException;
+    Value cross(SourceContext context, Value left, Value right) throws QuExecException;
 
-    Object dagger(SourceContext context, Object evaluate) throws QuExecException;
+    Value dagger(SourceContext context, Value evaluate) throws QuExecException;
 
     /**
      * Returns the division of two operands (left / right)
@@ -79,7 +76,7 @@ public interface ExecutionContext {
      * @param left    left operand
      * @param right   right operand
      */
-    Object div(SourceContext context, Object left, Object right) throws QuExecException;
+    Value div(SourceContext context, Value left, Value right) throws QuExecException;
 
     /**
      * Returns the value of function
@@ -88,7 +85,7 @@ public interface ExecutionContext {
      * @param id      the function identifier
      * @param args    the arguments
      */
-    Object function(SourceContext context, String id, Tuple2<Object, SourceContext>[] args) throws QuExecException;
+    Value function(SourceContext context, String id, Value.ListValue args) throws QuExecException;
 
     /**
      * Returns the ket of integer state
@@ -96,7 +93,7 @@ public interface ExecutionContext {
      * @param context the source position of the operation
      * @param state   the state
      */
-    Object intToKet(SourceContext context, Object state) throws QuExecException;
+    Value intToKet(SourceContext context, Value state) throws QuExecException;
 
     /**
      * Returns the product of two operands
@@ -105,7 +102,9 @@ public interface ExecutionContext {
      * @param left    left operand
      * @param right   right operand
      */
-    Object mul(SourceContext context, Object left, Object right) throws QuExecException;
+    Value mul(SourceContext context, Value left, Value right) throws QuExecException;
+
+    Value mul0(SourceContext context, Value left, Value right) throws QuExecException;
 
     /**
      * Returns the negation of argument
@@ -113,7 +112,7 @@ public interface ExecutionContext {
      * @param context the source position of the operation
      * @param arg     the argument
      */
-    Object negate(SourceContext context, Object arg) throws QuExecException;
+    Value negate(SourceContext context, Value arg) throws QuExecException;
 
     /**
      * Returns the value of the variable
@@ -121,7 +120,7 @@ public interface ExecutionContext {
      * @param context the source position of the operation
      * @param id      the variable identifier
      */
-    Object retrieveVar(SourceContext context, String id) throws QuExecException;
+    Value retrieveVar(SourceContext context, String id) throws QuExecException;
 
     /**
      * Returns the difference of two operands (left - right)
@@ -130,5 +129,5 @@ public interface ExecutionContext {
      * @param left    left operand
      * @param right   right operand
      */
-    Object sub(SourceContext context, Object left, Object right) throws QuExecException;
+    Value sub(SourceContext context, Value left, Value right) throws QuExecException;
 }

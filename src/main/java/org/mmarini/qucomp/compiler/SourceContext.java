@@ -123,7 +123,7 @@ public record SourceContext(String token, String line, int lineNumber, int posit
      * @param message the message
      */
     public String reportMessage(String message) {
-        return message + " token(\"" + token + "\")";
+        return message;// + " token(\"" + token + "\")";
     }
 
     @Override

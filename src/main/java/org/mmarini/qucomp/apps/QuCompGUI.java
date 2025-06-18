@@ -131,7 +131,7 @@ public class QuCompGUI {
         this.compiler = Compiler.create();
         this.processor = new Processor();
         this.varPanel = new VariablePanel();
-        this.execPanel=new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        this.execPanel = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 
         createContent();
         createFlow();
@@ -213,6 +213,43 @@ public class QuCompGUI {
     }
 
     /**
+     * Executes the code
+     *
+     * @param source the source code
+     */
+    void execute(String source) {
+        try {
+            errorPanel.setText("Running code ...");
+            // Compile and execute
+            Value.ListValue values = (Value.ListValue) compile(source).evaluate(processor);
+            StringBuilder text = new StringBuilder();
+            for (Value value : values.value()) {
+                if (value != null) {
+                    Arrays.stream(value.source().fullReportMessage(value.toString()))
+                            .forEach(s -> text.append(s).append("\n"));
+                }
+                text.append("\n");
+            }
+            errorPanel.setText(text.toString());
+            varPanel.setVariables(processor.variables());
+        } catch (QuSourceException e) {
+            SourceContext ctx = e.context();
+            String[] msg = ctx.fullReportMessage(e.getMessage());
+            errorPanel.setText(Arrays.stream(msg)
+                    .map(a -> a + "\n")
+                    .reduce(String::concat).orElse(""));
+            Element root = codeEditor.getDocument().getDefaultRootElement();
+            int startOfLineOffset = root.getElement(ctx.lineNumber() - 1).getStartOffset();
+            codeEditor.setCaretPosition(startOfLineOffset + ctx.position());
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        } finally {
+            runMenu.setEnabled(true);
+            codeEditor.setEnabled(true);
+        }
+    }
+
+    /**
      * Handle exit menu action
      *
      * @param actionEvent the event
@@ -242,40 +279,6 @@ public class QuCompGUI {
                 open(file);
                 d.dispose();
             });
-        }
-    }
-
-    /**
-     * Executes the code
-     *
-     * @param source the source code
-     */
-    void execute(String source) {
-        try {
-            errorPanel.setText("Running code ...");
-            // Compile and execute
-            Object[] values = (Object[]) compile(source).evaluate(processor);
-            Object value = values.length > 0 ? values[values.length - 1] : null;
-            if (value != null) {
-                errorPanel.setText(value.toString());
-            } else {
-                errorPanel.setText("No result");
-            }
-            varPanel.setVariable(processor.variables());
-        } catch (QuSourceException e) {
-            SourceContext ctx = e.context();
-            String[] msg = ctx.fullReportMessage(e.getMessage());
-            errorPanel.setText(Arrays.stream(msg)
-                    .map(a -> a + "\n")
-                    .reduce(String::concat).orElse(""));
-            Element root = codeEditor.getDocument().getDefaultRootElement();
-            int startOfLineOffset = root.getElement(ctx.lineNumber() - 1).getStartOffset();
-            codeEditor.setCaretPosition(startOfLineOffset + ctx.position());
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
-        } finally {
-            runMenu.setEnabled(true);
-            codeEditor.setEnabled(true);
         }
     }
 

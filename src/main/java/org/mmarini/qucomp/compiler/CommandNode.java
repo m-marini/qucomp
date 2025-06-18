@@ -28,7 +28,6 @@
 
 package org.mmarini.qucomp.compiler;
 
-import org.mmarini.Tuple2;
 import org.mmarini.qucomp.apis.Complex;
 import org.mmarini.qucomp.apis.Matrix;
 
@@ -70,10 +69,9 @@ public interface CommandNode {
      *
      * @param token the token referencing the source location of command
      * @param id    the variable identifier
-     * @param arg   the value to assign
      */
-    static Assign assign(Token token, String id, CommandNode arg) {
-        return new Assign(token.context(), id, arg);
+    static Assign assign(Token token, String id) {
+        return new Assign(token.context(), id, null);
     }
 
     /**
@@ -145,6 +143,17 @@ public interface CommandNode {
      * @param left  the left operand
      * @param right the right operand
      */
+    static Mul0 mul0(Token token, CommandNode left, CommandNode right) {
+        return new Mul0(token.context(), left, right);
+    }
+
+    /**
+     * Returns the command to multiply two operands
+     *
+     * @param token the token referencing the source of add command
+     * @param left  the left operand
+     * @param right the right operand
+     */
     static Mul mul(Token token, CommandNode left, CommandNode right) {
         return new Mul(token.context(), left, right);
     }
@@ -185,8 +194,8 @@ public interface CommandNode {
      * @param token the token referencing the source of command
      * @param value the value
      */
-    static Value value(Token token, Complex value) {
-        return new Value(token.context(), value);
+    static ValueCommand value(Token token, Complex value) {
+        return new ValueCommand(token.context(), new Value.ComplexValue(token.context(), value));
     }
 
 
@@ -196,22 +205,8 @@ public interface CommandNode {
      * @param token the token referencing the source of command
      * @param value the value
      */
-    static Value value(Token token, Matrix value) {
-        return new Value(token.context(), value);
-    }
-
-
-    /**
-     * Returns the command to return the constant token value
-     *
-     * @param token the token referencing the source of command
-     */
-    static Value value(Token token) {
-        return new Value(token.context(), switch (token) {
-            case Token.IntegerToken tok -> tok.value();
-            case Token.RealToken tok -> Complex.create(tok.value());
-            default -> token.token();
-        });
+    static ValueCommand value(Token token, Matrix value) {
+        return new ValueCommand(token.context(), new Value.MatrixValue(token.context(), value));
     }
 
     /**
@@ -224,7 +219,7 @@ public interface CommandNode {
      *
      * @param context the execution context
      */
-    Object evaluate(ExecutionContext context) throws QuExecException;
+    Value evaluate(ExecutionContext context) throws QuExecException;
 
     /**
      * Single argument command node
@@ -278,7 +273,7 @@ public interface CommandNode {
     record Add(SourceContext context, CommandNode left, CommandNode right) implements BinaryNode {
 
         @Override
-        public Object evaluate(ExecutionContext context) throws QuExecException {
+        public Value evaluate(ExecutionContext context) throws QuExecException {
             return context.add(this.context, left.evaluate(context), right.evaluate(context));
         }
     }
@@ -293,8 +288,23 @@ public interface CommandNode {
     record Sub(SourceContext context, CommandNode left, CommandNode right) implements BinaryNode {
 
         @Override
-        public Object evaluate(ExecutionContext context) throws QuExecException {
+        public Value evaluate(ExecutionContext context) throws QuExecException {
             return context.sub(this.context, left.evaluate(context), right.evaluate(context));
+        }
+    }
+
+    /**
+     * Commands to multiply two arguments
+     *
+     * @param context the command source reference
+     * @param left    the left argument
+     * @param right   the right argument
+     */
+    record Mul0(SourceContext context, CommandNode left, CommandNode right) implements BinaryNode {
+
+        @Override
+        public Value evaluate(ExecutionContext context) throws QuExecException {
+            return context.mul0(this.context, left.evaluate(context), right.evaluate(context));
         }
     }
 
@@ -308,7 +318,7 @@ public interface CommandNode {
     record Mul(SourceContext context, CommandNode left, CommandNode right) implements BinaryNode {
 
         @Override
-        public Object evaluate(ExecutionContext context) throws QuExecException {
+        public Value evaluate(ExecutionContext context) throws QuExecException {
             return context.mul(this.context, left.evaluate(context), right.evaluate(context));
         }
     }
@@ -323,7 +333,7 @@ public interface CommandNode {
     record Div(SourceContext context, CommandNode left, CommandNode right) implements BinaryNode {
 
         @Override
-        public Object evaluate(ExecutionContext context) throws QuExecException {
+        public Value evaluate(ExecutionContext context) throws QuExecException {
             return context.div(this.context, left.evaluate(context), right.evaluate(context));
         }
     }
@@ -338,7 +348,7 @@ public interface CommandNode {
     record Cross(SourceContext context, CommandNode left, CommandNode right) implements BinaryNode {
 
         @Override
-        public Object evaluate(ExecutionContext context) throws QuExecException {
+        public Value evaluate(ExecutionContext context) throws QuExecException {
             return context.cross(this.context, left.evaluate(context), right.evaluate(context));
         }
     }
@@ -352,7 +362,7 @@ public interface CommandNode {
     record Clear(SourceContext context) implements CommandNode {
 
         @Override
-        public Object evaluate(ExecutionContext context) throws QuExecException {
+        public Value evaluate(ExecutionContext context) throws QuExecException {
             return context.clear(this.context);
         }
     }
@@ -363,10 +373,10 @@ public interface CommandNode {
      * @param context the command source reference
      * @param value   the value maybe Integer, String, Complex, Ket, Bra
      */
-    record Value(SourceContext context, Object value) implements CommandNode {
+    record ValueCommand(SourceContext context, Value value) implements CommandNode {
 
         @Override
-        public Object evaluate(ExecutionContext context) {
+        public Value evaluate(ExecutionContext context) {
             return value;
         }
     }
@@ -405,12 +415,12 @@ public interface CommandNode {
         }
 
         @Override
-        public Object evaluate(ExecutionContext context) throws QuExecException {
-            Object[] values = new Object[commands.size()];
+        public Value.ListValue evaluate(ExecutionContext context) throws QuExecException {
+            Value[] values = new Value[commands.size()];
             for (int i = 0; i < commands.size(); i++) {
                 values[i] = commands.get(i).evaluate(context);
             }
-            return values;
+            return new Value.ListValue(this.context, values);
         }
     }
 
@@ -423,8 +433,17 @@ public interface CommandNode {
      */
     record Assign(SourceContext context, String id, CommandNode arg) implements UnaryNode {
 
+        /**
+         * Returns the assign command with the set argument
+         *
+         * @param arg the argument
+         */
+        public Assign arg(CommandNode arg) {
+            return new Assign(context, id, arg);
+        }
+
         @Override
-        public Object evaluate(ExecutionContext context) throws QuExecException {
+        public Value evaluate(ExecutionContext context) throws QuExecException {
             return context.assign(this.context, id, arg.evaluate(context));
         }
     }
@@ -438,7 +457,7 @@ public interface CommandNode {
     record RetrieveVar(SourceContext context, String id) implements CommandNode {
 
         @Override
-        public Object evaluate(ExecutionContext context) throws QuExecException {
+        public Value evaluate(ExecutionContext context) throws QuExecException {
             return context.retrieveVar(this.context, id);
         }
     }
@@ -452,7 +471,7 @@ public interface CommandNode {
     record IntToKet(SourceContext context, CommandNode arg) implements UnaryNode {
 
         @Override
-        public Object evaluate(ExecutionContext context) throws QuExecException {
+        public Value evaluate(ExecutionContext context) throws QuExecException {
             return context.intToKet(this.context, arg.evaluate(context));
         }
     }
@@ -466,7 +485,7 @@ public interface CommandNode {
     record Dagger(SourceContext context, CommandNode arg) implements UnaryNode {
 
         @Override
-        public Object evaluate(ExecutionContext context) throws QuExecException {
+        public Value evaluate(ExecutionContext context) throws QuExecException {
             return context.dagger(this.context, arg.evaluate(context));
         }
     }
@@ -480,7 +499,7 @@ public interface CommandNode {
     record Negate(SourceContext context, CommandNode arg) implements UnaryNode {
 
         @Override
-        public Object evaluate(ExecutionContext context) throws QuExecException {
+        public Value evaluate(ExecutionContext context) throws QuExecException {
             return context.negate(this.context, arg.evaluate(context));
         }
     }
@@ -495,14 +514,14 @@ public interface CommandNode {
     record CallFunction(SourceContext context, String id, CommandNode.CompositeNode arg) implements UnaryNode {
 
         @Override
-        public Object evaluate(ExecutionContext context) throws QuExecException {
+        public Value evaluate(ExecutionContext context) throws QuExecException {
             List<CommandNode> commands = arg.commands();
-            Tuple2<Object, SourceContext>[] args = new Tuple2[commands.size()];
+            Value[] args = new Value[commands.size()];
             for (int i = 0; i < commands.size(); i++) {
                 CommandNode argCommand = commands.get(i);
-                args[i] = Tuple2.of(argCommand.evaluate(context), argCommand.context());
+                args[i] = argCommand.evaluate(context);
             }
-            return context.function(this.context, id, args);
+            return context.function(this.context, id, new Value.ListValue(this.context, args));
         }
     }
 }
