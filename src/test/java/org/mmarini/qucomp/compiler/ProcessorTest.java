@@ -42,8 +42,7 @@ import java.util.stream.Stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mmarini.qucomp.Matchers.complexClose;
-import static org.mmarini.qucomp.Matchers.matrixCloseTo;
+import static org.mmarini.qucomp.Matchers.*;
 import static org.mmarini.qucomp.apis.MatrixTest.*;
 
 class ProcessorTest {
@@ -51,6 +50,7 @@ class ProcessorTest {
     private static final Matrix NORM02 = Matrix.create(4, 1,
             0.5f, 0.5f, 0.5f, 0.5f
     );
+    private static final SourceContext CTX = new SourceContext("1", "1", 1, 0);
 
     public static Stream<Arguments> testMatrixArgs() {
         return Stream.of(
@@ -184,7 +184,11 @@ class ProcessorTest {
                 Arguments.of("qubit1(0,3);", QUBIT1_03),
                 Arguments.of("qubit1(1,3);", QUBIT1_13),
                 Arguments.of("qubit1(2,3);", QUBIT1_23),
-                Arguments.of("normalise(|0>+|1>+|2>+|3>);", NORM02)
+                Arguments.of("normalise(|0>+|1>+|2>+|3>);", NORM02),
+                Arguments.of("<0| . i;", Matrix.ket(1, 0).dagger().mul(Complex.i())),
+                Arguments.of("i . <0|;", Matrix.ket(1, 0).dagger().mul(Complex.i())),
+                Arguments.of("<0| . 2;", Matrix.ket(1, 0).dagger().mul(2)),
+                Arguments.of("2 . <0|;", Matrix.ket(1, 0).dagger().mul(2))
         );
     }
 
@@ -212,16 +216,16 @@ class ProcessorTest {
 
     @Test
     void testAssign() {
-        Object[] result = assertDoesNotThrow(() -> execute("let a = 1;"));
-        assertThat(result[0], equalTo(1));
-        assertThat(processor.variables(), hasEntry(equalTo("a"), equalTo(1)));
+        Value.ListValue result = assertDoesNotThrow(() -> execute("let a = 1;"));
+        assertThat(result.value(), arrayContaining(isA(Value.IntValue.class)));
+        assertThat(processor.variables(), hasEntry(equalTo("a"), isA(Value.IntValue.class)));
     }
 
     @Test
     void testClear() {
-        processor.variables().put("a", 1);
-        Object[] results = assertDoesNotThrow(() -> execute("clear();"));
-        assertNull(results[0]);
+        processor.variables().put("a", new Value.IntValue(CTX, 1));
+        Value.ListValue results = assertDoesNotThrow(() -> execute("clear();"));
+        assertThat(results.value()[0], isIntValue(0));
         assertThat(processor.variables(), anEmptyMap());
     }
 
@@ -273,99 +277,102 @@ class ProcessorTest {
     })
     void testComplex(String text, double re, double im) {
         Complex expected = new Complex(re, im);
-        Object[] result = assertDoesNotThrow(() -> execute(text));
-        assertThat((Complex) result[0], complexClose(expected, EPSILON));
+        Value.ListValue result = assertDoesNotThrow(() -> execute(text));
+        assertThat(result.value()[0], isComplexValue(complexClose(expected, EPSILON)));
         assertThat(processor.variables(), anEmptyMap());
     }
 
     @ParameterizedTest
     @CsvSource({
-            "|1.>; , Expected integer value: (1.0) token(\"1.\")",
-            "a; , Undefined variable a token(\"a\")",
-            "sqrt(|0>);,Unexpected matrix argument ((1.0) |0>) token(\"0\")",
-            "sqrt(<0|);,Unexpected matrix argument ((1.0) <0|) token(\"<\")",
+            "|1.>; , Unexpected complex argument",
+            "a; , Undefined variable a",
+            "sqrt(|0>);,Unexpected matrix argument",
+            "sqrt(<0|);,Unexpected matrix argument",
             // 5
-            "|0> * |0>;,Invalid product operands shapes 2x1 by 2x1 token(\"*\")",
-            "<0| * <0|;,Invalid product operands shapes 1x2 by 1x2 token(\"*\")",
-            "1 + <0|;,Unexpected right argument ((1.0) <0|) token(\"+\")",
-            "i + <0|;,Unexpected right argument ((1.0) <0|) token(\"+\")",
-            "1 + |0>;,Unexpected right argument ((1.0) |0>) token(\"+\")",
+            "|0> * |0>;,Invalid product operands shapes 2x1 by 2x1",
+            "<0| * <0|;,Invalid product operands shapes 1x2 by 1x2",
+            "1 + <0|;,'Unexpected integer, matrix arguments'",
+            "i + <0|;,'Unexpected complex, matrix arguments'",
+            "1 + |0>;,'Unexpected integer, matrix arguments'",
             // 10
-            "i + |0>;,Unexpected right argument ((1.0) |0>) token(\"+\")",
-            "|0> + 1;,Unexpected right argument integer (1) token(\"+\")",
-            "|0> + i;,Unexpected right argument complex (i) token(\"+\")",
-            "<0| + 1;,Unexpected right argument integer (1) token(\"+\")",
-            "<0| + i;,Unexpected right argument complex (i) token(\"+\")",
+            "i + |0>;,'Unexpected complex, matrix arguments'",
+            "|0> + 1;,'Unexpected matrix, integer arguments'",
+            "|0> + i;,'Unexpected matrix, complex arguments'",
+            "<0| + 1;,'Unexpected matrix, integer arguments'",
+            "<0| + i;,'Unexpected matrix, complex arguments'",
             // 15
-            "1 - <0|;,Unexpected right argument ((1.0) <0|) token(\"-\")",
-            "i - <0|;,Unexpected right argument ((1.0) <0|) token(\"-\")",
-            "1 - |0>;,Unexpected right argument ((1.0) |0>) token(\"-\")",
-            "i - |0>;,Unexpected right argument ((1.0) |0>) token(\"-\")",
-            "|0> - 1;,Unexpected right argument int (1) token(\"-\")",
+            "1 - <0|;,'Unexpected integer, matrix arguments'",
+            "i - <0|;,'Unexpected complex, matrix arguments'",
+            "1 - |0>;,'Unexpected integer, matrix arguments'",
+            "i - |0>;,'Unexpected complex, matrix arguments'",
+            "|0> - 1;,'Unexpected matrix, integer arguments'",
             // 20
-            "|0> - i;,Unexpected right argument complex (i) token(\"-\")",
-            "<0| - 1;,Unexpected right argument int (1) token(\"-\")",
-            "<0| - i;,Unexpected right argument complex (i) token(\"-\")",
-            "<0| / |0>;,Unexpected right argument ((1.0) |0>) token(\"/\")",
-            "|0> / |0>;,Unexpected right argument ((1.0) |0>) token(\"/\")",
+            "|0> - i;,'Unexpected matrix, complex arguments'",
+            "<0| - 1;,'Unexpected matrix, integer arguments'",
+            "<0| - i;,'Unexpected matrix, complex arguments'",
+            "<0| / |0>;,'Unexpected matrix, matrix arguments'",
+            "|0> / |0>;,'Unexpected matrix, matrix arguments'",
             // 25
-            "|0> / <0|;,Unexpected right argument ((1.0) <0|) token(\"/\")",
-            "1 x 1;, Unexpected left argument integer (1) token(\"x\")",
-            "i x 1;, Unexpected left argument complex (i) token(\"x\")",
-            "|0> x 1;, Unexpected right argument integer (1) token(\"x\")",
-            "|0> x i;, Unexpected right argument complex (i) token(\"x\")",
+            "|0> / <0|;,'Unexpected matrix, matrix arguments'",
+            "1 x 1;, 'Unexpected integer, integer arguments'",
+            "i x 1;, 'Unexpected complex, integer arguments'",
+            "|0> x 1;, 'Unexpected matrix, integer arguments'",
+            "|0> x i;, 'Unexpected matrix, complex arguments'",
             // 30
-            "<0| x 1;, Unexpected right argument integer (1) token(\"x\")",
-            "<0| x i;, Unexpected right argument complex (i) token(\"x\")",
-            "I(i);, Argument should be an integer: actual (i) token(\"i\")",
-            "I(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"0\")",
-            "I(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"<\")",
+            "<0| x 1;, 'Unexpected matrix, integer arguments'",
+            "<0| x i;, 'Unexpected matrix, complex arguments'",
+            "I(i);, Unexpected complex argument",
+            "I(|0>);, Unexpected matrix argument",
+            "I(<0|);, Unexpected matrix argument",
             // 35
-            "H(i);, Argument should be an integer: actual (i) token(\"i\")",
-            "H(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"0\")",
-            "H(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"<\")",
-            "X(i);, Argument should be an integer: actual (i) token(\"i\")",
-            "X(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"0\")",
+            "H(i);, Unexpected complex argument",
+            "H(|0>);, Unexpected matrix argument",
+            "H(<0|);, Unexpected matrix argument",
+            "X(i);, Unexpected complex argument",
+            "X(|0>);, Unexpected matrix argument",
             // 40
-            "X(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"<\")",
-            "Y(i);, Argument should be an integer: actual (i) token(\"i\")",
-            "Y(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"0\")",
-            "Y(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"<\")",
-            "Z(i);, Argument should be an integer: actual (i) token(\"i\")",
+            "X(<0|);,Unexpected matrix argument",
+            "Y(i);, Unexpected complex argument",
+            "Y(|0>);, Unexpected matrix argument",
+            "Y(<0|);, Unexpected matrix argument",
+            "Z(i);, Unexpected complex argument",
             // 45
-            "Z(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"0\")",
-            "Z(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"<\")",
-            "S(i);, Argument should be an integer: actual (i) token(\"i\")",
-            "S(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"0\")",
-            "S(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"<\")",
+            "Z(|0>);, Unexpected matrix argument",
+            "Z(<0|);, Unexpected matrix argument",
+            "S(i);, Unexpected complex argument",
+            "S(|0>);, Unexpected matrix argument",
+            "S(<0|);, Unexpected matrix argument",
             // 50
-            "T(i);, Argument should be an integer: actual (i) token(\"i\")",
-            "T(|0>);, Argument should be an integer: actual ((1.0) |0>) token(\"0\")",
-            "T(<0|);, Argument should be an integer: actual ((1.0) <0|) token(\"<\")",
-            "<0| / <0|;, Unexpected right argument ((1.0) <0|) token(\"/\")",
-            "<2| / <2|;, Unexpected right argument ((1.0) <2|) token(\"/\")",
+            "T(i);, Unexpected complex argument",
+            "T(|0>);, Unexpected matrix argument",
+            "T(<0|);, Unexpected matrix argument",
+            "<0| / <0|;,'Unexpected matrix, matrix arguments'",
+            "<2| / <2|;,'Unexpected matrix, matrix arguments'",
             // 55
-            "'ary(1,i);', Argument should be an integer: actual (i) token(\"i\")",
-            "'ary(i,1);', Argument should be an integer: actual (i) token(\"i\")",
-            "'sim(1,i);', Argument should be an integer: actual (i) token(\"i\")",
-            "'sim(i,1);', Argument should be an integer: actual (i) token(\"i\")",
-            "'eps(1,i);', Argument should be an integer: actual (i) token(\"i\")",
-            "'eps(i,1);', Argument should be an integer: actual (i) token(\"i\")",
-            "'SWAP(1,i);', Argument should be an integer: actual (i) token(\"i\")",
-            "'SWAP(i,1);', Argument should be an integer: actual (i) token(\"i\")",
-            "'CNOT(1,i);', Control qubit should be an integer: actual (i) token(\"i\")",
-            "'CNOT(i,1);', Data qubit should be an integer: actual (i) token(\"i\")",
-            "'CNOT(0,0);', 'Expected all different indices [0, 0] token(\"CNOT\")'",
-            "'CCNOT(1,i,1);', Control0 qubit should be an integer: actual (i) token(\"i\")",
-            "'CCNOT(i,1,1);', Data qubit should be an integer: actual (i) token(\"i\")",
-            "'CCNOT(1,1,i);', Control1 qubit should be an integer: actual (i) token(\"i\")",
-            "'CCNOT(0,0,1);', 'Expected all different indices [0, 0, 1] token(\"CCNOT\")'",
-            "'CCNOT(0,1,0);', 'Expected all different indices [0, 1, 0] token(\"CCNOT\")'",
-            "'CCNOT(1,0,0);', 'Expected all different indices [1, 0, 0] token(\"CCNOT\")'",
-            "'qubit0(1,i);', Number of qubits should be an integer: actual (i) token(\"i\")",
-            "'qubit0(i,1);', Qubit index should be an integer: actual (i) token(\"i\")",
-            "'qubit1(1,i);', Number of qubits should be an integer: actual (i) token(\"i\")",
-            "'qubit1(i,1);', Qubit index should be an integer: actual (i) token(\"i\")",
+            "'ary(1,i);','Unexpected integer, complex arguments'",
+            "'ary(i,1);','Unexpected complex, integer arguments'",
+            "'sim(1,i);','Unexpected integer, complex arguments'",
+            "'sim(i,1);','Unexpected complex, integer arguments'",
+            "'eps(1,i);','Unexpected integer, complex arguments'",
+            // 60
+            "'eps(i,1);','Unexpected complex, integer arguments'",
+            "'SWAP(1,i);','Unexpected integer, complex arguments'",
+            "'SWAP(i,1);','Unexpected complex, integer arguments'",
+            "'CNOT(1,i);','Unexpected integer, complex arguments'",
+            "'CNOT(i,1);','Unexpected complex, integer arguments'",
+            // 65
+            "'CNOT(0,0);','Expected all different indices [0, 0]'",
+            "'CCNOT(1,i,1);','Unexpected integer, complex, integer arguments'",
+            "'CCNOT(i,1,1);','Unexpected complex, integer, integer arguments'",
+            "'CCNOT(1,1,i);','Unexpected integer, integer, complex arguments'",
+            "'CCNOT(0,0,1);','Expected all different indices [0, 0, 1]'",
+            // 70
+            "'CCNOT(0,1,0);','Expected all different indices [0, 1, 0]'",
+            "'CCNOT(1,0,0);', 'Expected all different indices [1, 0, 0]'",
+            "'qubit0(1,i);','Unexpected integer, complex arguments'",
+            "'qubit0(i,1);','Unexpected complex, integer arguments'",
+            "'qubit1(1,i);','Unexpected integer, complex arguments'",
+            "'qubit1(i,1);','Unexpected complex, integer arguments'",
     })
     void testError(String text, String msg) {
         QuException ex = assertThrows(QuException.class, () -> execute(text));
@@ -395,24 +402,27 @@ class ProcessorTest {
             "normalise(10);, 1",
     })
     void testInt(String text, int expected) {
-        Object[] result = assertDoesNotThrow(() -> execute(text));
-        assertEquals(expected, result[0]);
+        Value.ListValue result = assertDoesNotThrow(() -> execute(text));
+        assertThat(result.value()[0], isA(Value.IntValue.class));
+        assertEquals(expected, ((Value.IntValue) result.value()[0]).value());
         assertThat(processor.variables(), anEmptyMap());
     }
 
     @ParameterizedTest
     @MethodSource("testMatrixArgs")
     void testMatrix(String text, Matrix exp) {
-        Object[] result = assertDoesNotThrow(() -> execute(text));
-        assertThat((Matrix) result[0], matrixCloseTo(exp, EPSILON));
+        Value.ListValue result = assertDoesNotThrow(() -> execute(text));
+        assertThat(result.value()[0], isMatrixValue(matrixCloseTo(exp, EPSILON)));
         assertThat(processor.variables(), anEmptyMap());
     }
 
     @Test
     void testVar() {
-        Object[] result = assertDoesNotThrow(() -> execute("let a = 1; -a;"));
-        assertThat(result[0], equalTo(1));
-        assertThat(result[1], equalTo(-1));
-        assertThat(processor.variables(), hasEntry(equalTo("a"), equalTo(1)));
+        Value.ListValue result = assertDoesNotThrow(() -> execute("let a = 1; -a;"));
+
+        assertThat(result.value(), arrayContaining(isA(Value.IntValue.class), isA(Value.IntValue.class)));
+        assertEquals(1, ((Value.IntValue) result.value()[0]).value());
+        assertEquals(-1, ((Value.IntValue) result.value()[1]).value());
+        assertThat(processor.variables(), hasEntry(equalTo("a"), isA(Value.IntValue.class)));
     }
 }

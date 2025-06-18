@@ -110,8 +110,9 @@ public class Syntax {
         // <divide-tail> ::= "/" <cross-exp> | ""
         builder.opt("<multiply-exp>", "<cross-exp>", "<mul-tail>");
         builder.repeat("<mul-tail>", "<mul-tail-opt>");
-        builder.options("<mul-tail-opt>", "<multiply-tail>", "<divide-tail>");
+        builder.options("<mul-tail-opt>", "<multiply-tail>", "<multiply0-tail>", "<divide-tail>");
         builder.opt("<multiply-tail>", "*", "<cross-exp>");
+        builder.opt("<multiply0-tail>", ".", "<cross-exp>");
         builder.opt("<divide-tail>", "/", "<cross-exp>");
 
         // <cross-exp> ::= <unary-exp> <cross-tail>
@@ -203,6 +204,7 @@ public class Syntax {
         builder.oper("=");
         builder.oper(";");
         builder.oper(",");
+        builder.oper(".");
 
         // Reserved keywords
         builder.id("clear");

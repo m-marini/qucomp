@@ -37,6 +37,7 @@ import org.mmarini.qucomp.apis.Matrix;
 import org.mmarini.qucomp.compiler.CommandNode;
 import org.mmarini.qucomp.compiler.SyntaxRule;
 import org.mmarini.qucomp.compiler.Token;
+import org.mmarini.qucomp.compiler.Value;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -290,6 +291,29 @@ public interface Matchers {
         return isBinaryCommand(isA(CommandNode.Mul.class), left, right);
     }
 
+    static Matcher<Value> isComplexValue(Matcher<Complex> expected) {
+        requireNonNull(expected);
+        return new CustomMatcher<>(format("ComplexValue of %s",
+                expected)) {
+            public void describeMismatch(Object item, Description description) {
+                if (item instanceof Value.ComplexValue value) {
+                    description.appendText("complex value of ")
+                            .appendValue(value.toString())
+                            .appendText(" ");
+                    expected.describeMismatch(value.value(), description);
+                } else {
+                    super.describeMismatch(item, description);
+                }
+            }
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof Value.ComplexValue value)) return false;
+                return expected.matches(value.value());
+            }
+        };
+    }
+
     static Matcher<CommandNode> isNegateCommand(Matcher<CommandNode> arg) {
         return isUnaryCommand(isA(CommandNode.Negate.class), arg);
     }
@@ -349,24 +373,82 @@ public interface Matchers {
         };
     }
 
+    static Matcher<Value> isIntValue(int value) {
+        return isIntValue(equalTo(value));
+    }
+
+    static Matcher<Value> isIntValue(Matcher<Integer> expected) {
+        requireNonNull(expected);
+        return new CustomMatcher<>(format("IntValue of %s",
+                expected)) {
+            public void describeMismatch(Object item, Description description) {
+                if (item instanceof Value.IntValue value) {
+                    description.appendText("int value of ")
+                            .appendValue(value.toString())
+                            .appendText(" ");
+                    expected.describeMismatch(value.value(), description);
+                } else {
+                    super.describeMismatch(item, description);
+                }
+            }
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof Value.IntValue value)) return false;
+                return expected.matches(value.value());
+            }
+        };
+    }
+
+    static Matcher<Value> isMatrixValue(Matcher<Matrix> expected) {
+        requireNonNull(expected);
+        return new CustomMatcher<>(format("MatrixValue of %s",
+                expected)) {
+            public void describeMismatch(Object item, Description description) {
+                if (item instanceof Value.MatrixValue value) {
+                    description.appendText("complex value of ")
+                            .appendValue(value.toString())
+                            .appendText(" ");
+                    expected.describeMismatch(value.value(), description);
+                } else {
+                    super.describeMismatch(item, description);
+                }
+            }
+
+            @Override
+            public boolean matches(Object o) {
+                if (!(o instanceof Value.MatrixValue value)) return false;
+                return expected.matches(value.value());
+            }
+        };
+    }
+
+    static Matcher<CommandNode> isMatrixValueCommand(Matcher<Matrix> expected) {
+        return isValueCommand(isMatrixValue(expected));
+    }
+
+    static Matcher<CommandNode> isMul0Command(Matcher<CommandNode> left, Matcher<CommandNode> right) {
+        return isBinaryCommand(isA(CommandNode.Mul0.class), left, right);
+    }
+
     static Matcher<CommandNode> isValueCommand(int expected) {
-        return isValueCommand(equalTo(expected));
+        return isValueCommand(isIntValue(equalTo(expected)));
     }
 
     static Matcher<CommandNode> isValueCommand(Complex expected, double epsilon) {
-        return isValueCommand(complexClose(expected, epsilon));
+        return isValueCommand(isComplexValue(complexClose(expected, epsilon)));
     }
 
     static Matcher<CommandNode> isValueCommand(double re, double im, double epsilon) {
-        return isValueCommand(complexClose(re, im, epsilon));
+        return isValueCommand(isComplexValue(complexClose(re, im, epsilon)));
     }
 
-    static <T> Matcher<CommandNode> isValueCommand(Matcher<T> expected) {
+    static Matcher<CommandNode> isValueCommand(Matcher<Value> expected) {
         requireNonNull(expected);
         return new CustomMatcher<>(format("ValueCommand of %s",
                 expected)) {
             public void describeMismatch(Object item, Description description) {
-                if (item instanceof CommandNode.Value value) {
+                if (item instanceof CommandNode.ValueCommand value) {
                     description.appendText("value of ")
                             .appendValue(value.toString())
                             .appendText(" ");
@@ -378,7 +460,7 @@ public interface Matchers {
 
             @Override
             public boolean matches(Object o) {
-                if (!(o instanceof CommandNode.Value cmd)) return false;
+                if (!(o instanceof CommandNode.ValueCommand cmd)) return false;
                 return expected.matches(cmd.value());
             }
         };

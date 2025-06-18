@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Issue [#35](https://github.com/m-marini/qucomp/issues/35): Add qubit projections
 - Issue [#37](https://github.com/m-marini/qucomp/issues/37): Add normalization function
+- Issue [#42](https://github.com/m-marini/qucomp/issues/42): Add product by 0 extension
 
 ### Changed
 
