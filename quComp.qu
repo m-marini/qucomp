@@ -1,3 +1,43 @@
-let a = |0>;
-let b = CNOT(1,0);
-let c = a^;
+/*
+ * Full Adder
+ *
+ *       In 0 ---c---c-----------c--- Out 0
+ *               |   |           |
+ *       In 1 ---c---X---c---c---X--- Out 1
+ *               |       |   |
+ * Carry in 2 -----------c---X------- Out 2 Sum (In 0 + In 1 + Carry in)
+ *               |       |
+ *       In 3 ---X-------X----------- Out 1 Carry out
+ */
+
+// Input bits
+let in0 = |0>;
+let in1 = |0>;
+let carryIn = |0>;
+
+// Bits indices
+let inBit0 = 0;
+let inBit1 = 1;
+let carryInBit = 2;
+let sumBit = 2;
+let carryOutBit = 3;
+
+let numBits = 4;
+
+// Circuits
+let halfAdder = CNOT(inBit1, inBit0)
+              * CNOT(carryInBit, inBit1)
+              * CCNOT(carryOutBit, inBit1, carryInBit)
+              * CNOT(inBit1, inBit0)
+              * CCNOT(carryOutBit, inBit0, inBit1);
+
+// Global input
+let in = carryIn x in1 x in0;
+
+// Output states
+let out = halfAdder * in;
+
+// Probabilities of sum and carry bits at |1>
+
+let sumBitProb = out^ * qubit1(sumBit, numBits) * out;
+let carryBitProb = out^ * qubit1(carryOutBit, numBits) * out;

@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.text.Element;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -101,6 +102,8 @@ public class QuCompGUI {
     private final JFrame frame;
     private final JMenuItem exitMenu;
     private final JMenuItem openMenu;
+    private final JMenuItem saveMenu;
+    private final JMenuItem saveAsMenu;
     private final JMenuItem runMenu;
     private final JFileChooser fileChooser;
     private final Namespace args;
@@ -112,6 +115,7 @@ public class QuCompGUI {
     private final Processor processor;
     private final VariablePanel varPanel;
     private final JSplitPane execPanel;
+    private File sourceFile;
 
     /**
      * Creates the application
@@ -122,6 +126,8 @@ public class QuCompGUI {
         this.args = requireNonNull(parsedArgs);
         this.frame = new JFrame();
         this.openMenu = SwingUtils.createMenuItem("ComputeGUI.openMenu");
+        this.saveMenu = SwingUtils.createMenuItem("ComputeGUI.saveMenu");
+        this.saveAsMenu = SwingUtils.createMenuItem("ComputeGUI.saveAsMenu");
         this.runMenu = SwingUtils.createMenuItem("QuCompGUI.runMenu");
         this.exitMenu = SwingUtils.createMenuItem("ComputeGUI.exitMenu");
         this.fileChooser = new JFileChooser();
@@ -148,6 +154,9 @@ public class QuCompGUI {
      */
     private void createContent() {
         fileChooser.setCurrentDirectory(new File("."));
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("qu file", "qu");
+        fileChooser.addChoosableFileFilter(filter);
+        fileChooser.setFileFilter(filter);
 
         codeEditor.setFont(Font.decode(Font.MONOSPACED).deriveFont(Font.BOLD, 14));
 
@@ -156,7 +165,7 @@ public class QuCompGUI {
         errorPanel.setRows(2);
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setTitle(Messages.getString("Compute.title"));
+        frame.setTitle(Messages.getString("ComputeGUI.title"));
         frame.setJMenuBar(createMenu());
         frame.setResizable(true);
         frame.setSize(1024, 700);
@@ -183,6 +192,8 @@ public class QuCompGUI {
      */
     private void createFlow() {
         openMenu.addActionListener(this::onOpen);
+        saveMenu.addActionListener(this::onSave);
+        saveAsMenu.addActionListener(this::onSaveAs);
         exitMenu.addActionListener(this::onExit);
         runMenu.addActionListener(this::onRun);
         frame.addWindowListener(new WindowAdapter() {
@@ -201,6 +212,8 @@ public class QuCompGUI {
 
         JMenu fileMenu = SwingUtils.createMenu("ComputeGUI.fileMenu");
         fileMenu.add(openMenu);
+        fileMenu.add(saveMenu);
+        fileMenu.add(saveAsMenu);
         fileMenu.add(new JSeparator());
         fileMenu.add(exitMenu);
 
@@ -210,6 +223,48 @@ public class QuCompGUI {
         menuBar.add(fileMenu);
         menuBar.add(execMenu);
         return menuBar;
+    }
+
+    /**
+     * Handles the open action
+     *
+     * @param actionEvent the event
+     */
+    private void onOpen(ActionEvent actionEvent) {
+        if (sourceFile != null) {
+            fileChooser.setSelectedFile(sourceFile);
+        }
+        int rc = fileChooser.showOpenDialog(null);
+        if (rc == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            JDialog d = showDialogMessage("ComputeGUI.loadingDialog.title", "ComputeGUI.loadingDialog.text");
+            io().scheduleDirect(() -> {
+                open(file);
+                d.dispose();
+            });
+        }
+    }
+
+    /**
+     * Handles save menu event
+     *
+     * @param actionEvent event
+     */
+    private void onSave(ActionEvent actionEvent) {
+        save(sourceFile);
+    }
+
+    /**
+     * Handles save as menu event
+     *
+     * @param actionEvent the event
+     */
+    private void onSaveAs(ActionEvent actionEvent) {
+        int rc = fileChooser.showSaveDialog(null);
+        if (rc == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            save(file);
+        }
     }
 
     /**
@@ -266,19 +321,21 @@ public class QuCompGUI {
     }
 
     /**
-     * Handles the open action
+     * Opens the source file
      *
-     * @param actionEvent the event
+     * @param code the source file
      */
-    private void onOpen(ActionEvent actionEvent) {
-        int rc = fileChooser.showOpenDialog(null);
-        if (rc == JFileChooser.APPROVE_OPTION) {
-            File file = fileChooser.getSelectedFile();
-            JDialog d = showDialogMessage("ComputeGUI.loadingDialog.title", "ComputeGUI.loadingDialog.text");
-            io().scheduleDirect(() -> {
-                open(file);
-                d.dispose();
-            });
+    private void open(File code) {
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(code));
+            codeEditor.setText(reader.lines()
+                    .map(line -> line + "\n")
+                    .reduce(String::concat)
+                    .orElse(""));
+            this.sourceFile = code;
+            frame.setTitle(Messages.format("ComputeGUI.fileTitle", code.toString()));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -297,14 +354,17 @@ public class QuCompGUI {
                 .subscribe();
     }
 
-    private void open(File code) {
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(code));
-            codeEditor.setText(reader.lines()
-                    .map(line -> line + "\n")
-                    .reduce(String::concat)
-                    .orElse(""));
-        } catch (FileNotFoundException e) {
+    /**
+     * Saves the code in file
+     *
+     * @param code the file
+     */
+    private void save(File code) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(code))) {
+            writer.print(codeEditor.getText());
+            this.sourceFile = code;
+            frame.setTitle(Messages.format("ComputeGUI.fileTitle", code.toString()));
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
