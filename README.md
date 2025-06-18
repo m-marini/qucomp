@@ -2,6 +2,13 @@ This project is a quantum computing emulation.
 
 The documentaion is in the [Wiki section](https://github.com/m-marini/qucomp/wiki).
 
+## Release 0.3.1
+
+- Add qubit projections, normalization function, product operator `.`
+- Add save file
+- Asynchronous execution in GUI and double precision complex
+- Fixed wrong sqrt of negative integer
+
 ## Release 0.3.0
 
 - Qu language compiler
